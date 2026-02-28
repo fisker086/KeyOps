@@ -1,0 +1,188 @@
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: keyops-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-keyops}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - keyops-network
+
+  # Redis 缓存服务（用于分布式特性）
+  redis:
+    image: redis:7-alpine
+    container_name: keyops-redis
+    restart: unless-stopped
+    command: >
+      sh -c "
+      if [ -n \"$$REDIS_PASSWORD\" ]; then
+        redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\"
+      else
+        redis-server --appendonly yes
+      fi
+      "
+    environment:
+      TZ: Asia/Shanghai
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      # 注意：如果设置了REDIS_PASSWORD，需要手动调整健康检查命令为：
+      # test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - keyops-network
+
+  # Guacamole daemon (guacd) - 用于 RDP 录制
+  guacd:
+    image: guacamole/guacd:1.5.5
+    container_name: keyops-guacd
+    restart: unless-stopped
+    # 平台配置：自动适配 ARM64 (Apple Silicon) 和 AMD64
+    # 在 Apple Silicon Mac 上，Docker Desktop 会自动使用 Rosetta 2 模拟运行 AMD64 镜像
+    # 如需强制使用特定平台，可通过环境变量设置：DOCKER_PLATFORM=linux/amd64 或 linux/arm64
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "${GUACD_PORT:-4822}:4822"
+    volumes:
+      # 录制文件目录：挂载到宿主机，确保 zjump 服务也能访问
+      # 容器内路径：/replay
+      # 宿主机路径：./recordings（相对路径，会在 docker-compose.yml 所在目录创建）
+      - ./recordings:/replay:rw
+    networks:
+      - keyops-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo 'test' | nc localhost 4822 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # KeyOps 后端服务（API only）
+  keyops-backend:
+    # 使用 GitHub Container Registry 镜像
+    image: ghcr.nju.edu.cn/fisker086/keyops-backend:latest
+    container_name: keyops-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      guacd:
+        condition: service_healthy
+    networks:
+      - keyops-network
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"    # 后端 API 端口（可选，通常不需要暴露）
+      - "${SSH_PORT:-2222}:2222"         # SSH Gateway（直接 SSH 登录）
+    volumes:
+      # 配置文件（可选，如果需要自定义配置而不重新构建镜像）
+      - ./config:/app/config:ro
+      # 日志目录
+      - ./logs:/app/logs:rw
+      # 录制文件目录：与 guacd 共享，确保 keyops 服务能读取录制文件
+      # 宿主机路径：./recordings
+      # 容器内路径：/replay（与 guacd 保持一致，确保路径一致）
+      - ./recordings:/replay:rw
+    environment:
+      # 服务器配置
+      KEYOPS_CONFIG: /app/config/config.yaml
+      KEYOPS_ADDR_HTTP: :8080
+      KEYOPS_ADDR_SSH: :2222
+      GIN_MODE: ${GIN_MODE:-release}
+      
+      # 数据库配置
+      # 使用服务名连接（Docker Compose 网络）
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER:-root}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      DB_NAME: ${MYSQL_DATABASE:-keyops}
+      
+      # Redis 配置（用于分布式特性）
+      REDIS_ENABLED: ${REDIS_ENABLED:-true}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      
+      # Guacd 配置（用于 RDP 连接）
+      GUACD_HOST: guacd
+      GUACD_PORT: 4822
+      
+      # 录制配置
+      # RECORDING_CONTAINER_PATH: 容器内路径，用于路径转换（宿主机路径 -> 容器内路径）
+      # 数据库 recording_path 存储宿主机路径，代码会自动转换为容器内路径
+      RECORDING_CONTAINER_PATH: /replay
+      
+      # 时区
+      TZ: ${TZ:-Asia/Shanghai}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # KeyOps 前端服务（Nginx + 前端静态文件）
+  keyops-frontend:
+    # 使用 GitHub Container Registry 镜像
+    image: ghcr.nju.edu.cn/fisker086/keyops-frontend:latest
+    container_name: keyops-frontend
+    restart: unless-stopped
+    depends_on:
+      keyops-backend:
+        condition: service_healthy
+    networks:
+      - keyops-network
+    ports:
+      - "${HTTP_PORT:-80}:80"           # HTTP (前端 + Nginx 代理 API)
+      - "${HTTPS_PORT:-443}:443"        # HTTPS (可选，需要配置 SSL 证书)
+    volumes:
+      # Nginx 配置文件（方便用户修改配置，如添加 HTTPS 支持）
+      - ./ui/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # 日志目录
+      - ./logs:/app/logs:rw
+      # SSL 证书目录（可选，用于 HTTPS）
+      # - ./ssl:/etc/nginx/ssl:ro
+    environment:
+      # 时区
+      TZ: ${TZ:-Asia/Shanghai}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  keyops-network:
+    driver: bridge

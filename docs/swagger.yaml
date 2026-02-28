@@ -1,0 +1,6681 @@
+basePath: /api
+definitions:
+  github_com_fisker_zjump-backend_internal_model.Approval:
+    properties:
+      applicant:
+        allOf:
+        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.User'
+        description: 关联
+      applicant_email:
+        description: 申请人邮箱
+        type: string
+      applicant_id:
+        description: 申请人信息
+        type: string
+      applicant_name:
+        description: 申请人名称
+        type: string
+      approval_note:
+        description: 审批备注
+        type: string
+      approved_at:
+        description: 批准时间
+        type: string
+      approver_ids:
+        description: 审批人信息
+        items:
+          type: string
+        type: array
+      approver_names:
+        description: 审批人名称列表
+        items:
+          type: string
+        type: array
+      created_at:
+        description: 时间信息
+        type: string
+      current_approver:
+        description: 当前审批人
+        type: string
+      deploy_config:
+        description: 发布相关字段（当Type为deployment时使用）
+        type: string
+      deployed:
+        description: 是否已发布
+        type: boolean
+      deployment_id:
+        description: 关联的部署记录ID（发布成功后创建）
+        type: string
+      description:
+        description: 描述
+        type: string
+      duration:
+        description: 权限时长(小时)
+        type: integer
+      expires_at:
+        description: 过期时间
+        type: string
+      external_data:
+        description: 第三方平台额外数据(JSON)
+        type: string
+      external_id:
+        description: 第三方平台信息
+        type: string
+      external_url:
+        description: 第三方平台审批单链接
+        type: string
+      id:
+        type: string
+      permissions:
+        description: 权限信息
+        items:
+          type: string
+        type: array
+      platform:
+        allOf:
+        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalPlatform'
+        description: 审批平台
+      priority:
+        description: '优先级: low/normal/high/urgent'
+        type: string
+      reason:
+        description: 审批详情
+        type: string
+      reject_reason:
+        description: 拒绝原因
+        type: string
+      rejected_at:
+        description: 拒绝时间
+        type: string
+      resource_ids:
+        description: 资源ID列表
+        items:
+          type: string
+        type: array
+      resource_names:
+        description: 资源名称列表
+        items:
+          type: string
+        type: array
+      resource_type:
+        description: 资源信息
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalStatus'
+        description: 状态
+      title:
+        description: 标题
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalType'
+        description: 类型
+      updated_at:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.ApprovalPlatform:
+    enum:
+    - internal
+    - feishu
+    - dingtalk
+    - wechat
+    - custom
+    type: string
+    x-enum-comments:
+      ApprovalPlatformCustom: 自定义
+      ApprovalPlatformDingTalk: 钉钉
+      ApprovalPlatformFeishu: 飞书
+      ApprovalPlatformInternal: 内部审批系统
+      ApprovalPlatformWeChat: 企业微信
+    x-enum-descriptions:
+    - 内部审批系统
+    - 飞书
+    - 钉钉
+    - 企业微信
+    - 自定义
+    x-enum-varnames:
+    - ApprovalPlatformInternal
+    - ApprovalPlatformFeishu
+    - ApprovalPlatformDingTalk
+    - ApprovalPlatformWeChat
+    - ApprovalPlatformCustom
+  github_com_fisker_zjump-backend_internal_model.ApprovalStatus:
+    enum:
+    - pending
+    - approved
+    - rejected
+    - canceled
+    - expired
+    type: string
+    x-enum-comments:
+      ApprovalStatusApproved: 已批准
+      ApprovalStatusCanceled: 已取消
+      ApprovalStatusExpired: 已过期
+      ApprovalStatusPending: 待审批
+      ApprovalStatusRejected: 已拒绝
+    x-enum-descriptions:
+    - 待审批
+    - 已批准
+    - 已拒绝
+    - 已取消
+    - 已过期
+    x-enum-varnames:
+    - ApprovalStatusPending
+    - ApprovalStatusApproved
+    - ApprovalStatusRejected
+    - ApprovalStatusCanceled
+    - ApprovalStatusExpired
+  github_com_fisker_zjump-backend_internal_model.ApprovalType:
+    enum:
+    - host_access
+    - host_group_access
+    - deployment
+    type: string
+    x-enum-comments:
+      ApprovalTypeDeployment: 发布审批
+      ApprovalTypeHostAccess: 主机访问权限
+      ApprovalTypeHostGroupAccess: 主机组访问权限
+    x-enum-descriptions:
+    - 主机访问权限
+    - 主机组访问权限
+    - 发布审批
+    x-enum-varnames:
+    - ApprovalTypeHostAccess
+    - ApprovalTypeHostGroupAccess
+    - ApprovalTypeDeployment
+  github_com_fisker_zjump-backend_internal_model.BillPrice:
+    properties:
+      cluster:
+        description: 集群
+        type: string
+      createdAt:
+        type: string
+      description:
+        description: 描述
+        type: string
+      id:
+        type: integer
+      price:
+        description: 单价
+        type: number
+      resource_type:
+        description: 资源类型
+        type: string
+      scale:
+        description: 规格，如 1:2, 1:4
+        type: string
+      updatedAt:
+        type: string
+      vendor:
+        description: 云厂商
+        type: string
+    required:
+    - vendor
+    type: object
+  github_com_fisker_zjump-backend_internal_model.CreateApplicationDeployBindingRequest:
+    properties:
+      applicationId:
+        type: string
+      argocdApplication:
+        description: 当 deployType=argocd 时必填
+        type: string
+      deployConfigId:
+        type: string
+      deployConfigName:
+        type: string
+      deployStrategy:
+        description: rolling, blue_green, canary, multi_lane
+        type: string
+      deployType:
+        enum:
+        - jenkins
+        - argocd
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      environment:
+        enum:
+        - dev
+        - test
+        - qa
+        - staging
+        - prod
+        type: string
+      jenkinsJob:
+        description: 当 deployType=jenkins 时必填
+        type: string
+      pipelineId:
+        description: 流水线定义 ID，空则默认
+        type: string
+      strategyOptions:
+        description: JSON
+        type: string
+    required:
+    - applicationId
+    - deployConfigId
+    - deployType
+    - environment
+    type: object
+  github_com_fisker_zjump-backend_internal_model.CreateApplicationRequest:
+    properties:
+      department:
+        type: string
+      description:
+        type: string
+      devOwners:
+        items:
+          type: string
+        type: array
+      gitUrl:
+        type: string
+      isCritical:
+        type: boolean
+      jenkinsJobName:
+        type: string
+      jenkinsServerId:
+        type: integer
+      lineOfBiz:
+        type: string
+      name:
+        type: string
+      offlineAt:
+        type: string
+      onlineAt:
+        type: string
+      opsOwners:
+        items:
+          type: string
+        type: array
+      org:
+        type: string
+      site:
+        type: string
+      srvType:
+        type: string
+      status:
+        type: string
+      testOwners:
+        items:
+          type: string
+        type: array
+      virtualTech:
+        type: string
+    required:
+    - name
+    - srvType
+    type: object
+  github_com_fisker_zjump-backend_internal_model.CreateJenkinsServerRequest:
+    properties:
+      alias:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      password:
+        description: 密码或API Token
+        type: string
+      url:
+        description: Jenkins服务器URL（格式：http://host:port 或 https://host:port）
+        type: string
+      username:
+        type: string
+    required:
+    - alias
+    - password
+    - url
+    - username
+    type: object
+  github_com_fisker_zjump-backend_internal_model.CreateOrganizationRequest:
+    properties:
+      description:
+        type: string
+      isActive:
+        type: boolean
+      parentId:
+        type: string
+      sortOrder:
+        type: integer
+      unitCode:
+        type: string
+      unitName:
+        type: string
+      unitOwner:
+        type: string
+      unitType:
+        type: string
+    required:
+    - unitCode
+    - unitName
+    - unitType
+    type: object
+  github_com_fisker_zjump-backend_internal_model.DBInstance:
+    properties:
+      authDatabase:
+        description: MongoDB 认证数据库
+        type: string
+      charset:
+        type: string
+      connectionString:
+        description: MongoDB/Redis 连接字符串
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      databaseName:
+        type: string
+      dbType:
+        type: string
+      description:
+        type: string
+      host:
+        type: string
+      id:
+        type: integer
+      isEnabled:
+        type: boolean
+      name:
+        type: string
+      port:
+        type: integer
+      sslCert:
+        type: string
+      sslEnabled:
+        type: boolean
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.Deployment:
+    properties:
+      artifact_url:
+        type: string
+      build_log:
+        description: Jenkins构建日志内容（保存完整日志，即使job被删除也能查看）
+        type: string
+      cluster_id:
+        type: string
+      cluster_name:
+        type: string
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      created_by_name:
+        type: string
+      deploy_config:
+        description: JSON格式存储不同发布方式的配置
+        type: string
+      deploy_type:
+        description: jenkins, k8s, gitops, argocd, helm
+        type: string
+      description:
+        type: string
+      duration:
+        description: 秒
+        type: integer
+      env_id:
+        type: string
+      env_name:
+        type: string
+      id:
+        type: string
+      jenkins_build_number:
+        description: 向后兼容字段
+        type: integer
+      jenkins_job:
+        description: 向后兼容字段
+        type: string
+      k8s_kind:
+        description: 向后兼容字段
+        type: string
+      k8s_yaml:
+        description: 向后兼容字段
+        type: string
+      log_path:
+        type: string
+      namespace:
+        type: string
+      project_id:
+        type: string
+      project_name:
+        type: string
+      started_at:
+        type: string
+      status:
+        description: pending, running, success, failed, cancelled
+        type: string
+      updated_at:
+        type: string
+      verify_enabled:
+        description: 是否启用kubedog验证
+        type: boolean
+      verify_timeout:
+        description: 验证超时时间（秒），默认300秒
+        type: integer
+      version:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.GetBuildLogResponse:
+    properties:
+      buildNumber:
+        type: integer
+      hasMore:
+        type: boolean
+      jobName:
+        type: string
+      log:
+        type: string
+      moreData:
+        type: boolean
+      server:
+        type: string
+      textSize:
+        type: integer
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsBuild:
+    properties:
+      building:
+        type: boolean
+      description:
+        type: string
+      displayName:
+        type: string
+      duration:
+        type: integer
+      estimatedDuration:
+        type: integer
+      fullDisplayName:
+        type: string
+      keepLog:
+        type: boolean
+      number:
+        type: integer
+      queueId:
+        type: integer
+      result:
+        description: SUCCESS/FAILURE/UNSTABLE/ABORTED
+        type: string
+      timestamp:
+        type: integer
+      url:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsBuildDetailResponse:
+    properties:
+      build:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+      server:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsComputer:
+    properties:
+      displayName:
+        type: string
+      executors:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsExecutor'
+        type: array
+      icon:
+        type: string
+      iconClassName:
+        type: string
+      idle:
+        type: boolean
+      jnlpAgent:
+        type: boolean
+      launchSupported:
+        type: boolean
+      loadStatistics:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsLoadStatistics'
+      manualLaunchAllowed:
+        type: boolean
+      monitorData:
+        additionalProperties: true
+        type: object
+      numExecutors:
+        type: integer
+      offline:
+        type: boolean
+      offlineCause: {}
+      oneOffExecutors:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsExecutor'
+        type: array
+      temporarilyOffline:
+        type: boolean
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsExecutor:
+    properties:
+      currentExecutable: {}
+      currentWorkUnit: {}
+      idle:
+        type: boolean
+      likelyStuck:
+        type: boolean
+      number:
+        type: integer
+      progress:
+        type: integer
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsJob:
+    properties:
+      _class:
+        type: string
+      buildable:
+        type: boolean
+      color:
+        type: string
+      description:
+        type: string
+      displayName:
+        type: string
+      lastBuild:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+      lastFailedBuild:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+      lastStableBuild:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+      lastSuccessfulBuild:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsJobDetailResponse:
+    properties:
+      builds:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+        type: array
+      job:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob'
+      server:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob'
+        type: array
+      server:
+        type: string
+      total:
+        type: integer
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsLabel:
+    properties:
+      name:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsLoadStatistics:
+    properties:
+      busyExecutors:
+        type: integer
+      idleExecutors:
+        type: integer
+      queueLength:
+        type: integer
+      totalExecutors:
+        type: integer
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsQueue:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsQueueItem'
+        type: array
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsQueueItem:
+    properties:
+      actions:
+        items: {}
+        type: array
+      blocked:
+        type: boolean
+      buildable:
+        type: boolean
+      buildableStartMilliseconds:
+        type: integer
+      id:
+        type: integer
+      inQueueSince:
+        type: integer
+      params:
+        type: string
+      stuck:
+        type: boolean
+      task:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsTask'
+      url:
+        type: string
+      why:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsServer:
+    properties:
+      alias:
+        description: 别名(服务器名称)
+        type: string
+      created_at:
+        type: string
+      description:
+        description: 描述
+        type: string
+      enabled:
+        description: 是否启用
+        type: boolean
+      id:
+        type: integer
+      updated_at:
+        type: string
+      url:
+        description: Jenkins服务器URL（格式：http://host:port 或 https://host:port）
+        type: string
+      username:
+        description: 用户名
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo:
+    properties:
+      alias:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      updated_at:
+        type: string
+      url:
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsServerListResponse:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo'
+        type: array
+      total:
+        type: integer
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo:
+    properties:
+      assignedLabels:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsLabel'
+        type: array
+      computers:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsComputer'
+        type: array
+      mode:
+        type: string
+      nodeDescription:
+        type: string
+      nodeName:
+        type: string
+      numExecutors:
+        type: integer
+      overallLoad:
+        additionalProperties:
+          type: integer
+        type: object
+      primaryView:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsView'
+      unlabeledLoad:
+        additionalProperties:
+          type: integer
+        type: object
+      useCrumbs:
+        type: boolean
+      useSecurity:
+        type: boolean
+      version:
+        type: string
+      views:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsView'
+        type: array
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsTask:
+    properties:
+      color:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.JenkinsView:
+    properties:
+      description:
+        type: string
+      jobs:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob'
+        type: array
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.OperationLog:
+    properties:
+      created_at:
+        type: string
+      desc:
+        type: string
+      id:
+        type: integer
+      ip:
+        type: string
+      method:
+        type: string
+      path:
+        type: string
+      start_time:
+        type: string
+      status:
+        type: integer
+      time_cost:
+        type: integer
+      user_agent:
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.PaginatedResponse:
+    properties:
+      data: {}
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  github_com_fisker_zjump-backend_internal_model.PodCommandRecord:
+    properties:
+      clusterId:
+        type: string
+      clusterName:
+        type: string
+      command:
+        type: string
+      container:
+        type: string
+      createdAt:
+        type: string
+      executedAt:
+        type: string
+      id:
+        type: integer
+      namespace:
+        type: string
+      podName:
+        type: string
+      userId:
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.QueryLog:
+    properties:
+      affectedRows:
+        type: integer
+      clientIp:
+        type: string
+      createdAt:
+        type: string
+      databaseName:
+        type: string
+      dbType:
+        type: string
+      errorMessage:
+        type: string
+      executionTimeMs:
+        type: integer
+      id:
+        type: integer
+      instanceId:
+        type: integer
+      instanceName:
+        type: string
+      queryContent:
+        type: string
+      queryType:
+        type: string
+      resultCount:
+        type: integer
+      resultPreview:
+        type: string
+      status:
+        type: string
+      userAgent:
+        type: string
+      userId:
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.Role:
+    properties:
+      color:
+        description: 显示相关
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      priority:
+        type: integer
+      status:
+        description: active, inactive
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.StartJobRequest:
+    properties:
+      parameters:
+        additionalProperties:
+          type: string
+        type: object
+      reason:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.StartJobResponse:
+    properties:
+      buildNumber:
+        type: integer
+      jobName:
+        type: string
+      message:
+        type: string
+      queueId:
+        type: integer
+      server:
+        type: string
+      success:
+        type: boolean
+    type: object
+  github_com_fisker_zjump-backend_internal_model.StopBuildResponse:
+    properties:
+      buildNumber:
+        type: integer
+      jobName:
+        type: string
+      message:
+        type: string
+      server:
+        type: string
+      success:
+        type: boolean
+    type: object
+  github_com_fisker_zjump-backend_internal_model.SystemUser:
+    properties:
+      authType:
+        description: 认证信息 (必须明确选择 password 或 key，不支持 auto)
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        description: 显示名称
+        type: string
+      passphrase:
+        type: string
+      password:
+        type: string
+      priority:
+        description: 其他设置
+        type: integer
+      privateKey:
+        type: string
+      protocol:
+        description: 协议和设置
+        type: string
+      status:
+        description: active, inactive
+        type: string
+      updatedAt:
+        type: string
+      username:
+        description: OS用户名
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionRequest:
+    properties:
+      password:
+        description: 密码或API Token
+        type: string
+      url:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - url
+    - username
+    type: object
+  github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+      systemInfo:
+        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo'
+    type: object
+  github_com_fisker_zjump-backend_internal_model.UpdateApplicationDeployBindingRequest:
+    properties:
+      argocdApplication:
+        type: string
+      deployConfigId:
+        type: string
+      deployConfigName:
+        type: string
+      deployStrategy:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      environment:
+        enum:
+        - dev
+        - test
+        - qa
+        - staging
+        - prod
+        type: string
+      jenkinsJob:
+        type: string
+      pipelineId:
+        type: string
+      strategyOptions:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.UpdateApplicationRequest:
+    properties:
+      department:
+        type: string
+      description:
+        type: string
+      devOwners:
+        items:
+          type: string
+        type: array
+      gitUrl:
+        type: string
+      isCritical:
+        type: boolean
+      jenkinsJobName:
+        type: string
+      jenkinsServerId:
+        type: integer
+      lineOfBiz:
+        type: string
+      name:
+        type: string
+      offlineAt:
+        type: string
+      onlineAt:
+        type: string
+      opsOwners:
+        items:
+          type: string
+        type: array
+      org:
+        type: string
+      site:
+        type: string
+      srvType:
+        type: string
+      status:
+        type: string
+      testOwners:
+        items:
+          type: string
+        type: array
+      virtualTech:
+        type: string
+    required:
+    - name
+    - srvType
+    type: object
+  github_com_fisker_zjump-backend_internal_model.UpdateJenkinsServerRequest:
+    properties:
+      alias:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      password:
+        description: 密码或API Token（如果为空则不更新）
+        type: string
+      url:
+        description: Jenkins服务器URL（格式：http://host:port 或 https://host:port）
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_model.UpdateOrganizationRequest:
+    properties:
+      description:
+        type: string
+      isActive:
+        type: boolean
+      parentId:
+        type: string
+      sortOrder:
+        type: integer
+      unitName:
+        type: string
+      unitOwner:
+        type: string
+      unitType:
+        type: string
+    required:
+    - unitName
+    - unitType
+    type: object
+  github_com_fisker_zjump-backend_internal_model.User:
+    properties:
+      authMethod:
+        description: password, publickey, both
+        type: string
+      autoDisableOnExpiry:
+        type: boolean
+      createdAt:
+        type: string
+      email:
+        type: string
+      expirationWarningSent:
+        type: boolean
+      expiresAt:
+        type: string
+      fullName:
+        type: string
+      id:
+        type: string
+      lastLoginIp:
+        type: string
+      lastLoginTime:
+        type: string
+      organizationId:
+        description: 所属部门ID
+        type: string
+      role:
+        description: admin, user
+        type: string
+      sshKeyFingerprint:
+        type: string
+      sshKeyGeneratedAt:
+        type: string
+      sshPublicKey:
+        type: string
+      status:
+        type: string
+      twoFactorEnabled:
+        description: 2FA相关字段
+        type: boolean
+      twoFactorVerifiedAt:
+        type: string
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.BatchGrantPermissionRequest:
+    properties:
+      description:
+        type: string
+      expiresAt:
+        type: string
+      instanceId:
+        type: integer
+      permissionType:
+        enum:
+        - read
+        - write
+        - admin
+        type: string
+      permissions:
+        items:
+          properties:
+            databaseName:
+              description: 留空表示实例级别权限
+              type: string
+          type: object
+        type: array
+      userId:
+        type: string
+    required:
+    - instanceId
+    - permissionType
+    - permissions
+    - userId
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest:
+    properties:
+      authDatabase:
+        type: string
+      charset:
+        type: string
+      connectionString:
+        type: string
+      databaseName:
+        type: string
+      dbType:
+        enum:
+        - mysql
+        - postgresql
+        - mongodb
+        - redis
+        type: string
+      description:
+        type: string
+      host:
+        type: string
+      name:
+        type: string
+      password:
+        description: Redis 类型密码可选，其他类型在 handler 中验证
+        type: string
+      port:
+        type: integer
+      sslCert:
+        type: string
+      sslEnabled:
+        type: boolean
+      username:
+        type: string
+    required:
+    - dbType
+    - host
+    - name
+    - port
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.ExecuteQueryRequest:
+    properties:
+      databaseName:
+        type: string
+      instanceId:
+        type: integer
+      query:
+        type: string
+    required:
+    - databaseName
+    - instanceId
+    - query
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.GrantPermissionRequest:
+    properties:
+      databaseName:
+        type: string
+      description:
+        type: string
+      expiresAt:
+        type: string
+      grantedBy:
+        type: string
+      instanceId:
+        type: integer
+      permissionType:
+        enum:
+        - read
+        - write
+        - admin
+        type: string
+      tableName:
+        type: string
+      userId:
+        type: string
+    required:
+    - instanceId
+    - permissionType
+    - userId
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo:
+    properties:
+      databaseName:
+        type: string
+      description:
+        type: string
+      expiresAt:
+        type: string
+      grantedAt:
+        type: string
+      grantedBy:
+        type: string
+      instanceId:
+        type: integer
+      instanceName:
+        type: string
+      permissionType:
+        type: string
+      tableName:
+        type: string
+      userId:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.QueryResult:
+    properties:
+      affectedRows:
+        type: integer
+      columns:
+        items:
+          type: string
+        type: array
+      documents:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      error:
+        type: string
+      executionTimeMs:
+        type: integer
+      redisResult: {}
+      resultCount:
+        type: integer
+      rows:
+        items:
+          items: {}
+          type: array
+        type: array
+      success:
+        type: boolean
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.RevokePermissionRequest:
+    properties:
+      databaseName:
+        type: string
+      instanceId:
+        type: integer
+      permissionType:
+        enum:
+        - read
+        - write
+        - admin
+        type: string
+      tableName:
+        type: string
+      userId:
+        type: string
+    required:
+    - instanceId
+    - permissionType
+    - userId
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.UpdateInstanceRequest:
+    properties:
+      authDatabase:
+        type: string
+      charset:
+        type: string
+      connectionString:
+        type: string
+      databaseName:
+        type: string
+      description:
+        type: string
+      host:
+        type: string
+      isEnabled:
+        type: boolean
+      name:
+        type: string
+      password:
+        description: 可选，如果提供则更新
+        type: string
+      port:
+        type: integer
+      sslCert:
+        type: string
+      sslEnabled:
+        type: boolean
+      username:
+        type: string
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionRequest:
+    properties:
+      databaseName:
+        type: string
+      description:
+        type: string
+      expiresAt:
+        type: string
+      instanceId:
+        type: integer
+      permissionType:
+        enum:
+        - read
+        - write
+        - admin
+        type: string
+      tableName:
+        type: string
+      userId:
+        type: string
+    required:
+    - instanceId
+    - permissionType
+    - userId
+    type: object
+  github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionResourceRequest:
+    properties:
+      description:
+        type: string
+      expiresAt:
+        type: string
+      grantedBy:
+        type: string
+      newDatabaseName:
+        type: string
+      newInstanceId:
+        type: integer
+      newPermissionType:
+        enum:
+        - read
+        - write
+        - admin
+        type: string
+      newTableName:
+        type: string
+      oldDatabaseName:
+        type: string
+      oldInstanceId:
+        type: integer
+      oldPermissionType:
+        enum:
+        - read
+        - write
+        - admin
+        type: string
+      oldTableName:
+        type: string
+      userId:
+        type: string
+    required:
+    - newInstanceId
+    - newPermissionType
+    - oldInstanceId
+    - oldPermissionType
+    - userId
+    type: object
+  internal_api_handler_bastion.CreatePermissionRuleRequest:
+    properties:
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      description:
+        type: string
+      enabled:
+        description: 状态
+        type: boolean
+      hostGroupId:
+        description: 资产范围
+        type: string
+      hostGroupIds:
+        description: 多个主机组ID
+        items:
+          type: string
+        type: array
+      hostIds:
+        description: JSON数组，指定主机ID列表
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      priority:
+        type: integer
+      roleId:
+        description: 授权对象
+        type: string
+      systemUserId:
+        description: 系统用户
+        type: string
+      systemUserIds:
+        description: 多个系统用户ID
+        items:
+          type: string
+        type: array
+      updatedAt:
+        type: string
+      userGroupId:
+        description: 用户组ID（前端字段名，映射到 RoleID）
+        type: string
+      validFrom:
+        description: 时间限制
+        type: string
+      validTo:
+        type: string
+    type: object
+  internal_api_handler_k8s.AddPermissionRequest:
+    properties:
+      action:
+        description: read, write, delete, admin
+        type: string
+      clusterId:
+        type: string
+      namespace:
+        type: string
+      resourceName:
+        description: 资源名称（可选）
+        type: string
+      resourceType:
+        description: deployment, statefulset, service, pod, ingress, namespace
+        type: string
+      roleId:
+        description: 角色ID（角色级权限）
+        type: string
+      userId:
+        description: 用户ID（用户级权限）
+        type: string
+    required:
+    - action
+    - clusterId
+    - namespace
+    type: object
+  internal_api_handler_k8s.CheckPermissionRequest:
+    properties:
+      action:
+        description: read, write, delete, admin
+        type: string
+      cluster_id:
+        type: string
+      namespace:
+        type: string
+      resource_name:
+        type: string
+      resource_type:
+        type: string
+    required:
+    - action
+    type: object
+  internal_api_handler_k8s.CreateClusterRequest:
+    properties:
+      apiServer:
+        description: 使用 kubeconfig 时可选，会自动从 kubeconfig 中提取
+        type: string
+      authType:
+        type: string
+      defaultNamespace:
+        type: string
+      description:
+        type: string
+      environment:
+        type: string
+      kubeconfig:
+        type: string
+      name:
+        type: string
+      region:
+        type: string
+      token:
+        type: string
+      version:
+        type: string
+    required:
+    - name
+    type: object
+  internal_api_handler_k8s.CreateDeploymentRequest:
+    properties:
+      artifact_url:
+        type: string
+      cluster_id:
+        type: string
+      cluster_name:
+        type: string
+      deploy_type:
+        description: jenkins, k8s
+        type: string
+      description:
+        type: string
+      env_id:
+        type: string
+      env_name:
+        type: string
+      jenkins_job:
+        type: string
+      k8s_kind:
+        type: string
+      k8s_yaml:
+        type: string
+      namespace:
+        type: string
+      project_id:
+        type: string
+      project_name:
+        type: string
+      verify_enabled:
+        type: boolean
+      verify_timeout:
+        type: integer
+      version:
+        type: string
+    required:
+    - deploy_type
+    - project_name
+    type: object
+  internal_api_handler_k8s.DeploymentListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_api_handler_k8s.DryRunResourceYamlRequest:
+    properties:
+      cluster_id:
+        type: string
+      cluster_name:
+        type: string
+      namespace:
+        type: string
+      resource_name:
+        type: string
+      resource_type:
+        type: string
+      yaml:
+        type: string
+    required:
+    - resource_name
+    - resource_type
+    - yaml
+    type: object
+  internal_api_handler_k8s.RemovePermissionRequest:
+    properties:
+      action:
+        type: string
+      clusterId:
+        type: string
+      namespace:
+        type: string
+      resourceName:
+        type: string
+      resourceType:
+        type: string
+      roleId:
+        type: string
+      userId:
+        type: string
+    required:
+    - action
+    - clusterId
+    - namespace
+    type: object
+  internal_api_handler_k8s.RestartPodRequest:
+    properties:
+      cluster_id:
+        type: string
+      cluster_name:
+        type: string
+      env_id:
+        type: integer
+      namespace:
+        type: string
+      node_id:
+        type: integer
+      pod_name:
+        type: string
+    required:
+    - pod_name
+    type: object
+  internal_api_handler_k8s.ScaleReplicaRequest:
+    properties:
+      cluster_id:
+        type: string
+      cluster_name:
+        type: string
+      deployment_name:
+        description: 新增：Deployment名称
+        type: string
+      desired_replicas:
+        type: integer
+      env_id:
+        type: integer
+      namespace:
+        type: string
+      node_id:
+        type: integer
+    required:
+    - desired_replicas
+    type: object
+  internal_api_handler_k8s.UpdateClusterRequest:
+    properties:
+      apiServer:
+        type: string
+      authType:
+        type: string
+      defaultNamespace:
+        type: string
+      description:
+        type: string
+      environment:
+        type: string
+      kubeconfig:
+        type: string
+      region:
+        type: string
+      status:
+        type: string
+      token:
+        type: string
+      version:
+        type: string
+    type: object
+  internal_api_handler_k8s.UpdateDeploymentStatusRequest:
+    properties:
+      duration:
+        type: integer
+      log_path:
+        type: string
+      status:
+        type: string
+    required:
+    - status
+    type: object
+  internal_api_handler_k8s.UpdateResourceYamlRequest:
+    properties:
+      cluster_id:
+        type: string
+      cluster_name:
+        type: string
+      namespace:
+        type: string
+      resource_name:
+        type: string
+      resource_type:
+        type: string
+      yaml:
+        type: string
+    required:
+    - resource_name
+    - resource_type
+    - yaml
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@keyops.com
+    name: API Support
+  description: KeyOps 基础设施管理平台 API 文档
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: KeyOps API
+  version: "2.0"
+paths:
+  /api/app-deploy-bindings:
+    get:
+      parameters:
+      - description: 应用ID
+        in: query
+        name: applicationId
+        type: string
+      - description: '发布类型: jenkins, argocd'
+        in: query
+        name: deployType
+        type: string
+      - description: '环境: dev, test, qa, staging, prod'
+        in: query
+        name: environment
+        type: string
+      - description: 是否启用
+        in: query
+        name: enabled
+        type: boolean
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取应用-发布绑定列表
+      tags:
+      - app-deploy-bindings
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 绑定信息
+        in: body
+        name: binding
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateApplicationDeployBindingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建应用-发布绑定
+      tags:
+      - app-deploy-bindings
+  /api/app-deploy-bindings/{id}:
+    delete:
+      parameters:
+      - description: 绑定ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除应用-发布绑定
+      tags:
+      - app-deploy-bindings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 绑定ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 绑定信息
+        in: body
+        name: binding
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateApplicationDeployBindingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新应用-发布绑定
+      tags:
+      - app-deploy-bindings
+  /api/app-deploy-bindings/applications:
+    get:
+      parameters:
+      - description: '发布类型: jenkins, argocd'
+        in: query
+        name: deployType
+        required: true
+        type: string
+      - description: '环境: dev, test, qa, staging, prod'
+        in: query
+        name: environment
+        type: string
+      - description: 应用名称关键字
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取可用于发布的应用列表
+      tags:
+      - app-deploy-bindings
+  /api/applications:
+    get:
+      parameters:
+      - description: 应用名称（模糊搜索）
+        in: query
+        name: name
+        type: string
+      - description: 事业部
+        in: query
+        name: org
+        type: string
+      - description: 部门
+        in: query
+        name: department
+        type: string
+      - description: 应用状态
+        in: query
+        name: status
+        type: string
+      - description: 应用类型
+        in: query
+        name: srvType
+        type: string
+      - description: 虚拟化技术
+        in: query
+        name: virtualTech
+        type: string
+      - description: 应用站点
+        in: query
+        name: site
+        type: string
+      - description: 是否核心应用
+        in: query
+        name: isCritical
+        type: boolean
+      - description: 页码（与 pageSize 同时传时返回分页结构）
+        in: query
+        name: page
+        type: integer
+      - description: 每页条数
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取应用列表
+      tags:
+      - applications
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Application
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建应用
+      tags:
+      - applications
+  /api/applications/{id}:
+    delete:
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除应用
+      tags:
+      - applications
+    get:
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取单个应用
+      tags:
+      - applications
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Application
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新应用
+      tags:
+      - applications
+  /api/approvals/{id}:
+    put:
+      consumes:
+      - application/json
+      description: 更新审批信息，主要用于标记发布状态
+      parameters:
+      - description: 审批ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新请求
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Approval'
+              type: object
+      summary: 更新审批
+      tags:
+      - 审批管理
+  /api/bill/price:
+    get:
+      consumes:
+      - application/json
+      description: 获取单价管理列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取单价列表
+      tags:
+      - bill
+    post:
+      consumes:
+      - application/json
+      description: 创建单价配置
+      parameters:
+      - description: 单价信息
+        in: body
+        name: price
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.BillPrice'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建单价
+      tags:
+      - bill
+  /api/bill/price/:id:
+    put:
+      consumes:
+      - application/json
+      description: 更新单价配置
+      parameters:
+      - description: 单价ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 单价信息
+        in: body
+        name: price
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.BillPrice'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新单价
+      tags:
+      - bill
+  /api/bill/records:
+    get:
+      consumes:
+      - application/json
+      description: 获取账单明细列表，支持分页和筛选
+      parameters:
+      - description: 云厂商 (tencent/huawei-langgemap/huawei-bjlg)
+        in: query
+        name: vendor
+        required: true
+        type: string
+      - description: '账单月份 (格式: 2024-01)'
+        in: query
+        name: month
+        required: true
+        type: string
+      - description: 资源类型代码
+        in: query
+        name: resource_code
+        type: string
+      - description: 服务类型代码
+        in: query
+        name: service_code
+        type: string
+      - default: 1
+        description: 页码，从1开始
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - default: "0"
+        description: 是否从云厂商API查询 (0=本地, 1=远程)
+        in: query
+        name: remote
+        type: string
+      - default: "0"
+        description: 是否计算费用 (0=否, 1=是)
+        in: query
+        name: with_amount
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取账单明细列表
+      tags:
+      - bill
+  /api/bill/resource:
+    get:
+      consumes:
+      - application/json
+      description: 获取我的资源列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取我的资源列表
+      tags:
+      - bill
+  /api/bill/statistics:
+    get:
+      consumes:
+      - application/json
+      description: 获取当月总费用，用于前端展示饼图
+      parameters:
+      - description: 账单月份
+        in: query
+        name: month
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取费用统计
+      tags:
+      - bill
+  /api/bill/summary:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定云厂商和月份的账单汇总信息
+      parameters:
+      - description: 云厂商
+        in: query
+        name: vendor
+        required: true
+        type: string
+      - description: 账单月份
+        in: query
+        name: month
+        required: true
+        type: string
+      - default: "0"
+        description: 是否从云厂商API查询
+        in: query
+        name: remote
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取月度账单汇总
+      tags:
+      - bill
+  /api/bill/trend:
+    get:
+      consumes:
+      - application/json
+      description: 获取月度费用列表，用于前端展示折线图
+      parameters:
+      - description: 云厂商
+        in: query
+        name: vendor
+        type: string
+      - description: 年份
+        in: query
+        name: year
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取费用趋势
+      tags:
+      - bill
+  /api/bill/trend/month:
+    get:
+      consumes:
+      - application/json
+      description: 获取折线图上x轴的月份列表，默认查询最近6个月
+      parameters:
+      - description: 年份
+        in: query
+        name: year
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取费用趋势月份列表
+      tags:
+      - bill
+  /api/bill/vm:
+    get:
+      consumes:
+      - application/json
+      description: 获取虚拟机分摊账单（本地数据库，包含硬盘）
+      parameters:
+      - description: 云厂商
+        in: query
+        name: vendor
+        required: true
+        type: string
+      - description: 账单月份
+        in: query
+        name: month
+        required: true
+        type: string
+      - description: 分摊类型 (department/business)
+        in: query
+        name: split_type
+        type: string
+      - default: "0"
+        description: 是否包含详情
+        in: query
+        name: with_detail
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取虚拟机分摊账单
+      tags:
+      - bill
+  /api/deployments:
+    get:
+      consumes:
+      - application/json
+      description: 查询部署记录列表，支持分页和筛选
+      parameters:
+      - description: 项目ID
+        in: query
+        name: project_id
+        type: string
+      - description: 项目名称
+        in: query
+        name: project_name
+        type: string
+      - description: 环境ID
+        in: query
+        name: env_id
+        type: string
+      - description: 集群ID
+        in: query
+        name: cluster_id
+        type: string
+      - description: '部署类型: jenkins, k8s'
+        in: query
+        name: deploy_type
+        type: string
+      - description: '状态: pending, running, success, failed, cancelled'
+        in: query
+        name: status
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_api_handler_k8s.DeploymentListResponse'
+              type: object
+      summary: 查询部署记录列表
+      tags:
+      - 发布管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的部署记录
+      parameters:
+      - description: 部署信息
+        in: body
+        name: deployment
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.CreateDeploymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+              type: object
+      summary: 创建部署记录
+      tags:
+      - 发布管理
+  /api/deployments/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除部署记录
+      parameters:
+      - description: 部署ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除部署记录
+      tags:
+      - 发布管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取部署记录详情
+      parameters:
+      - description: 部署ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+              type: object
+      summary: 获取部署记录详情
+      tags:
+      - 发布管理
+  /api/deployments/{id}/execute:
+    post:
+      consumes:
+      - application/json
+      description: 执行 K8s 容器部署，如果启用了验证，会使用 kubedog 监听部署状态
+      parameters:
+      - description: 部署ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+              type: object
+      summary: 执行 K8s 容器部署
+      tags:
+      - 发布管理
+  /api/deployments/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: 更新部署记录的状态
+      parameters:
+      - description: 部署ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 状态信息
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.UpdateDeploymentStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新部署状态
+      tags:
+      - 发布管理
+  /api/dms/instances:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - description: 数据库类型
+        in: query
+        name: db_type
+        type: string
+      - description: 是否启用
+        in: query
+        name: is_enabled
+        type: boolean
+      - description: 实例名称（模糊搜索）
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+                      type: array
+                    total:
+                      format: int64
+                      type: integer
+                  type: object
+              type: object
+      summary: 获取数据库实例列表
+      tags:
+      - DMS
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 实例信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+              type: object
+      summary: 创建数据库实例
+      tags:
+      - DMS
+  /api/dms/instances/:id:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 实例ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除数据库实例
+      tags:
+      - DMS
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 实例ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+              type: object
+      summary: 获取数据库实例详情
+      tags:
+      - DMS
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 实例ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 实例信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdateInstanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+              type: object
+      summary: 更新数据库实例
+      tags:
+      - DMS
+  /api/dms/instances/:id/test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 实例ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 测试数据库连接
+      tags:
+      - DMS
+  /api/dms/instances/test-connection:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 连接参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 测试连接（请求体，不落库）
+      tags:
+      - DMS
+  /api/dms/logs/queries:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - description: 用户ID
+        in: query
+        name: user_id
+        type: string
+      - description: 实例ID
+        in: query
+        name: instance_id
+        type: integer
+      - description: 数据库类型
+        in: query
+        name: db_type
+        type: string
+      - description: 查询类型
+        in: query
+        name: query_type
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 开始时间
+        in: query
+        name: start_time
+        type: string
+      - description: 结束时间
+        in: query
+        name: end_time
+        type: string
+      - description: 搜索关键词
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.QueryLog'
+                      type: array
+                    total:
+                      format: int64
+                      type: integer
+                  type: object
+              type: object
+      summary: 获取查询日志列表
+      tags:
+      - DMS
+  /api/dms/logs/queries/:id:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 日志ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.QueryLog'
+              type: object
+      summary: 获取查询日志详情
+      tags:
+      - DMS
+  /api/dms/permissions:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.RevokePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 回收数据库权限
+      tags:
+      - DMS
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户ID（为空则获取所有用户的权限）
+        in: query
+        name: user_id
+        type: string
+      - description: 实例ID
+        in: query
+        name: instance_id
+        type: integer
+      - description: 页码，从1开始
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量，默认20
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse'
+                  - properties:
+                      data:
+                        items:
+                          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo'
+                        type: array
+                    type: object
+              type: object
+      summary: 获取用户权限列表
+      tags:
+      - DMS
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.GrantPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 分配数据库权限
+      tags:
+      - DMS
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新数据库权限（只更新元数据：过期时间、描述）
+      tags:
+      - DMS
+  /api/dms/permissions/batch:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 批量权限信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.BatchGrantPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 批量分配数据库权限
+      tags:
+      - DMS
+  /api/dms/permissions/my:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo'
+                  type: array
+              type: object
+      summary: 获取当前用户的权限
+      tags:
+      - DMS
+  /api/dms/permissions/resource:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 权限信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionResourceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新权限的资源路径（先添加新权限，再删除旧权限）
+      tags:
+      - DMS
+  /api/dms/query/databases:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 实例ID
+        in: query
+        name: instance_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      summary: 获取数据库列表
+      tags:
+      - DMS
+  /api/dms/query/execute:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 查询请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.ExecuteQueryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.QueryResult'
+              type: object
+      summary: 执行SQL/MongoDB/Redis查询
+      tags:
+      - DMS
+  /api/dms/query/tables:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 实例ID
+        in: query
+        name: instance_id
+        required: true
+        type: integer
+      - description: 数据库名
+        in: query
+        name: database_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      summary: 获取表列表
+      tags:
+      - DMS
+  /api/jenkins/{serverId}/jobs:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定Jenkins服务器的所有任务
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse'
+              type: object
+      summary: 获取Jenkins任务列表
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/jobs/{jobName}:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定任务的详细信息和构建历史
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 任务名称
+        in: path
+        name: jobName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobDetailResponse'
+              type: object
+      summary: 获取Jenkins任务详情
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定构建的详细信息
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 任务名称
+        in: path
+        name: jobName
+        required: true
+        type: string
+      - description: 构建编号
+        in: path
+        name: buildNumber
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuildDetailResponse'
+              type: object
+      summary: 获取Jenkins构建详情
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}/log:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定构建的日志信息，支持分页获取
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 任务名称
+        in: path
+        name: jobName
+        required: true
+        type: string
+      - description: 构建编号
+        in: path
+        name: buildNumber
+        required: true
+        type: integer
+      - default: 0
+        description: 开始位置
+        in: query
+        name: start
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.GetBuildLogResponse'
+              type: object
+      summary: 获取Jenkins构建日志
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}/stop:
+    post:
+      consumes:
+      - application/json
+      description: 停止指定的Jenkins构建任务
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 任务名称
+        in: path
+        name: jobName
+        required: true
+        type: string
+      - description: 构建编号
+        in: path
+        name: buildNumber
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.StopBuildResponse'
+              type: object
+      summary: 停止Jenkins构建
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/jobs/{jobName}/start:
+    post:
+      consumes:
+      - application/json
+      description: 启动指定的Jenkins任务，支持带参数构建
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 任务名称
+        in: path
+        name: jobName
+        required: true
+        type: string
+      - description: 启动任务请求
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.StartJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.StartJobResponse'
+              type: object
+      summary: 启动Jenkins任务
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/jobs/search:
+    get:
+      consumes:
+      - application/json
+      description: 根据关键词模糊搜索指定Jenkins服务器的任务
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse'
+              type: object
+      summary: 搜索Jenkins任务
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/queue:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定Jenkins服务器的构建队列信息
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsQueue'
+              type: object
+      summary: 获取Jenkins队列信息
+      tags:
+      - Jenkins
+  /api/jenkins/{serverId}/system-info:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定Jenkins服务器的系统信息
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo'
+              type: object
+      summary: 获取Jenkins系统信息
+      tags:
+      - Jenkins
+  /api/jenkins/servers:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有配置的Jenkins服务器
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerListResponse'
+              type: object
+      summary: 获取Jenkins服务器列表
+      tags:
+      - Jenkins
+    post:
+      consumes:
+      - application/json
+      description: 创建新的Jenkins服务器配置
+      parameters:
+      - description: 服务器信息
+        in: body
+        name: server
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateJenkinsServerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServer'
+              type: object
+      summary: 创建Jenkins服务器
+      tags:
+      - Jenkins
+  /api/jenkins/servers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除Jenkins服务器配置
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除Jenkins服务器
+      tags:
+      - Jenkins
+    get:
+      consumes:
+      - application/json
+      description: 根据服务器ID获取Jenkins服务器详情
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo'
+              type: object
+      summary: 获取Jenkins服务器详情
+      tags:
+      - Jenkins
+    put:
+      consumes:
+      - application/json
+      description: 更新Jenkins服务器配置
+      parameters:
+      - description: 服务器ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 服务器信息
+        in: body
+        name: server
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateJenkinsServerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新Jenkins服务器
+      tags:
+      - Jenkins
+  /api/jenkins/test-connection:
+    post:
+      consumes:
+      - application/json
+      description: 测试Jenkins服务器连接是否正常
+      parameters:
+      - description: 连接测试请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionResponse'
+              type: object
+      summary: 测试Jenkins连接
+      tags:
+      - Jenkins
+  /api/k8s/clusters:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群列表
+      tags:
+      - K8s Cluster
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 创建集群请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.CreateClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建集群
+      tags:
+      - K8s Cluster
+  /api/k8s/clusters/:id:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除集群
+      tags:
+      - K8s Cluster
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群详情
+      tags:
+      - K8s Cluster
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新集群请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.UpdateClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新集群
+      tags:
+      - K8s Cluster
+  /api/k8s/clusters/:id/permissions:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群的所有权限
+      tags:
+      - K8s Permission
+  /api/k8s/clusters/:id/summary:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群摘要
+      tags:
+      - K8s Cluster
+  /api/k8s/clusters/dashboard/statistics:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 K8s 大盘统计数据
+      tags:
+      - K8s Cluster
+  /api/k8s/clusters/summary:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取所有集群摘要
+      tags:
+      - K8s Cluster
+  /api/k8s/permissions:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 删除权限请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.RemovePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除K8s资源权限
+      tags:
+      - K8s Permission
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户ID
+        in: query
+        name: userId
+        type: string
+      - description: 角色ID
+        in: query
+        name: roleId
+        type: string
+      - description: 集群ID
+        in: query
+        name: clusterId
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取K8s资源权限列表
+      tags:
+      - K8s Permission
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 添加权限请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.AddPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 添加K8s资源权限
+      tags:
+      - K8s Permission
+  /api/k8s/permissions/check:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 检查权限请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.CheckPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  type: boolean
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 检查K8s资源权限
+      tags:
+      - K8s Permission
+  /api/k8s/search:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 全局搜索
+      tags:
+      - K8s Search
+  /api/monitors/probe:
+    get:
+      consumes:
+      - application/json
+      description: 查询监控探针数据
+      parameters:
+      - description: 分组
+        in: query
+        name: group
+        required: true
+        type: string
+      - description: 项目
+        in: query
+        name: project
+        required: true
+        type: string
+      - description: 环境
+        in: query
+        name: env
+        required: true
+        type: string
+      - description: 模块
+        in: query
+        name: module
+        type: string
+      - description: 地址
+        in: query
+        name: address
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 查询 Probe 监控数据
+      tags:
+      - monitor
+  /api/monitors/prom:
+    get:
+      consumes:
+      - application/json
+      description: 获取监控查询语句列表，支持分页和搜索
+      parameters:
+      - description: 名称搜索（模糊匹配）
+        in: query
+        name: name
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取监控列表
+      tags:
+      - monitor
+    post:
+      consumes:
+      - application/json
+      description: 创建 Prometheus 监控查询语句
+      parameters:
+      - description: 监控信息
+        in: body
+        name: monitor
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建监控查询语句
+      tags:
+      - monitor
+  /api/monitors/prom/:id:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除监控查询语句
+      parameters:
+      - description: 监控ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除监控查询语句
+      tags:
+      - monitor
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取监控查询语句详情
+      parameters:
+      - description: 监控ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取监控详情
+      tags:
+      - monitor
+    put:
+      consumes:
+      - application/json
+      description: 更新 Prometheus 监控查询表达式
+      parameters:
+      - description: 监控ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 监控信息
+        in: body
+        name: monitor
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新监控查询语句
+      tags:
+      - monitor
+  /api/monitors/prom/count:
+    get:
+      consumes:
+      - application/json
+      description: 统计监控查询语句数量，用于分页
+      parameters:
+      - description: 名称搜索（模糊匹配）
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 统计监控数量
+      tags:
+      - monitor
+  /api/organizations:
+    get:
+      parameters:
+      - description: 返回树形结构
+        in: query
+        name: tree
+        type: boolean
+      - description: 组织类型过滤
+        in: query
+        name: unitType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取组织列表
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateOrganizationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建组织
+      tags:
+      - organizations
+  /api/organizations/{id}:
+    delete:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除组织
+      tags:
+      - organizations
+    get:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取单个组织
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Organization
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateOrganizationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新组织
+      tags:
+      - organizations
+  /api/organizations/tree:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取组织树
+      tags:
+      - organizations
+  /api/permission-rules:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取授权规则列表
+      tags:
+      - permission-rules
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Permission Rule
+        in: body
+        name: rule
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_bastion.CreatePermissionRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建授权规则
+      tags:
+      - permission-rules
+  /api/permission-rules/{id}:
+    delete:
+      parameters:
+      - description: Permission Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除授权规则
+      tags:
+      - permission-rules
+    get:
+      parameters:
+      - description: Permission Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取单个授权规则
+      tags:
+      - permission-rules
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Permission Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Permission Rule
+        in: body
+        name: rule
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_bastion.CreatePermissionRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新授权规则
+      tags:
+      - permission-rules
+  /api/permission-rules/by-host-group:
+    get:
+      parameters:
+      - description: Host Group ID
+        in: query
+        name: hostGroupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取主机组的授权规则
+      tags:
+      - permission-rules
+  /api/permission-rules/by-role:
+    get:
+      parameters:
+      - description: Role ID
+        in: query
+        name: roleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取角色的授权规则
+      tags:
+      - permission-rules
+  /api/roles:
+    get:
+      parameters:
+      - description: Include members
+        in: query
+        name: withMembers
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取角色列表
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Role'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建角色
+      tags:
+      - roles
+  /api/roles/{id}:
+    delete:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除角色
+      tags:
+      - roles
+    get:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Include members
+        in: query
+        name: withMembers
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取单个角色
+      tags:
+      - roles
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Role'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新角色
+      tags:
+      - roles
+  /api/roles/{id}/members:
+    get:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取角色成员
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request body with userId
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 添加用户到角色
+      tags:
+      - roles
+  /api/roles/{id}/members/{userId}:
+    delete:
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 从角色移除用户
+      tags:
+      - roles
+  /api/roles/{id}/members/batch:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request body with userIds
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 批量添加成员
+      tags:
+      - roles
+  /api/roles/by-user:
+    get:
+      parameters:
+      - description: User ID
+        in: query
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取用户所在的所有角色
+      tags:
+      - roles
+  /api/system-users:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取系统用户列表
+      tags:
+      - system-users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: System User
+        in: body
+        name: systemUser
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.SystemUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 创建系统用户
+      tags:
+      - system-users
+  /api/system-users/{id}:
+    delete:
+      parameters:
+      - description: System User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 删除系统用户
+      tags:
+      - system-users
+    get:
+      parameters:
+      - description: System User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取单个系统用户
+      tags:
+      - system-users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: System User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: System User
+        in: body
+        name: systemUser
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.SystemUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 更新系统用户
+      tags:
+      - system-users
+  /api/system-users/available:
+    get:
+      parameters:
+      - description: Host ID
+        in: query
+        name: hostId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 获取用户可用的系统用户列表
+      tags:
+      - system-users
+  /api/system-users/check-permission:
+    get:
+      parameters:
+      - description: Host ID
+        in: query
+        name: hostId
+        required: true
+        type: string
+      - description: System User ID
+        in: query
+        name: systemUserId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      summary: 检查用户权限
+      tags:
+      - system-users
+  /api/v1/audit/operation-logs:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: IP地址
+        in: query
+        name: ip
+        type: string
+      - description: API路径
+        in: query
+        name: path
+        type: string
+      - description: HTTP方法
+        in: query
+        name: method
+        type: string
+      - description: 状态码
+        in: query
+        name: status
+        type: integer
+      - description: '开始时间 (格式: 2006-01-02 15:04:05)'
+        in: query
+        name: start_time
+        type: string
+      - description: '结束时间 (格式: 2006-01-02 15:04:05)'
+        in: query
+        name: end_time
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse'
+                  - properties:
+                      data:
+                        items:
+                          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.OperationLog'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取操作日志列表
+      tags:
+      - 操作审计
+  /api/v1/audit/operation-logs/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 日志ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除操作日志
+      tags:
+      - 操作审计
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 日志ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.OperationLog'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取操作日志详情
+      tags:
+      - 操作审计
+  /api/v1/audit/operation-logs/batch:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 日志ID列表
+        in: body
+        name: ids
+        required: true
+        schema:
+          items:
+            type: integer
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 批量删除操作日志
+      tags:
+      - 操作审计
+  /api/v1/audit/pod-commands:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: query
+        name: cluster_id
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - description: Pod名称
+        in: query
+        name: pod_name
+        type: string
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 命令（模糊匹配）
+        in: query
+        name: command
+        type: string
+      - description: '开始时间 (格式: 2006-01-02 15:04:05)'
+        in: query
+        name: start_time
+        type: string
+      - description: '结束时间 (格式: 2006-01-02 15:04:05)'
+        in: query
+        name: end_time
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse'
+                  - properties:
+                      data:
+                        items:
+                          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PodCommandRecord'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Pod 命令日志列表
+      tags:
+      - 操作审计
+  /api/v1/kube/base:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Kubernetes 基础信息
+      tags:
+      - K8s
+  /api/v1/kube/containers:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - description: Pod名称
+        in: query
+        name: pod_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取容器列表
+      tags:
+      - K8s
+  /api/v1/kube/cronjob:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 CronJob 列表
+      tags:
+      - K8s
+  /api/v1/kube/cronjob/{cronjob_name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: CronJob名称
+        in: path
+        name: cronjob_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 CronJob 详情
+      tags:
+      - K8s
+  /api/v1/kube/daemonset:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 DaemonSet 列表
+      tags:
+      - K8s
+  /api/v1/kube/daemonset/{daemonset_name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: DaemonSet名称
+        in: path
+        name: daemonset_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 DaemonSet 详情
+      tags:
+      - K8s
+  /api/v1/kube/daemonset/{daemonset_name}/metrics:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: DaemonSet名称
+        in: path
+        name: daemonset_name
+        required: true
+        type: string
+      - description: 最近时间（秒）
+        in: query
+        name: last_time
+        required: true
+        type: integer
+      - description: 步长（秒）
+        in: query
+        name: step
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 DaemonSet 监控数据
+      tags:
+      - K8s
+  /api/v1/kube/daemonset/{daemonset_name}/revisions:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: DaemonSet名称
+        in: path
+        name: daemonset_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 DaemonSet 历史版本列表
+      tags:
+      - K8s
+  /api/v1/kube/daemonset/{daemonset_name}/rollback:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: DaemonSet名称
+        in: path
+        name: daemonset_name
+        required: true
+        type: string
+      - description: 回滚请求
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 回滚 DaemonSet 到指定版本
+      tags:
+      - K8s
+  /api/v1/kube/deployment:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Deployment 列表
+      tags:
+      - K8s
+  /api/v1/kube/deployment/{deployment_name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment名称
+        in: path
+        name: deployment_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Deployment 详情
+      tags:
+      - K8s
+  /api/v1/kube/deployment/{deployment_name}/metrics:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment名称
+        in: path
+        name: deployment_name
+        required: true
+        type: string
+      - description: 最近时间（秒）
+        in: query
+        name: last_time
+        required: true
+        type: integer
+      - description: 步长（秒）
+        in: query
+        name: step
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Deployment 监控数据
+      tags:
+      - K8s
+  /api/v1/kube/deployment/{deployment_name}/revisions:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment名称
+        in: path
+        name: deployment_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Deployment 历史版本列表
+      tags:
+      - K8s
+  /api/v1/kube/deployment/{deployment_name}/rollback:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment名称
+        in: path
+        name: deployment_name
+        required: true
+        type: string
+      - description: 目标版本号
+        in: body
+        name: to_revision
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 回滚 Deployment 到指定版本
+      tags:
+      - K8s
+  /api/v1/kube/event:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - description: 对象名称
+        in: query
+        name: object_name
+        required: true
+        type: string
+      - description: 对象类型
+        in: query
+        name: object_kind
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Event 列表
+      tags:
+      - K8s
+  /api/v1/kube/hpa:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 HPA 列表
+      tags:
+      - K8s
+  /api/v1/kube/ingress:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Ingress 列表
+      tags:
+      - K8s
+  /api/v1/kube/job:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Job 列表
+      tags:
+      - K8s
+  /api/v1/kube/job/{job_name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Job名称
+        in: path
+        name: job_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Job 详情
+      tags:
+      - K8s
+  /api/v1/kube/namespace:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取命名空间列表
+      tags:
+      - K8s
+  /api/v1/kube/node:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Node 列表
+      tags:
+      - K8s
+  /api/v1/kube/pod:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 重启Pod请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.RestartPodRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 重启Pod
+      tags:
+      - K8s
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Pod 列表
+      tags:
+      - K8s
+  /api/v1/kube/pod/detail:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Pod名称
+        in: query
+        name: pod_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Pod 详情
+      tags:
+      - K8s
+  /api/v1/kube/pod/down_logs:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - description: Pod名称
+        in: query
+        name: pod_name
+        required: true
+        type: string
+      - description: 容器名称
+        in: query
+        name: container
+        required: true
+        type: string
+      - description: 限制字节数
+        in: query
+        name: limit_bytes
+        type: integer
+      - description: 时间范围（秒）
+        in: query
+        name: since_second
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 下载容器日志
+      tags:
+      - K8s
+  /api/v1/kube/pod/metrics:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Pod名称
+        in: query
+        name: pod_name
+        required: true
+        type: string
+      - description: 指标名称
+        in: query
+        name: metrics_name
+        required: true
+        type: string
+      - description: 最近时间
+        in: query
+        name: last_time
+        required: true
+        type: integer
+      - description: 步长
+        in: query
+        name: step
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取Pod指标
+      tags:
+      - K8s
+  /api/v1/kube/pod/ws/logs:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Pod名称
+        in: query
+        name: pod_name
+        required: true
+        type: string
+      - description: 容器名称
+        in: query
+        name: container
+        type: string
+      - description: 是否跟随日志（默认false）
+        in: query
+        name: follow
+        type: boolean
+      - description: 显示最后N行（默认100）
+        in: query
+        name: tail_lines
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 流式传输 Pod 日志
+      tags:
+      - K8s
+  /api/v1/kube/pod/ws/terminal:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Pod名称
+        in: query
+        name: pod_name
+        required: true
+        type: string
+      - description: 容器名称
+        in: query
+        name: container
+        type: string
+      - description: 执行的命令（默认/bin/sh）
+        in: query
+        name: command
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 连接 Pod 终端
+      tags:
+      - K8s
+  /api/v1/kube/scale:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取副本数
+      tags:
+      - K8s
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 扩缩容请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.ScaleReplicaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 扩缩容副本
+      tags:
+      - K8s
+  /api/v1/kube/service:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Service 列表
+      tags:
+      - K8s
+  /api/v1/kube/statefulset:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 应用ID（兼容旧方式）
+        in: query
+        name: node_id
+        type: integer
+      - description: 环境ID（兼容旧方式）
+        in: query
+        name: env_id
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StatefulSet 列表
+      tags:
+      - K8s
+  /api/v1/kube/statefulset/{statefulset_name}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: StatefulSet名称
+        in: path
+        name: statefulset_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StatefulSet 详情
+      tags:
+      - K8s
+  /api/v1/kube/statefulset/{statefulset_name}/metrics:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: StatefulSet名称
+        in: path
+        name: statefulset_name
+        required: true
+        type: string
+      - description: 最近时间（秒）
+        in: query
+        name: last_time
+        required: true
+        type: integer
+      - description: 步长（秒）
+        in: query
+        name: step
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StatefulSet 监控数据
+      tags:
+      - K8s
+  /api/v1/kube/statefulset/{statefulset_name}/revisions:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: StatefulSet名称
+        in: path
+        name: statefulset_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StatefulSet 历史版本列表
+      tags:
+      - K8s
+  /api/v1/kube/statefulset/{statefulset_name}/rollback:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: StatefulSet名称
+        in: path
+        name: statefulset_name
+        required: true
+        type: string
+      - description: 回滚请求
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 回滚 StatefulSet 到指定版本
+      tags:
+      - K8s
+  /api/v1/kube/yaml:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间（PV和StorageClass不需要）
+        in: query
+        name: namespace
+        type: string
+      - description: 资源类型（pod, service, ingress, deployment, daemonset, statefulset,
+          job, cronjob, pv, pvc, storageclass, configmap, secret, destinationrule,
+          gateway, virtualservice）
+        in: query
+        name: resource_type
+        required: true
+        type: string
+      - description: 资源名称
+        in: query
+        name: resource_name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: YAML内容
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 K8s 资源的 YAML 内容
+      tags:
+      - K8s
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 更新资源 YAML 请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.UpdateResourceYamlRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 K8s 资源的 YAML 内容
+      tags:
+      - K8s
+  /api/v1/kube/yaml/dry-run:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Dry-run 资源 YAML 请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.DryRunResourceYamlRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Dry-run 结果 YAML
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: Dry-run 预览 K8s 资源变更
+      tags:
+      - K8s
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

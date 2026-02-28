@@ -1,0 +1,1 @@
+import{u as s,j as r,B as n,a9 as e,aa as o,T as a}from"./index-DN-w3rpt.js";function l(){const{t}=s();return r.jsx(n,{sx:{p:3},children:r.jsx(e,{children:r.jsxs(o,{children:[r.jsx(a,{variant:"h5",gutterBottom:!0,children:t("menu.billVM")}),r.jsx(a,{variant:"body2",color:"text.secondary",children:t("bill.vm.description")})]})})})}export{l as default};
