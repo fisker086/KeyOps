@@ -93,8 +93,6 @@ docker-compose down
 
 ### PostgreSQL Deployment
 
-**Modify environment variables** in `.env` file:
-
 ```bash
 docker-compose -f docker-compose-pg.yaml up -d
 
@@ -115,30 +113,6 @@ DB_NAME=keyops
 - `6379`: Redis (optional)
 - `4822`: Guacamole daemon (RDP)
 
-## Environment Variables Configuration
-
-Create `.env` file (optional):
-
-```bash
-# Database configuration
-MYSQL_ROOT_PASSWORD=123456
-MYSQL_DATABASE=keyops
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=keyops
-
-# Redis configuration
-REDIS_ENABLED=true
-REDIS_PASSWORD=
-
-# AI Assistant (optional; enable and set LLM if needed)
-AI_ASSISTANT_ENABLED=true
-AI_ASSISTANT_LLM_API_KEY=sk-xxx
-AI_ASSISTANT_LLM_BASE_URL=https://...
-AI_ASSISTANT_LLM_MODEL=qwen-max
-# AI_ASSISTANT_LLM_MAX_STEPS=30
-# AI_ASSISTANT_LLM_PROXY_URL=http://127.0.0.1:7890
-```
 
 ## License
 

@@ -93,8 +93,6 @@ docker-compose down
 
 ### PostgreSQL 部署
 
-**修改环境变量**，在 `.env` 文件中设置：
-
 ```bash
 docker-compose -f docker-compose-pg.yaml up -d
 
@@ -115,30 +113,6 @@ DB_NAME=keyops
 - `6379`: Redis（可选）
 - `4822`: Guacamole daemon（RDP）
 
-## 环境变量配置
-
-创建 `.env` 文件（可选）：
-
-```bash
-# 数据库配置
-MYSQL_ROOT_PASSWORD=123456
-MYSQL_DATABASE=keyops
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=keyops
-
-# Redis 配置
-REDIS_ENABLED=true
-REDIS_PASSWORD=
-
-# AI 助手（可选，启用后需配置大模型）
-AI_ASSISTANT_ENABLED=true
-AI_ASSISTANT_LLM_API_KEY=sk-xxx
-AI_ASSISTANT_LLM_BASE_URL=https://...
-AI_ASSISTANT_LLM_MODEL=qwen-max
-# AI_ASSISTANT_LLM_MAX_STEPS=30
-# AI_ASSISTANT_LLM_PROXY_URL=http://127.0.0.1:7890
-```
 
 ## License
 
