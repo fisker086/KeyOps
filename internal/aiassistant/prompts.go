@@ -4,13 +4,9 @@ package aiassistant
 
 import (
 	"fmt"
-
-	"github.com/fisker086/keyops/internal/aiassistant/tools"
-	"github.com/fisker086/keyops/internal/aiassistant/tools/builtin"
-	"github.com/fisker086/keyops/internal/aiassistant/tools/k8s"
 )
 
-// commonConstraints 通用约束 + 内置工具箱（Prometheus/Grafana），定义见 tools/builtin
+// commonConstraints 通用约束。工具箱由 GetAvailableToolsPrompt 根据目标环境配置动态注入（单 Agent 多 Skills）。
 const commonConstraints = `
 ## 核心约束（严禁违反）：
 1. **身份/能力类问题**：若用户仅询问你的身份、角色或能力（如：你是谁、有什么功能、你能做什么），请**直接**以 "Final Answer:" 开头回答，不要使用任何 Action 或工具。
@@ -21,13 +17,13 @@ const commonConstraints = `
 6. **语言一致**：回答使用与用户相同的语言（用户用中文则用中文，用英文则用英文）。
 
 ## 工具调用规范：
-- **Action**：必须是下方「工具箱」中列出的工具名称。
+- 系统会根据目标环境配置，在下方自动追加「当前环境可用技能」及工具箱列表。**Action** 必须是其中列出的工具名称，未列出的工具表示当前环境未配置，请勿调用。
 - **Action Input**：仅写一个合法 JSON 对象，键名和值类型严格符合工具 Schema，例如 execute_promql_query 的 {"query":"up","duration":"1h"}。
-` + builtin.PromptFragment
+`
 
 // GetFallbackSystemPrompt 无 DB 或未配置该专家时使用的通用回退提示（不按角色写死，执行时以 DB 专家配置为准）
 func GetFallbackSystemPrompt() string {
-	return "你是一名运维助手，请根据用户任务使用下方工具箱进行分析并给出结论。\n\n" + commonConstraints
+	return "你是一名运维助手，请根据用户任务使用下方当前环境可用技能进行分析并给出结论。\n\n" + commonConstraints
 }
 
 func getSREAnalysisExpertPrompt(maxSteps int) string {
@@ -61,8 +57,8 @@ func getGlobalInspectorPrompt(maxSteps int) string {
 `, maxSteps, commonConstraints)
 }
 
-// k8sExpertConstraints 为 K8s 专家专用：通用约束 + K8s 工具箱（与 Prometheus/Grafana 工具并列可用）
-var k8sExpertConstraints = commonConstraints + tools.GetPromptFragment(k8s.ID)
+// k8sExpertConstraints 与 commonConstraints 相同，K8s 工具箱由 GetAvailableToolsPrompt 根据环境配置动态注入
+var k8sExpertConstraints = commonConstraints
 
 func getK8sContainerExpertPrompt(maxSteps int) string {
 	return fmt.Sprintf(`你是一名 K8s 容器专家（K8s Container Expert），负责对 Kubernetes 集群进行巡检，从节点、Pod、工作负载、资源与事件等维度发现潜在问题，并输出专业巡检报告。

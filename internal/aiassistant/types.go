@@ -42,6 +42,7 @@ type Schedule struct {
 	ID                     string   `json:"id"`
 	Name                   string   `json:"name"`
 	EnvID                  string   `json:"env_id"`
+	ModelID                string   `json:"model_id,omitempty"` // 模型配置 ID，空则使用第一个
 	Cron                   string   `json:"cron"`
 	TaskPrompt             string   `json:"task_prompt"`
 	Role                   string   `json:"role,omitempty"`
@@ -55,7 +56,7 @@ type Schedule struct {
 }
 
 // Environment 目标环境（数据来源：数据库表 ai_assistant_environments，由 store.ListEnvironments / GetEnvironment 加载）
-// PromURL/GrafURL 用于 Prometheus/Grafana 场景；非该场景时可留空，用 extra_config 存任意扩展配置
+// 支持三种技能：Prometheus、Grafana、K8s 集群，可组合配置
 // K8sClusterID 关联 K8s 管理中的集群 ID，选择后该环境可用于 K8s 巡检等场景
 type Environment struct {
 	ID             string                 `json:"id"`
@@ -64,9 +65,10 @@ type Environment struct {
 	GrafURL        string                 `json:"graf_url,omitempty"`
 	GrafToken      string                 `json:"graf_token,omitempty"`
 	Cluster        string                 `json:"cluster,omitempty"`
-	K8sClusterID   string                 `json:"k8s_cluster_id,omitempty"` // 关联 K8s 集群 ID（来自 k8s 管理）
-	AllowedRoleIDs []string               `json:"allowed_role_ids,omitempty"`  // 允许使用该环境的平台角色ID列表，空表示所有角色可用
-	ExtraConfig    map[string]interface{} `json:"extra_config,omitempty"`      // 扩展配置（JSON 对象），非 Prometheus/Grafana 时使用，供后续扩展
+	K8sClusterID   string                 `json:"k8s_cluster_id,omitempty"`   // 关联 K8s 集群 ID（来自 k8s 管理）
+	AllowedRoleIDs []string               `json:"allowed_role_ids,omitempty"`   // 允许使用该环境的平台角色ID列表，空表示所有角色可用
+	ExtraConfig    map[string]interface{} `json:"extra_config,omitempty"`      // 保留字段，DB 兼容；界面已移除，仅支持 Prometheus/Grafana/K8s
+	EnabledSkills  []string               `json:"enabled_skills,omitempty"`    // 当前环境启用的技能（prometheus/grafana/k8s），API 返回时由 handler 填充
 }
 
 // ModelConfig 模型配置（API 响应用，列表可隐藏 api_key）

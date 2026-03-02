@@ -1,1 +1,0 @@
-import{u as n,j as r,B as a,a9 as s,aa as e,T as t}from"./index-DN-w3rpt.js";function d(){const{t:o}=n();return r.jsx(a,{sx:{p:3},children:r.jsx(s,{children:r.jsxs(e,{children:[r.jsx(t,{variant:"h5",gutterBottom:!0,children:o("menu.monitorProbe")}),r.jsx(t,{variant:"body2",color:"text.secondary",children:o("monitor.probe.description")})]})})})}export{d as default};

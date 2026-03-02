@@ -4,10 +4,6 @@
 
 ---
 
-**Screenshots**
-<img width="2924" height="1374" alt="image" src="https://github.com/user-attachments/assets/8a50b150-3c33-49df-b201-5c398a03f3ab" />
-<img width="2504" height="1582" alt="image" src="https://github.com/user-attachments/assets/c20edb04-d634-43a5-94f4-1a982c55e8e7" />
-
 **Enterprise-grade DevOps platform built with Go**
 
 ## Core Features

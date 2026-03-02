@@ -90,6 +90,9 @@ func scheduleFromMap(id string, v map[string]interface{}) Schedule {
 	if x, ok := v["env_id"].(string); ok {
 		s.EnvID = x
 	}
+	if x, ok := v["model_id"].(string); ok {
+		s.ModelID = x
+	}
 	if x, ok := v["cron"].(string); ok {
 		s.Cron = x
 	}
@@ -144,7 +147,7 @@ func toUint(it interface{}) (uint, bool) {
 }
 
 // AddSchedule 新增
-func (sm *ScheduleManager) AddSchedule(name, envID, cron, taskPrompt, role, larkBotID, larkGroupName, larkFolderID, responsibleUser string, enabled bool, notificationChannelIDs []uint) (string, error) {
+func (sm *ScheduleManager) AddSchedule(name, envID, modelID, cron, taskPrompt, role, larkBotID, larkGroupName, larkFolderID, responsibleUser string, enabled bool, notificationChannelIDs []uint) (string, error) {
 	data, err := sm.load()
 	if err != nil {
 		return "", err
@@ -156,6 +159,7 @@ func (sm *ScheduleManager) AddSchedule(name, envID, cron, taskPrompt, role, lark
 		"cron":             cron,
 		"task_prompt":      taskPrompt,
 		"role":             role,
+		"model_id":         modelID,
 		"lark_bot_id":      larkBotID,
 		"lark_group_name":  larkGroupName,
 		"lark_folder_id":   larkFolderID,

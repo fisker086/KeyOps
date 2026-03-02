@@ -83,44 +83,49 @@ func (s *Store) AutoMigrate() error {
 	if err := s.seedDefaultExperts(); err != nil {
 		return err
 	}
-	return s.ensureK8sExpertExists()
+	return s.upgradeExpertPromptsForSkills()
 }
 
-// ensureK8sExpertExists 确保「K8s 容器专家」存在且提示词含 K8s 工具箱（兼容已 seed 过的库）
-func (s *Store) ensureK8sExpertExists() error {
-	var cfg *Expert
-	for _, e := range GetExpertsConfig() {
-		if e.ID == "k8s-expert" {
-			cfg = &e
-			break
+// upgradeExpertPromptsForSkills 将旧格式（内嵌工具箱）的专家提示词升级为 Skills 设计（工具箱由运行时动态注入）
+func (s *Store) upgradeExpertPromptsForSkills() error {
+	const oldFormatMarker = "## 工具箱 (Action Tools) 详解"
+	configs := GetExpertsConfig()
+	cfgByID := make(map[string]Expert)
+	for _, e := range configs {
+		cfgByID[e.ID] = e
+	}
+	for _, id := range []string{"sre", "inspector", "k8s-expert"} {
+		cfg, ok := cfgByID[id]
+		if !ok {
+			continue
 		}
-	}
-	if cfg == nil {
-		return nil
-	}
-	var rec ExpertRecord
-	err := s.db.Where("id = ?", "k8s-expert").First(&rec).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return s.db.Create(&ExpertRecord{
-				ID:           cfg.ID,
-				Name:         cfg.Name,
-				Description:  cfg.Description,
-				SystemPrompt: cfg.SystemPrompt,
-				IsCustom:     false,
-				Sort:         ivalExpert(cfg.ID),
-			}).Error
+		var rec ExpertRecord
+		err := s.db.Where("id = ?", id).First(&rec).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound && id == "k8s-expert" {
+				if err := s.db.Create(&ExpertRecord{
+					ID:           cfg.ID,
+					Name:         cfg.Name,
+					Description:  cfg.Description,
+					SystemPrompt: cfg.SystemPrompt,
+					IsCustom:     false,
+					Sort:         ivalExpert(cfg.ID),
+				}).Error; err != nil {
+					return err
+				}
+			}
+			continue
 		}
-		return err
-	}
-	// 若已有记录但提示词中不含 K8s 工具箱，则更新为最新（含 k8s_cluster_summary 等工具）
-	if !strings.Contains(rec.SystemPrompt, "k8s_cluster_summary") {
-		return s.db.Model(&ExpertRecord{}).Where("id = ?", "k8s-expert").Updates(map[string]interface{}{
-			"name":          cfg.Name,
-			"description":   cfg.Description,
-			"system_prompt": cfg.SystemPrompt,
-			"sort":         ivalExpert(cfg.ID),
-		}).Error
+		if strings.Contains(rec.SystemPrompt, oldFormatMarker) {
+			if err := s.db.Model(&ExpertRecord{}).Where("id = ?", id).Updates(map[string]interface{}{
+				"name":          cfg.Name,
+				"description":   cfg.Description,
+				"system_prompt": cfg.SystemPrompt,
+				"sort":         ivalExpert(cfg.ID),
+			}).Error; err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

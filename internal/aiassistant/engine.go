@@ -121,6 +121,10 @@ func (e *Engine) Run(ctx context.Context, task, role, systemPromptOverride strin
 	if systemPrompt == "" {
 		systemPrompt = GetFallbackSystemPrompt()
 	}
+	// 单 Agent 多 Skills：根据环境配置注入当前可用工具，避免 LLM 调用未配置的工具
+	if avail := GetAvailableToolsPrompt(e.env, e.runners); avail != "" {
+		systemPrompt = systemPrompt + avail
+	}
 	messages := []openai.ChatCompletionMessage{
 		{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},
 		{Role: openai.ChatMessageRoleUser, Content: task},

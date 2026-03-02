@@ -1,0 +1,1 @@
+import{u as s,j as r,B as e,a9 as i,aa as n,T as a}from"./index-Bs4i1T-t.js";function l(){const{t}=s();return r.jsx(e,{sx:{p:3},children:r.jsx(i,{children:r.jsxs(n,{children:[r.jsx(a,{variant:"h5",gutterBottom:!0,children:t("menu.billPrice")}),r.jsx(a,{variant:"body2",color:"text.secondary",children:t("bill.price.description")})]})})})}export{l as default};

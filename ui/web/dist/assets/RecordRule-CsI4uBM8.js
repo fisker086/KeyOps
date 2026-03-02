@@ -1,1 +1,0 @@
-import{u as e,j as r,B as a,a9 as n,aa as s,T as t}from"./index-DN-w3rpt.js";function d(){const{t:o}=e();return r.jsx(a,{sx:{p:3},children:r.jsx(n,{children:r.jsxs(s,{children:[r.jsx(t,{variant:"h5",gutterBottom:!0,children:o("menu.monitorRecordRule")}),r.jsx(t,{variant:"body2",color:"text.secondary",children:o("monitor.recordRule.description")})]})})})}export{d as default};

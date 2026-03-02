@@ -1,10 +1,10 @@
 basePath: /api
 definitions:
-  github_com_fisker_zjump-backend_internal_model.Approval:
+  github_com_fisker086_keyops_internal_model.Approval:
     properties:
       applicant:
         allOf:
-        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.User'
+        - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.User'
         description: 关联
       applicant_email:
         description: 申请人邮箱
@@ -73,7 +73,7 @@ definitions:
         type: array
       platform:
         allOf:
-        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalPlatform'
+        - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.ApprovalPlatform'
         description: 审批平台
       priority:
         description: '优先级: low/normal/high/urgent'
@@ -102,19 +102,19 @@ definitions:
         type: string
       status:
         allOf:
-        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalStatus'
+        - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.ApprovalStatus'
         description: 状态
       title:
         description: 标题
         type: string
       type:
         allOf:
-        - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalType'
+        - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.ApprovalType'
         description: 类型
       updated_at:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.ApprovalPlatform:
+  github_com_fisker086_keyops_internal_model.ApprovalPlatform:
     enum:
     - internal
     - feishu
@@ -140,7 +140,7 @@ definitions:
     - ApprovalPlatformDingTalk
     - ApprovalPlatformWeChat
     - ApprovalPlatformCustom
-  github_com_fisker_zjump-backend_internal_model.ApprovalStatus:
+  github_com_fisker086_keyops_internal_model.ApprovalStatus:
     enum:
     - pending
     - approved
@@ -166,7 +166,7 @@ definitions:
     - ApprovalStatusRejected
     - ApprovalStatusCanceled
     - ApprovalStatusExpired
-  github_com_fisker_zjump-backend_internal_model.ApprovalType:
+  github_com_fisker086_keyops_internal_model.ApprovalType:
     enum:
     - host_access
     - host_group_access
@@ -184,7 +184,7 @@ definitions:
     - ApprovalTypeHostAccess
     - ApprovalTypeHostGroupAccess
     - ApprovalTypeDeployment
-  github_com_fisker_zjump-backend_internal_model.BillPrice:
+  github_com_fisker086_keyops_internal_model.BillPrice:
     properties:
       cluster:
         description: 集群
@@ -213,7 +213,7 @@ definitions:
     required:
     - vendor
     type: object
-  github_com_fisker_zjump-backend_internal_model.CreateApplicationDeployBindingRequest:
+  github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest:
     properties:
       applicationId:
         type: string
@@ -259,7 +259,7 @@ definitions:
     - deployType
     - environment
     type: object
-  github_com_fisker_zjump-backend_internal_model.CreateApplicationRequest:
+  github_com_fisker086_keyops_internal_model.CreateApplicationRequest:
     properties:
       department:
         type: string
@@ -307,7 +307,7 @@ definitions:
     - name
     - srvType
     type: object
-  github_com_fisker_zjump-backend_internal_model.CreateJenkinsServerRequest:
+  github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest:
     properties:
       alias:
         type: string
@@ -329,7 +329,7 @@ definitions:
     - url
     - username
     type: object
-  github_com_fisker_zjump-backend_internal_model.CreateOrganizationRequest:
+  github_com_fisker086_keyops_internal_model.CreateOrganizationRequest:
     properties:
       description:
         type: string
@@ -352,7 +352,7 @@ definitions:
     - unitName
     - unitType
     type: object
-  github_com_fisker_zjump-backend_internal_model.DBInstance:
+  github_com_fisker086_keyops_internal_model.DBInstance:
     properties:
       authDatabase:
         description: MongoDB 认证数据库
@@ -391,7 +391,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.Deployment:
+  github_com_fisker086_keyops_internal_model.Deployment:
     properties:
       artifact_url:
         type: string
@@ -463,7 +463,7 @@ definitions:
       version:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.GetBuildLogResponse:
+  github_com_fisker086_keyops_internal_model.GetBuildLogResponse:
     properties:
       buildNumber:
         type: integer
@@ -480,7 +480,7 @@ definitions:
       textSize:
         type: integer
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsBuild:
+  github_com_fisker086_keyops_internal_model.JenkinsBuild:
     properties:
       building:
         type: boolean
@@ -508,20 +508,20 @@ definitions:
       url:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsBuildDetailResponse:
+  github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse:
     properties:
       build:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
       server:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsComputer:
+  github_com_fisker086_keyops_internal_model.JenkinsComputer:
     properties:
       displayName:
         type: string
       executors:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsExecutor'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor'
         type: array
       icon:
         type: string
@@ -534,7 +534,7 @@ definitions:
       launchSupported:
         type: boolean
       loadStatistics:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsLoadStatistics'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics'
       manualLaunchAllowed:
         type: boolean
       monitorData:
@@ -547,12 +547,12 @@ definitions:
       offlineCause: {}
       oneOffExecutors:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsExecutor'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor'
         type: array
       temporarilyOffline:
         type: boolean
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsExecutor:
+  github_com_fisker086_keyops_internal_model.JenkinsExecutor:
     properties:
       currentExecutable: {}
       currentWorkUnit: {}
@@ -565,7 +565,7 @@ definitions:
       progress:
         type: integer
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsJob:
+  github_com_fisker086_keyops_internal_model.JenkinsJob:
     properties:
       _class:
         type: string
@@ -578,46 +578,46 @@ definitions:
       displayName:
         type: string
       lastBuild:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
       lastFailedBuild:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
       lastStableBuild:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
       lastSuccessfulBuild:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
       name:
         type: string
       url:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsJobDetailResponse:
+  github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse:
     properties:
       builds:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
         type: array
       job:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob'
       server:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse:
+  github_com_fisker086_keyops_internal_model.JenkinsJobListResponse:
     properties:
       jobs:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob'
         type: array
       server:
         type: string
       total:
         type: integer
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsLabel:
+  github_com_fisker086_keyops_internal_model.JenkinsLabel:
     properties:
       name:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsLoadStatistics:
+  github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics:
     properties:
       busyExecutors:
         type: integer
@@ -628,14 +628,14 @@ definitions:
       totalExecutors:
         type: integer
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsQueue:
+  github_com_fisker086_keyops_internal_model.JenkinsQueue:
     properties:
       items:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsQueueItem'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueueItem'
         type: array
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsQueueItem:
+  github_com_fisker086_keyops_internal_model.JenkinsQueueItem:
     properties:
       actions:
         items: {}
@@ -655,13 +655,13 @@ definitions:
       stuck:
         type: boolean
       task:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsTask'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsTask'
       url:
         type: string
       why:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsServer:
+  github_com_fisker086_keyops_internal_model.JenkinsServer:
     properties:
       alias:
         description: 别名(服务器名称)
@@ -685,7 +685,7 @@ definitions:
         description: 用户名
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo:
+  github_com_fisker086_keyops_internal_model.JenkinsServerInfo:
     properties:
       alias:
         type: string
@@ -704,24 +704,24 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsServerListResponse:
+  github_com_fisker086_keyops_internal_model.JenkinsServerListResponse:
     properties:
       list:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo'
         type: array
       total:
         type: integer
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo:
+  github_com_fisker086_keyops_internal_model.JenkinsSystemInfo:
     properties:
       assignedLabels:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsLabel'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLabel'
         type: array
       computers:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsComputer'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsComputer'
         type: array
       mode:
         type: string
@@ -736,7 +736,7 @@ definitions:
           type: integer
         type: object
       primaryView:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsView'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView'
       unlabeledLoad:
         additionalProperties:
           type: integer
@@ -749,10 +749,10 @@ definitions:
         type: string
       views:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsView'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView'
         type: array
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsTask:
+  github_com_fisker086_keyops_internal_model.JenkinsTask:
     properties:
       color:
         type: string
@@ -761,20 +761,20 @@ definitions:
       url:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.JenkinsView:
+  github_com_fisker086_keyops_internal_model.JenkinsView:
     properties:
       description:
         type: string
       jobs:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob'
         type: array
       name:
         type: string
       url:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.OperationLog:
+  github_com_fisker086_keyops_internal_model.OperationLog:
     properties:
       created_at:
         type: string
@@ -799,7 +799,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.PaginatedResponse:
+  github_com_fisker086_keyops_internal_model.PaginatedResponse:
     properties:
       data: {}
       page:
@@ -811,7 +811,7 @@ definitions:
       total_pages:
         type: integer
     type: object
-  github_com_fisker_zjump-backend_internal_model.PodCommandRecord:
+  github_com_fisker086_keyops_internal_model.PodCommandRecord:
     properties:
       clusterId:
         type: string
@@ -836,7 +836,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.QueryLog:
+  github_com_fisker086_keyops_internal_model.QueryLog:
     properties:
       affectedRows:
         type: integer
@@ -875,7 +875,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.Response:
+  github_com_fisker086_keyops_internal_model.Response:
     properties:
       code:
         type: integer
@@ -883,7 +883,7 @@ definitions:
       message:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.Role:
+  github_com_fisker086_keyops_internal_model.Role:
     properties:
       color:
         description: 显示相关
@@ -908,7 +908,7 @@ definitions:
       updatedAt:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.StartJobRequest:
+  github_com_fisker086_keyops_internal_model.StartJobRequest:
     properties:
       parameters:
         additionalProperties:
@@ -917,7 +917,7 @@ definitions:
       reason:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.StartJobResponse:
+  github_com_fisker086_keyops_internal_model.StartJobResponse:
     properties:
       buildNumber:
         type: integer
@@ -932,7 +932,7 @@ definitions:
       success:
         type: boolean
     type: object
-  github_com_fisker_zjump-backend_internal_model.StopBuildResponse:
+  github_com_fisker086_keyops_internal_model.StopBuildResponse:
     properties:
       buildNumber:
         type: integer
@@ -945,7 +945,7 @@ definitions:
       success:
         type: boolean
     type: object
-  github_com_fisker_zjump-backend_internal_model.SystemUser:
+  github_com_fisker086_keyops_internal_model.SystemUser:
     properties:
       authType:
         description: 认证信息 (必须明确选择 password 或 key，不支持 auto)
@@ -982,7 +982,7 @@ definitions:
         description: OS用户名
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionRequest:
+  github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest:
     properties:
       password:
         description: 密码或API Token
@@ -996,7 +996,7 @@ definitions:
     - url
     - username
     type: object
-  github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionResponse:
+  github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse:
     properties:
       error:
         type: string
@@ -1005,9 +1005,9 @@ definitions:
       success:
         type: boolean
       systemInfo:
-        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo'
+        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo'
     type: object
-  github_com_fisker_zjump-backend_internal_model.UpdateApplicationDeployBindingRequest:
+  github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest:
     properties:
       argocdApplication:
         type: string
@@ -1036,7 +1036,7 @@ definitions:
       strategyOptions:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.UpdateApplicationRequest:
+  github_com_fisker086_keyops_internal_model.UpdateApplicationRequest:
     properties:
       department:
         type: string
@@ -1084,7 +1084,7 @@ definitions:
     - name
     - srvType
     type: object
-  github_com_fisker_zjump-backend_internal_model.UpdateJenkinsServerRequest:
+  github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest:
     properties:
       alias:
         type: string
@@ -1101,7 +1101,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_model.UpdateOrganizationRequest:
+  github_com_fisker086_keyops_internal_model.UpdateOrganizationRequest:
     properties:
       description:
         type: string
@@ -1121,7 +1121,7 @@ definitions:
     - unitName
     - unitType
     type: object
-  github_com_fisker_zjump-backend_internal_model.User:
+  github_com_fisker086_keyops_internal_model.User:
     properties:
       authMethod:
         description: password, publickey, both
@@ -1168,7 +1168,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.BatchGrantPermissionRequest:
+  github_com_fisker086_keyops_internal_service_dms.BatchGrantPermissionRequest:
     properties:
       description:
         type: string
@@ -1198,7 +1198,7 @@ definitions:
     - permissions
     - userId
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest:
+  github_com_fisker086_keyops_internal_service_dms.CreateInstanceRequest:
     properties:
       authDatabase:
         type: string
@@ -1238,7 +1238,7 @@ definitions:
     - name
     - port
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.ExecuteQueryRequest:
+  github_com_fisker086_keyops_internal_service_dms.ExecuteQueryRequest:
     properties:
       databaseName:
         type: string
@@ -1251,7 +1251,7 @@ definitions:
     - instanceId
     - query
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.GrantPermissionRequest:
+  github_com_fisker086_keyops_internal_service_dms.GrantPermissionRequest:
     properties:
       databaseName:
         type: string
@@ -1278,7 +1278,7 @@ definitions:
     - permissionType
     - userId
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo:
+  github_com_fisker086_keyops_internal_service_dms.PermissionInfo:
     properties:
       databaseName:
         type: string
@@ -1301,7 +1301,7 @@ definitions:
       userId:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.QueryResult:
+  github_com_fisker086_keyops_internal_service_dms.QueryResult:
     properties:
       affectedRows:
         type: integer
@@ -1329,7 +1329,7 @@ definitions:
       success:
         type: boolean
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.RevokePermissionRequest:
+  github_com_fisker086_keyops_internal_service_dms.RevokePermissionRequest:
     properties:
       databaseName:
         type: string
@@ -1350,7 +1350,7 @@ definitions:
     - permissionType
     - userId
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.UpdateInstanceRequest:
+  github_com_fisker086_keyops_internal_service_dms.UpdateInstanceRequest:
     properties:
       authDatabase:
         type: string
@@ -1380,7 +1380,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionRequest:
+  github_com_fisker086_keyops_internal_service_dms.UpdatePermissionRequest:
     properties:
       databaseName:
         type: string
@@ -1405,7 +1405,7 @@ definitions:
     - permissionType
     - userId
     type: object
-  github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionResourceRequest:
+  github_com_fisker086_keyops_internal_service_dms.UpdatePermissionResourceRequest:
     properties:
       description:
         type: string
@@ -1607,7 +1607,7 @@ definitions:
     properties:
       items:
         items:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Deployment'
         type: array
       page:
         type: integer
@@ -1727,6 +1727,54 @@ definitions:
     required:
     - status
     type: object
+  internal_api_handler_k8s.UpdatePermissionRequest:
+    properties:
+      new:
+        properties:
+          action:
+            type: string
+          clusterId:
+            type: string
+          namespace:
+            type: string
+          resourceName:
+            type: string
+          resourceType:
+            type: string
+          roleId:
+            type: string
+          userId:
+            type: string
+        required:
+        - action
+        - clusterId
+        - namespace
+        type: object
+      old:
+        properties:
+          action:
+            type: string
+          clusterId:
+            type: string
+          namespace:
+            type: string
+          resourceName:
+            type: string
+          resourceType:
+            type: string
+          roleId:
+            type: string
+          userId:
+            type: string
+        required:
+        - action
+        - clusterId
+        - namespace
+        type: object
+    required:
+    - new
+    - old
+    type: object
   internal_api_handler_k8s.UpdateResourceYamlRequest:
     properties:
       cluster_id:
@@ -1794,7 +1842,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取应用-发布绑定列表
       tags:
       - app-deploy-bindings
@@ -1807,14 +1855,14 @@ paths:
         name: binding
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateApplicationDeployBindingRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建应用-发布绑定
       tags:
       - app-deploy-bindings
@@ -1832,7 +1880,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除应用-发布绑定
       tags:
       - app-deploy-bindings
@@ -1850,14 +1898,14 @@ paths:
         name: binding
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateApplicationDeployBindingRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新应用-发布绑定
       tags:
       - app-deploy-bindings
@@ -1883,7 +1931,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取可用于发布的应用列表
       tags:
       - app-deploy-bindings
@@ -1936,7 +1984,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取应用列表
       tags:
       - applications
@@ -1949,14 +1997,14 @@ paths:
         name: application
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateApplicationRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CreateApplicationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建应用
       tags:
       - applications
@@ -1974,7 +2022,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除应用
       tags:
       - applications
@@ -1991,7 +2039,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取单个应用
       tags:
       - applications
@@ -2009,14 +2057,14 @@ paths:
         name: application
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateApplicationRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.UpdateApplicationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新应用
       tags:
       - applications
@@ -2044,10 +2092,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Approval'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Approval'
               type: object
       summary: 更新审批
       tags:
@@ -2063,7 +2111,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取单价列表
       tags:
       - bill
@@ -2077,14 +2125,14 @@ paths:
         name: price
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.BillPrice'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.BillPrice'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建单价
       tags:
       - bill
@@ -2104,14 +2152,14 @@ paths:
         name: price
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.BillPrice'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.BillPrice'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新单价
       tags:
       - bill
@@ -2165,7 +2213,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取账单明细列表
       tags:
       - bill
@@ -2180,7 +2228,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取我的资源列表
       tags:
       - bill
@@ -2201,7 +2249,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取费用统计
       tags:
       - bill
@@ -2232,7 +2280,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取月度账单汇总
       tags:
       - bill
@@ -2256,7 +2304,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取费用趋势
       tags:
       - bill
@@ -2276,7 +2324,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取费用趋势月份列表
       tags:
       - bill
@@ -2311,7 +2359,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取虚拟机分摊账单
       tags:
       - bill
@@ -2362,7 +2410,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   $ref: '#/definitions/internal_api_handler_k8s.DeploymentListResponse'
@@ -2388,10 +2436,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Deployment'
               type: object
       summary: 创建部署记录
       tags:
@@ -2413,7 +2461,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除部署记录
       tags:
       - 发布管理
@@ -2434,10 +2482,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Deployment'
               type: object
       summary: 获取部署记录详情
       tags:
@@ -2460,10 +2508,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Deployment'
               type: object
       summary: 执行 K8s 容器部署
       tags:
@@ -2491,7 +2539,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新部署状态
       tags:
       - 发布管理
@@ -2529,13 +2577,13 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   properties:
                     list:
                       items:
-                        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+                        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.DBInstance'
                       type: array
                     total:
                       format: int64
@@ -2554,7 +2602,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.CreateInstanceRequest'
       produces:
       - application/json
       responses:
@@ -2562,10 +2610,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.DBInstance'
               type: object
       summary: 创建数据库实例
       tags:
@@ -2586,7 +2634,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除数据库实例
       tags:
       - DMS
@@ -2606,10 +2654,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.DBInstance'
               type: object
       summary: 获取数据库实例详情
       tags:
@@ -2628,7 +2676,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdateInstanceRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.UpdateInstanceRequest'
       produces:
       - application/json
       responses:
@@ -2636,10 +2684,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.DBInstance'
               type: object
       summary: 更新数据库实例
       tags:
@@ -2660,7 +2708,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 测试数据库连接
       tags:
       - DMS
@@ -2674,14 +2722,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.CreateInstanceRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 测试连接（请求体，不落库）
       tags:
       - DMS
@@ -2739,13 +2787,13 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   properties:
                     list:
                       items:
-                        $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.QueryLog'
+                        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.QueryLog'
                       type: array
                     total:
                       format: int64
@@ -2772,10 +2820,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.QueryLog'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.QueryLog'
               type: object
       summary: 获取查询日志详情
       tags:
@@ -2790,14 +2838,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.RevokePermissionRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.RevokePermissionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 回收数据库权限
       tags:
       - DMS
@@ -2828,15 +2876,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse'
+                  - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.PaginatedResponse'
                   - properties:
                       data:
                         items:
-                          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo'
+                          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.PermissionInfo'
                         type: array
                     type: object
               type: object
@@ -2852,14 +2900,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.GrantPermissionRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.GrantPermissionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 分配数据库权限
       tags:
       - DMS
@@ -2872,14 +2920,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.UpdatePermissionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新数据库权限（只更新元数据：过期时间、描述）
       tags:
       - DMS
@@ -2893,14 +2941,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.BatchGrantPermissionRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.BatchGrantPermissionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 批量分配数据库权限
       tags:
       - DMS
@@ -2915,11 +2963,11 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo'
+                    $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.PermissionInfo'
                   type: array
               type: object
       summary: 获取当前用户的权限
@@ -2935,14 +2983,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionResourceRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.UpdatePermissionResourceRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新权限的资源路径（先添加新权限，再删除旧权限）
       tags:
       - DMS
@@ -2963,7 +3011,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   items:
@@ -2983,7 +3031,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.ExecuteQueryRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.ExecuteQueryRequest'
       produces:
       - application/json
       responses:
@@ -2991,10 +3039,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_service_dms.QueryResult'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_service_dms.QueryResult'
               type: object
       summary: 执行SQL/MongoDB/Redis查询
       tags:
@@ -3021,7 +3069,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   items:
@@ -3049,10 +3097,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse'
               type: object
       summary: 获取Jenkins任务列表
       tags:
@@ -3080,10 +3128,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobDetailResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse'
               type: object
       summary: 获取Jenkins任务详情
       tags:
@@ -3116,10 +3164,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuildDetailResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse'
               type: object
       summary: 获取Jenkins构建详情
       tags:
@@ -3157,10 +3205,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.GetBuildLogResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.GetBuildLogResponse'
               type: object
       summary: 获取Jenkins构建日志
       tags:
@@ -3193,10 +3241,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.StopBuildResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.StopBuildResponse'
               type: object
       summary: 停止Jenkins构建
       tags:
@@ -3221,7 +3269,7 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.StartJobRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.StartJobRequest'
       produces:
       - application/json
       responses:
@@ -3229,10 +3277,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.StartJobResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.StartJobResponse'
               type: object
       summary: 启动Jenkins任务
       tags:
@@ -3260,10 +3308,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse'
               type: object
       summary: 搜索Jenkins任务
       tags:
@@ -3286,10 +3334,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsQueue'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueue'
               type: object
       summary: 获取Jenkins队列信息
       tags:
@@ -3312,10 +3360,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo'
               type: object
       summary: 获取Jenkins系统信息
       tags:
@@ -3343,10 +3391,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerListResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerListResponse'
               type: object
       summary: 获取Jenkins服务器列表
       tags:
@@ -3361,7 +3409,7 @@ paths:
         name: server
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateJenkinsServerRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest'
       produces:
       - application/json
       responses:
@@ -3369,10 +3417,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServer'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServer'
               type: object
       summary: 创建Jenkins服务器
       tags:
@@ -3394,7 +3442,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除Jenkins服务器
       tags:
       - Jenkins
@@ -3415,10 +3463,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo'
               type: object
       summary: 获取Jenkins服务器详情
       tags:
@@ -3438,14 +3486,14 @@ paths:
         name: server
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateJenkinsServerRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新Jenkins服务器
       tags:
       - Jenkins
@@ -3460,7 +3508,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest'
       produces:
       - application/json
       responses:
@@ -3468,10 +3516,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionResponse'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse'
               type: object
       summary: 测试Jenkins连接
       tags:
@@ -3486,11 +3534,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取集群列表
@@ -3512,20 +3560,57 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 创建集群
       tags:
       - K8s Cluster
+  /api/k8s/clusters/:clusterId/effective-action:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: path
+        name: clusterId
+        required: true
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: 资源类型 deployment/statefulset/daemonset/pod 等
+        in: query
+        name: resourceType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取有效操作权限
+      tags:
+      - K8s Permission
   /api/k8s/clusters/:id:
     delete:
       consumes:
@@ -3542,15 +3627,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 删除集群
@@ -3571,19 +3656,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取集群详情
@@ -3610,19 +3695,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 更新集群
@@ -3644,14 +3729,43 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取集群的所有权限
+      tags:
+      - K8s Permission
+  /api/k8s/clusters/:id/permitted-namespaces:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取可访问的命名空间
       tags:
       - K8s Permission
   /api/k8s/clusters/:id/summary:
@@ -3670,19 +3784,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取集群摘要
@@ -3698,11 +3812,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 K8s 大盘统计数据
@@ -3718,11 +3832,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取所有集群摘要
@@ -3745,15 +3859,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 删除K8s资源权限
@@ -3781,11 +3895,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取K8s资源权限列表
@@ -3807,18 +3921,48 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 添加K8s资源权限
+      tags:
+      - K8s Permission
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 更新权限请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_k8s.UpdatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新K8s资源权限
       tags:
       - K8s Permission
   /api/k8s/permissions/check:
@@ -3839,7 +3983,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   type: boolean
@@ -3847,11 +3991,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 检查K8s资源权限
@@ -3874,7 +4018,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   additionalProperties: true
@@ -3920,7 +4064,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 查询 Probe 监控数据
       tags:
       - monitor
@@ -3950,7 +4094,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取监控列表
       tags:
       - monitor
@@ -3971,7 +4115,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建监控查询语句
       tags:
       - monitor
@@ -3992,7 +4136,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除监控查询语句
       tags:
       - monitor
@@ -4012,7 +4156,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取监控详情
       tags:
       - monitor
@@ -4038,7 +4182,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新监控查询语句
       tags:
       - monitor
@@ -4058,7 +4202,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 统计监控数量
       tags:
       - monitor
@@ -4079,7 +4223,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取组织列表
       tags:
       - organizations
@@ -4092,14 +4236,14 @@ paths:
         name: organization
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.CreateOrganizationRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CreateOrganizationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建组织
       tags:
       - organizations
@@ -4117,7 +4261,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除组织
       tags:
       - organizations
@@ -4134,7 +4278,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取单个组织
       tags:
       - organizations
@@ -4152,14 +4296,14 @@ paths:
         name: organization
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateOrganizationRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.UpdateOrganizationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新组织
       tags:
       - organizations
@@ -4171,7 +4315,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取组织树
       tags:
       - organizations
@@ -4183,7 +4327,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取授权规则列表
       tags:
       - permission-rules
@@ -4203,7 +4347,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建授权规则
       tags:
       - permission-rules
@@ -4221,7 +4365,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除授权规则
       tags:
       - permission-rules
@@ -4238,7 +4382,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取单个授权规则
       tags:
       - permission-rules
@@ -4263,7 +4407,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新授权规则
       tags:
       - permission-rules
@@ -4281,7 +4425,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取主机组的授权规则
       tags:
       - permission-rules
@@ -4299,7 +4443,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取角色的授权规则
       tags:
       - permission-rules
@@ -4316,7 +4460,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取角色列表
       tags:
       - roles
@@ -4329,14 +4473,14 @@ paths:
         name: role
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Role'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Role'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建角色
       tags:
       - roles
@@ -4354,7 +4498,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除角色
       tags:
       - roles
@@ -4375,7 +4519,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取单个角色
       tags:
       - roles
@@ -4393,14 +4537,14 @@ paths:
         name: role
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Role'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Role'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新角色
       tags:
       - roles
@@ -4418,7 +4562,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取角色成员
       tags:
       - roles
@@ -4445,7 +4589,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 添加用户到角色
       tags:
       - roles
@@ -4468,7 +4612,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 从角色移除用户
       tags:
       - roles
@@ -4498,7 +4642,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 批量添加成员
       tags:
       - roles
@@ -4516,7 +4660,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取用户所在的所有角色
       tags:
       - roles
@@ -4528,7 +4672,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取系统用户列表
       tags:
       - system-users
@@ -4541,14 +4685,14 @@ paths:
         name: systemUser
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.SystemUser'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.SystemUser'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 创建系统用户
       tags:
       - system-users
@@ -4566,7 +4710,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 删除系统用户
       tags:
       - system-users
@@ -4583,7 +4727,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取单个系统用户
       tags:
       - system-users
@@ -4601,14 +4745,14 @@ paths:
         name: systemUser
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.SystemUser'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.SystemUser'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新系统用户
       tags:
       - system-users
@@ -4626,7 +4770,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取用户可用的系统用户列表
       tags:
       - system-users
@@ -4649,7 +4793,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 检查用户权限
       tags:
       - system-users
@@ -4703,26 +4847,26 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse'
+                  - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.PaginatedResponse'
                   - properties:
                       data:
                         items:
-                          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.OperationLog'
+                          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.OperationLog'
                         type: array
                     type: object
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取操作日志列表
@@ -4744,15 +4888,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 删除操作日志
@@ -4774,19 +4918,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.OperationLog'
+                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.OperationLog'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取操作日志详情
@@ -4811,15 +4955,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 批量删除操作日志
@@ -4875,26 +5019,26 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse'
+                  - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.PaginatedResponse'
                   - properties:
                       data:
                         items:
-                          $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.PodCommandRecord'
+                          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.PodCommandRecord'
                         type: array
                     type: object
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Pod 命令日志列表
@@ -4931,18 +5075,55 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Kubernetes 基础信息
+      tags:
+      - K8s
+  /api/v1/kube/configmap:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 ConfigMap 列表
       tags:
       - K8s
   /api/v1/kube/containers:
@@ -4981,15 +5162,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取容器列表
@@ -5026,15 +5207,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 CronJob 列表
@@ -5069,15 +5250,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 CronJob 详情
@@ -5114,15 +5295,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 DaemonSet 列表
@@ -5157,15 +5338,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 DaemonSet 详情
@@ -5210,15 +5391,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 DaemonSet 监控数据
@@ -5253,15 +5434,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 DaemonSet 历史版本列表
@@ -5302,15 +5483,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 回滚 DaemonSet 到指定版本
@@ -5347,15 +5528,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Deployment 列表
@@ -5390,15 +5571,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Deployment 详情
@@ -5443,15 +5624,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Deployment 监控数据
@@ -5486,15 +5667,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Deployment 历史版本列表
@@ -5535,15 +5716,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 回滚 Deployment 到指定版本
@@ -5590,15 +5771,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Event 列表
@@ -5635,15 +5816,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 HPA 列表
@@ -5680,15 +5861,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Ingress 列表
@@ -5725,15 +5906,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Job 列表
@@ -5768,15 +5949,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Job 详情
@@ -5801,15 +5982,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取命名空间列表
@@ -5842,15 +6023,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Node 列表
@@ -5873,15 +6054,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 重启Pod
@@ -5917,15 +6098,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Pod 列表
@@ -5960,15 +6141,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Pod 详情
@@ -6023,15 +6204,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 下载容器日志
@@ -6081,15 +6262,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取Pod指标
@@ -6136,15 +6317,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 流式传输 Pod 日志
@@ -6187,18 +6368,88 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 连接 Pod 终端
+      tags:
+      - K8s
+  /api/v1/kube/pv:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 PV 列表
+      tags:
+      - K8s
+  /api/v1/kube/pvc:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 PVC 列表
       tags:
       - K8s
   /api/v1/kube/scale:
@@ -6232,15 +6483,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取副本数
@@ -6262,18 +6513,55 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 扩缩容副本
+      tags:
+      - K8s
+  /api/v1/kube/secret:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Secret 列表
       tags:
       - K8s
   /api/v1/kube/service:
@@ -6307,15 +6595,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 Service 列表
@@ -6352,15 +6640,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 StatefulSet 列表
@@ -6395,15 +6683,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 StatefulSet 详情
@@ -6448,15 +6736,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 StatefulSet 监控数据
@@ -6491,15 +6779,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 StatefulSet 历史版本列表
@@ -6540,21 +6828,102 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 回滚 StatefulSet 到指定版本
       tags:
       - K8s
+  /api/v1/kube/storageclass:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID（推荐）
+        in: query
+        name: cluster_id
+        type: string
+      - description: 集群名称（推荐）
+        in: query
+        name: cluster_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StorageClass 列表
+      tags:
+      - K8s
   /api/v1/kube/yaml:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 集群ID
+        in: query
+        name: cluster_id
+        required: true
+        type: string
+      - description: 集群名称
+        in: query
+        name: cluster_name
+        type: string
+      - description: 命名空间（PV和StorageClass不需要）
+        in: query
+        name: namespace
+        type: string
+      - description: 资源类型（service, ingress, deployment, daemonset, statefulset, pvc
+          等）
+        in: query
+        name: resource_type
+        required: true
+        type: string
+      - description: 资源名称
+        in: query
+        name: resource_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 K8s 资源
+      tags:
+      - K8s
     get:
       consumes:
       - application/json
@@ -6593,11 +6962,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 获取 K8s 资源的 YAML 内容
@@ -6619,19 +6988,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: 更新 K8s 资源的 YAML 内容
@@ -6658,15 +7027,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_fisker_zjump-backend_internal_model.Response'
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       security:
       - BearerAuth: []
       summary: Dry-run 预览 K8s 资源变更

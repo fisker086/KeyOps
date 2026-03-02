@@ -76,7 +76,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -99,7 +99,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.CreateApplicationDeployBindingRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest"
                         }
                     }
                 ],
@@ -107,7 +107,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -147,7 +147,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -179,7 +179,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateApplicationDeployBindingRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest"
                         }
                     }
                 ],
@@ -187,7 +187,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -213,7 +213,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -294,7 +294,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -317,7 +317,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.CreateApplicationRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CreateApplicationRequest"
                         }
                     }
                 ],
@@ -325,7 +325,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -353,7 +353,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -383,7 +383,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateApplicationRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.UpdateApplicationRequest"
                         }
                     }
                 ],
@@ -391,7 +391,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -417,7 +417,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -460,13 +460,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Approval"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Approval"
                                         }
                                     }
                                 }
@@ -493,7 +493,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -517,7 +517,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.BillPrice"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.BillPrice"
                         }
                     }
                 ],
@@ -525,7 +525,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -558,7 +558,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.BillPrice"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.BillPrice"
                         }
                     }
                 ],
@@ -566,7 +566,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -645,7 +645,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -668,7 +668,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -700,7 +700,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -746,7 +746,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -783,7 +783,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -814,7 +814,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -866,7 +866,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -943,7 +943,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -987,13 +987,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Deployment"
                                         }
                                     }
                                 }
@@ -1031,13 +1031,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Deployment"
                                         }
                                     }
                                 }
@@ -1071,7 +1071,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1105,13 +1105,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Deployment"
                                         }
                                     }
                                 }
@@ -1156,7 +1156,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1214,7 +1214,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1225,7 +1225,7 @@ const docTemplate = `{
                                                 "list": {
                                                     "type": "array",
                                                     "items": {
-                                                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance"
+                                                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.DBInstance"
                                                     }
                                                 },
                                                 "total": {
@@ -1259,7 +1259,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.CreateInstanceRequest"
                         }
                     }
                 ],
@@ -1269,13 +1269,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.DBInstance"
                                         }
                                     }
                                 }
@@ -1312,13 +1312,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.DBInstance"
                                         }
                                     }
                                 }
@@ -1352,7 +1352,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdateInstanceRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.UpdateInstanceRequest"
                         }
                     }
                 ],
@@ -1362,13 +1362,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.DBInstance"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.DBInstance"
                                         }
                                     }
                                 }
@@ -1401,7 +1401,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1432,7 +1432,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1457,7 +1457,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.CreateInstanceRequest"
                         }
                     }
                 ],
@@ -1465,7 +1465,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1553,7 +1553,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1564,7 +1564,7 @@ const docTemplate = `{
                                                 "list": {
                                                     "type": "array",
                                                     "items": {
-                                                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.QueryLog"
+                                                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.QueryLog"
                                                     }
                                                 },
                                                 "total": {
@@ -1608,13 +1608,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.QueryLog"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.QueryLog"
                                         }
                                     }
                                 }
@@ -1668,7 +1668,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1676,7 +1676,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse"
+                                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.PaginatedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1684,7 +1684,7 @@ const docTemplate = `{
                                                         "data": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo"
+                                                                "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.PermissionInfo"
                                                             }
                                                         }
                                                     }
@@ -1716,7 +1716,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.UpdatePermissionRequest"
                         }
                     }
                 ],
@@ -1724,7 +1724,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1747,7 +1747,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.GrantPermissionRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.GrantPermissionRequest"
                         }
                     }
                 ],
@@ -1755,7 +1755,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1778,7 +1778,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.RevokePermissionRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.RevokePermissionRequest"
                         }
                     }
                 ],
@@ -1786,7 +1786,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1811,7 +1811,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.BatchGrantPermissionRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.BatchGrantPermissionRequest"
                         }
                     }
                 ],
@@ -1819,7 +1819,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1843,7 +1843,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1851,7 +1851,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo"
+                                                "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.PermissionInfo"
                                             }
                                         }
                                     }
@@ -1881,7 +1881,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionResourceRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.UpdatePermissionResourceRequest"
                         }
                     }
                 ],
@@ -1889,7 +1889,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -1922,7 +1922,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1960,7 +1960,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.ExecuteQueryRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.ExecuteQueryRequest"
                         }
                     }
                 ],
@@ -1970,13 +1970,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_service_dms.QueryResult"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_service_dms.QueryResult"
                                         }
                                     }
                                 }
@@ -2020,7 +2020,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2074,13 +2074,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerListResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerListResponse"
                                         }
                                     }
                                 }
@@ -2108,7 +2108,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.CreateJenkinsServerRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest"
                         }
                     }
                 ],
@@ -2118,13 +2118,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServer"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServer"
                                         }
                                     }
                                 }
@@ -2162,13 +2162,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo"
                                         }
                                     }
                                 }
@@ -2203,7 +2203,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateJenkinsServerRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest"
                         }
                     }
                 ],
@@ -2211,7 +2211,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -2241,7 +2241,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -2267,7 +2267,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest"
                         }
                     }
                 ],
@@ -2277,13 +2277,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse"
                                         }
                                     }
                                 }
@@ -2321,13 +2321,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse"
                                         }
                                     }
                                 }
@@ -2372,13 +2372,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse"
                                         }
                                     }
                                 }
@@ -2423,13 +2423,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJobDetailResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse"
                                         }
                                     }
                                 }
@@ -2481,13 +2481,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuildDetailResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse"
                                         }
                                     }
                                 }
@@ -2546,13 +2546,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.GetBuildLogResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.GetBuildLogResponse"
                                         }
                                     }
                                 }
@@ -2604,13 +2604,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.StopBuildResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.StopBuildResponse"
                                         }
                                     }
                                 }
@@ -2653,7 +2653,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.StartJobRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.StartJobRequest"
                         }
                     }
                 ],
@@ -2663,13 +2663,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.StartJobResponse"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.StartJobResponse"
                                         }
                                     }
                                 }
@@ -2707,13 +2707,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsQueue"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueue"
                                         }
                                     }
                                 }
@@ -2751,13 +2751,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo"
                                         }
                                     }
                                 }
@@ -2788,13 +2788,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -2830,19 +2830,81 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/k8s/clusters/:clusterId/effective-action": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s Permission"
+                ],
+                "summary": "获取有效操作权限",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID",
+                        "name": "clusterId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间",
+                        "name": "namespace",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "资源类型 deployment/statefulset/daemonset/pod 等",
+                        "name": "resourceType",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -2878,25 +2940,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -2939,25 +3001,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -2991,19 +3053,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3039,13 +3101,64 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/k8s/clusters/:id/permitted-namespaces": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s Permission"
+                ],
+                "summary": "获取可访问的命名空间",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -3081,25 +3194,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3126,13 +3239,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3159,13 +3272,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3212,13 +3325,61 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s Permission"
+                ],
+                "summary": "更新K8s资源权限",
+                "parameters": [
+                    {
+                        "description": "更新权限请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handler_k8s.UpdatePermissionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3254,19 +3415,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3302,19 +3463,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3354,7 +3515,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3370,13 +3531,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3414,7 +3575,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3483,7 +3644,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3528,7 +3689,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3560,7 +3721,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3592,7 +3753,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3631,7 +3792,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3661,7 +3822,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3692,7 +3853,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3725,7 +3886,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3748,7 +3909,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.CreateOrganizationRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CreateOrganizationRequest"
                         }
                     }
                 ],
@@ -3756,7 +3917,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3775,7 +3936,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3803,7 +3964,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3833,7 +3994,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.UpdateOrganizationRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.UpdateOrganizationRequest"
                         }
                     }
                 ],
@@ -3841,7 +4002,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3867,7 +4028,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3886,7 +4047,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3917,7 +4078,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3945,7 +4106,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -3973,7 +4134,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4001,7 +4162,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4039,7 +4200,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4065,7 +4226,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4092,7 +4253,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4115,7 +4276,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Role"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Role"
                         }
                     }
                 ],
@@ -4123,7 +4284,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4151,7 +4312,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4185,7 +4346,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4215,7 +4376,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Role"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Role"
                         }
                     }
                 ],
@@ -4223,7 +4384,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4249,7 +4410,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4277,7 +4438,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4318,7 +4479,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4364,7 +4525,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4399,7 +4560,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4418,7 +4579,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4441,7 +4602,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.SystemUser"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.SystemUser"
                         }
                     }
                 ],
@@ -4449,7 +4610,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4477,7 +4638,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4512,7 +4673,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4540,7 +4701,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4570,7 +4731,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.SystemUser"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.SystemUser"
                         }
                     }
                 ],
@@ -4578,7 +4739,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4604,7 +4765,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4691,7 +4852,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4699,7 +4860,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse"
+                                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.PaginatedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4707,7 +4868,7 @@ const docTemplate = `{
                                                         "data": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.OperationLog"
+                                                                "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.OperationLog"
                                                             }
                                                         }
                                                     }
@@ -4722,13 +4883,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4769,19 +4930,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4819,13 +4980,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.OperationLog"
+                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.OperationLog"
                                         }
                                     }
                                 }
@@ -4835,13 +4996,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4875,19 +5036,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -4974,7 +5135,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                                 },
                                 {
                                     "type": "object",
@@ -4982,7 +5143,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.PaginatedResponse"
+                                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.PaginatedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4990,7 +5151,7 @@ const docTemplate = `{
                                                         "data": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.PodCommandRecord"
+                                                                "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.PodCommandRecord"
                                                             }
                                                         }
                                                     }
@@ -5005,13 +5166,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5070,19 +5231,78 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/kube/configmap": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s"
+                ],
+                "summary": "获取 ConfigMap 列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID（推荐）",
+                        "name": "cluster_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "集群名称（推荐）",
+                        "name": "cluster_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间",
+                        "name": "namespace",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5148,19 +5368,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5219,19 +5439,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5286,19 +5506,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5357,19 +5577,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5424,19 +5644,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5505,19 +5725,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5572,19 +5792,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5648,19 +5868,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5719,19 +5939,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5786,19 +6006,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5867,19 +6087,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -5934,19 +6154,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6010,19 +6230,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6095,19 +6315,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6166,19 +6386,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6237,19 +6457,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6308,19 +6528,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6375,19 +6595,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6428,19 +6648,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6493,19 +6713,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6564,19 +6784,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6612,19 +6832,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6679,19 +6899,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6776,19 +6996,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6864,19 +7084,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -6949,19 +7169,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7028,19 +7248,131 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/kube/pv": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s"
+                ],
+                "summary": "获取 PV 列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID（推荐）",
+                        "name": "cluster_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "集群名称（推荐）",
+                        "name": "cluster_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/kube/pvc": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s"
+                ],
+                "summary": "获取 PVC 列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID（推荐）",
+                        "name": "cluster_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "集群名称（推荐）",
+                        "name": "cluster_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间",
+                        "name": "namespace",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7099,19 +7431,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7147,19 +7479,78 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/kube/secret": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s"
+                ],
+                "summary": "获取 Secret 列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID（推荐）",
+                        "name": "cluster_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "集群名称（推荐）",
+                        "name": "cluster_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间",
+                        "name": "namespace",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7218,19 +7609,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7289,19 +7680,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7356,19 +7747,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7437,19 +7828,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7504,19 +7895,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7580,19 +7971,72 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/kube/storageclass": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s"
+                ],
+                "summary": "获取 StorageClass 列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID（推荐）",
+                        "name": "cluster_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "集群名称（推荐）",
+                        "name": "cluster_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7659,13 +8103,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7701,25 +8145,97 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s"
+                ],
+                "summary": "删除 K8s 资源",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "集群ID",
+                        "name": "cluster_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "集群名称",
+                        "name": "cluster_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间（PV和StorageClass不需要）",
+                        "name": "namespace",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "资源类型（service, ingress, deployment, daemonset, statefulset, pvc 等）",
+                        "name": "resource_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "资源名称",
+                        "name": "resource_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7763,19 +8279,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Response"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
@@ -7783,14 +8299,14 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_fisker_zjump-backend_internal_model.Approval": {
+        "github_com_fisker086_keyops_internal_model.Approval": {
             "type": "object",
             "properties": {
                 "applicant": {
                     "description": "关联",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.User"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.User"
                         }
                     ]
                 },
@@ -7886,7 +8402,7 @@ const docTemplate = `{
                     "description": "审批平台",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalPlatform"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.ApprovalPlatform"
                         }
                     ]
                 },
@@ -7928,7 +8444,7 @@ const docTemplate = `{
                     "description": "状态",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalStatus"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.ApprovalStatus"
                         }
                     ]
                 },
@@ -7940,7 +8456,7 @@ const docTemplate = `{
                     "description": "类型",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.ApprovalType"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.ApprovalType"
                         }
                     ]
                 },
@@ -7949,7 +8465,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.ApprovalPlatform": {
+        "github_com_fisker086_keyops_internal_model.ApprovalPlatform": {
             "type": "string",
             "enum": [
                 "internal",
@@ -7980,7 +8496,7 @@ const docTemplate = `{
                 "ApprovalPlatformCustom"
             ]
         },
-        "github_com_fisker_zjump-backend_internal_model.ApprovalStatus": {
+        "github_com_fisker086_keyops_internal_model.ApprovalStatus": {
             "type": "string",
             "enum": [
                 "pending",
@@ -8011,7 +8527,7 @@ const docTemplate = `{
                 "ApprovalStatusExpired"
             ]
         },
-        "github_com_fisker_zjump-backend_internal_model.ApprovalType": {
+        "github_com_fisker086_keyops_internal_model.ApprovalType": {
             "type": "string",
             "enum": [
                 "host_access",
@@ -8034,7 +8550,7 @@ const docTemplate = `{
                 "ApprovalTypeDeployment"
             ]
         },
-        "github_com_fisker_zjump-backend_internal_model.BillPrice": {
+        "github_com_fisker086_keyops_internal_model.BillPrice": {
             "type": "object",
             "required": [
                 "vendor"
@@ -8075,7 +8591,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.CreateApplicationDeployBindingRequest": {
+        "github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest": {
             "type": "object",
             "required": [
                 "applicationId",
@@ -8138,7 +8654,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.CreateApplicationRequest": {
+        "github_com_fisker086_keyops_internal_model.CreateApplicationRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -8210,7 +8726,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.CreateJenkinsServerRequest": {
+        "github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest": {
             "type": "object",
             "required": [
                 "alias",
@@ -8241,7 +8757,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.CreateOrganizationRequest": {
+        "github_com_fisker086_keyops_internal_model.CreateOrganizationRequest": {
             "type": "object",
             "required": [
                 "unitCode",
@@ -8275,7 +8791,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.DBInstance": {
+        "github_com_fisker086_keyops_internal_model.DBInstance": {
             "type": "object",
             "properties": {
                 "authDatabase": {
@@ -8333,7 +8849,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.Deployment": {
+        "github_com_fisker086_keyops_internal_model.Deployment": {
             "type": "object",
             "properties": {
                 "artifact_url": {
@@ -8436,7 +8952,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.GetBuildLogResponse": {
+        "github_com_fisker086_keyops_internal_model.GetBuildLogResponse": {
             "type": "object",
             "properties": {
                 "buildNumber": {
@@ -8462,7 +8978,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsBuild": {
+        "github_com_fisker086_keyops_internal_model.JenkinsBuild": {
             "type": "object",
             "properties": {
                 "building": {
@@ -8504,18 +9020,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsBuildDetailResponse": {
+        "github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse": {
             "type": "object",
             "properties": {
                 "build": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
                 },
                 "server": {
                     "type": "string"
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsComputer": {
+        "github_com_fisker086_keyops_internal_model.JenkinsComputer": {
             "type": "object",
             "properties": {
                 "displayName": {
@@ -8524,7 +9040,7 @@ const docTemplate = `{
                 "executors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsExecutor"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor"
                     }
                 },
                 "icon": {
@@ -8543,7 +9059,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "loadStatistics": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsLoadStatistics"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics"
                 },
                 "manualLaunchAllowed": {
                     "type": "boolean"
@@ -8562,7 +9078,7 @@ const docTemplate = `{
                 "oneOffExecutors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsExecutor"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor"
                     }
                 },
                 "temporarilyOffline": {
@@ -8570,7 +9086,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsExecutor": {
+        "github_com_fisker086_keyops_internal_model.JenkinsExecutor": {
             "type": "object",
             "properties": {
                 "currentExecutable": {},
@@ -8589,7 +9105,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsJob": {
+        "github_com_fisker086_keyops_internal_model.JenkinsJob": {
             "type": "object",
             "properties": {
                 "_class": {
@@ -8608,16 +9124,16 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "lastBuild": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
                 },
                 "lastFailedBuild": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
                 },
                 "lastStableBuild": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
                 },
                 "lastSuccessfulBuild": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
                 },
                 "name": {
                     "type": "string"
@@ -8627,30 +9143,30 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsJobDetailResponse": {
+        "github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse": {
             "type": "object",
             "properties": {
                 "builds": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsBuild"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
                     }
                 },
                 "job": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob"
                 },
                 "server": {
                     "type": "string"
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsJobListResponse": {
+        "github_com_fisker086_keyops_internal_model.JenkinsJobListResponse": {
             "type": "object",
             "properties": {
                 "jobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob"
                     }
                 },
                 "server": {
@@ -8661,7 +9177,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsLabel": {
+        "github_com_fisker086_keyops_internal_model.JenkinsLabel": {
             "type": "object",
             "properties": {
                 "name": {
@@ -8669,7 +9185,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsLoadStatistics": {
+        "github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics": {
             "type": "object",
             "properties": {
                 "busyExecutors": {
@@ -8686,18 +9202,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsQueue": {
+        "github_com_fisker086_keyops_internal_model.JenkinsQueue": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsQueueItem"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueueItem"
                     }
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsQueueItem": {
+        "github_com_fisker086_keyops_internal_model.JenkinsQueueItem": {
             "type": "object",
             "properties": {
                 "actions": {
@@ -8726,7 +9242,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "task": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsTask"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsTask"
                 },
                 "url": {
                     "type": "string"
@@ -8736,7 +9252,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsServer": {
+        "github_com_fisker086_keyops_internal_model.JenkinsServer": {
             "type": "object",
             "properties": {
                 "alias": {
@@ -8770,7 +9286,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo": {
+        "github_com_fisker086_keyops_internal_model.JenkinsServerInfo": {
             "type": "object",
             "properties": {
                 "alias": {
@@ -8799,13 +9315,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsServerListResponse": {
+        "github_com_fisker086_keyops_internal_model.JenkinsServerListResponse": {
             "type": "object",
             "properties": {
                 "list": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsServerInfo"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo"
                     }
                 },
                 "total": {
@@ -8813,19 +9329,19 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo": {
+        "github_com_fisker086_keyops_internal_model.JenkinsSystemInfo": {
             "type": "object",
             "properties": {
                 "assignedLabels": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsLabel"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLabel"
                     }
                 },
                 "computers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsComputer"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsComputer"
                     }
                 },
                 "mode": {
@@ -8847,7 +9363,7 @@ const docTemplate = `{
                     }
                 },
                 "primaryView": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsView"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView"
                 },
                 "unlabeledLoad": {
                     "type": "object",
@@ -8867,12 +9383,12 @@ const docTemplate = `{
                 "views": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsView"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView"
                     }
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsTask": {
+        "github_com_fisker086_keyops_internal_model.JenkinsTask": {
             "type": "object",
             "properties": {
                 "color": {
@@ -8886,7 +9402,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.JenkinsView": {
+        "github_com_fisker086_keyops_internal_model.JenkinsView": {
             "type": "object",
             "properties": {
                 "description": {
@@ -8895,7 +9411,7 @@ const docTemplate = `{
                 "jobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsJob"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob"
                     }
                 },
                 "name": {
@@ -8906,7 +9422,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.OperationLog": {
+        "github_com_fisker086_keyops_internal_model.OperationLog": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -8944,7 +9460,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.PaginatedResponse": {
+        "github_com_fisker086_keyops_internal_model.PaginatedResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -8962,7 +9478,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.PodCommandRecord": {
+        "github_com_fisker086_keyops_internal_model.PodCommandRecord": {
             "type": "object",
             "properties": {
                 "clusterId": {
@@ -9000,7 +9516,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.QueryLog": {
+        "github_com_fisker086_keyops_internal_model.QueryLog": {
             "type": "object",
             "properties": {
                 "affectedRows": {
@@ -9059,7 +9575,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.Response": {
+        "github_com_fisker086_keyops_internal_model.Response": {
             "type": "object",
             "properties": {
                 "code": {
@@ -9071,7 +9587,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.Role": {
+        "github_com_fisker086_keyops_internal_model.Role": {
             "type": "object",
             "properties": {
                 "color": {
@@ -9108,7 +9624,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.StartJobRequest": {
+        "github_com_fisker086_keyops_internal_model.StartJobRequest": {
             "type": "object",
             "properties": {
                 "parameters": {
@@ -9122,7 +9638,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.StartJobResponse": {
+        "github_com_fisker086_keyops_internal_model.StartJobResponse": {
             "type": "object",
             "properties": {
                 "buildNumber": {
@@ -9145,7 +9661,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.StopBuildResponse": {
+        "github_com_fisker086_keyops_internal_model.StopBuildResponse": {
             "type": "object",
             "properties": {
                 "buildNumber": {
@@ -9165,7 +9681,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.SystemUser": {
+        "github_com_fisker086_keyops_internal_model.SystemUser": {
             "type": "object",
             "properties": {
                 "authType": {
@@ -9218,7 +9734,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionRequest": {
+        "github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -9238,7 +9754,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.TestJenkinsConnectionResponse": {
+        "github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -9251,11 +9767,11 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "systemInfo": {
-                    "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.JenkinsSystemInfo"
+                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo"
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.UpdateApplicationDeployBindingRequest": {
+        "github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest": {
             "type": "object",
             "properties": {
                 "argocdApplication": {
@@ -9297,7 +9813,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.UpdateApplicationRequest": {
+        "github_com_fisker086_keyops_internal_model.UpdateApplicationRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -9369,7 +9885,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.UpdateJenkinsServerRequest": {
+        "github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest": {
             "type": "object",
             "properties": {
                 "alias": {
@@ -9394,7 +9910,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.UpdateOrganizationRequest": {
+        "github_com_fisker086_keyops_internal_model.UpdateOrganizationRequest": {
             "type": "object",
             "required": [
                 "unitName",
@@ -9424,7 +9940,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_model.User": {
+        "github_com_fisker086_keyops_internal_model.User": {
             "type": "object",
             "properties": {
                 "authMethod": {
@@ -9493,7 +10009,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.BatchGrantPermissionRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.BatchGrantPermissionRequest": {
             "type": "object",
             "required": [
                 "instanceId",
@@ -9536,7 +10052,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.CreateInstanceRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.CreateInstanceRequest": {
             "type": "object",
             "required": [
                 "dbType",
@@ -9593,7 +10109,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.ExecuteQueryRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.ExecuteQueryRequest": {
             "type": "object",
             "required": [
                 "databaseName",
@@ -9612,7 +10128,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.GrantPermissionRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.GrantPermissionRequest": {
             "type": "object",
             "required": [
                 "instanceId",
@@ -9651,7 +10167,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.PermissionInfo": {
+        "github_com_fisker086_keyops_internal_service_dms.PermissionInfo": {
             "type": "object",
             "properties": {
                 "databaseName": {
@@ -9686,7 +10202,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.QueryResult": {
+        "github_com_fisker086_keyops_internal_service_dms.QueryResult": {
             "type": "object",
             "properties": {
                 "affectedRows": {
@@ -9727,7 +10243,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.RevokePermissionRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.RevokePermissionRequest": {
             "type": "object",
             "required": [
                 "instanceId",
@@ -9757,7 +10273,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.UpdateInstanceRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.UpdateInstanceRequest": {
             "type": "object",
             "properties": {
                 "authDatabase": {
@@ -9802,7 +10318,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.UpdatePermissionRequest": {
             "type": "object",
             "required": [
                 "instanceId",
@@ -9838,7 +10354,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_fisker_zjump-backend_internal_service_dms.UpdatePermissionResourceRequest": {
+        "github_com_fisker086_keyops_internal_service_dms.UpdatePermissionResourceRequest": {
             "type": "object",
             "required": [
                 "newInstanceId",
@@ -10130,7 +10646,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_fisker_zjump-backend_internal_model.Deployment"
+                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Deployment"
                     }
                 },
                 "page": {
@@ -10308,6 +10824,77 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_api_handler_k8s.UpdatePermissionRequest": {
+            "type": "object",
+            "required": [
+                "new",
+                "old"
+            ],
+            "properties": {
+                "new": {
+                    "type": "object",
+                    "required": [
+                        "action",
+                        "clusterId",
+                        "namespace"
+                    ],
+                    "properties": {
+                        "action": {
+                            "type": "string"
+                        },
+                        "clusterId": {
+                            "type": "string"
+                        },
+                        "namespace": {
+                            "type": "string"
+                        },
+                        "resourceName": {
+                            "type": "string"
+                        },
+                        "resourceType": {
+                            "type": "string"
+                        },
+                        "roleId": {
+                            "type": "string"
+                        },
+                        "userId": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "old": {
+                    "type": "object",
+                    "required": [
+                        "action",
+                        "clusterId",
+                        "namespace"
+                    ],
+                    "properties": {
+                        "action": {
+                            "type": "string"
+                        },
+                        "clusterId": {
+                            "type": "string"
+                        },
+                        "namespace": {
+                            "type": "string"
+                        },
+                        "resourceName": {
+                            "type": "string"
+                        },
+                        "resourceType": {
+                            "type": "string"
+                        },
+                        "roleId": {
+                            "type": "string"
+                        },
+                        "userId": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },

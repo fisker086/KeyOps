@@ -1,1 +1,0 @@
-import{u as t,j as r,B as a,a9 as o,aa as n,T as e}from"./index-DN-w3rpt.js";function l(){const{t:s}=t();return r.jsx(a,{sx:{p:3},children:r.jsx(o,{children:r.jsxs(n,{children:[r.jsx(e,{variant:"h5",gutterBottom:!0,children:s("menu.billResource")}),r.jsx(e,{variant:"body2",color:"text.secondary",children:s("bill.resource.description")})]})})})}export{l as default};

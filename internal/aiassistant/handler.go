@@ -81,7 +81,13 @@ func (h *Handler) CreateSessionForSchedule(scheduleID, createdBy string) (string
 	if s == nil {
 		return "", fmt.Errorf("schedule not found: %s", scheduleID)
 	}
-	return h.sessionMgr.CreateSession(s.TaskPrompt, s.EnvID, s.Role, "", "", scheduleID, createdBy)
+	modelName := ""
+	if s.ModelID != "" && h.store != nil {
+		if mc, _ := h.store.GetModel(s.ModelID); mc != nil {
+			modelName = mc.Name
+		}
+	}
+	return h.sessionMgr.CreateSession(s.TaskPrompt, s.EnvID, s.Role, s.ModelID, modelName, scheduleID, createdBy)
 }
 
 // RunAgentCore 同步执行巡检（供 Temporal Activity 使用）
@@ -255,11 +261,16 @@ func (h *Handler) listEnvironments(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list environments"})
 			return
 		}
-		// 无 DB 环境或全部被角色过滤时返回空数组
+		for i := range list {
+			list[i].EnabledSkills = GetEnabledSkills(&list[i], h.runners)
+		}
 		c.JSON(http.StatusOK, list)
 		return
 	}
 	list := h.envMgr.ListEnvironments()
+	for i := range list {
+		list[i].EnabledSkills = GetEnabledSkills(&list[i], h.runners)
+	}
 	c.JSON(http.StatusOK, list)
 }
 
@@ -494,6 +505,7 @@ func (h *Handler) listSchedules(c *gin.Context) {
 type scheduleReq struct {
 	Name                   string  `json:"name"`
 	EnvID                  string  `json:"env_id"`
+	ModelID                string  `json:"model_id"`
 	Cron                   string  `json:"cron"`
 	TaskPrompt             string  `json:"task_prompt"`
 	Role                   string  `json:"role"`
@@ -515,7 +527,7 @@ func (h *Handler) addSchedule(c *gin.Context) {
 	if req.Enabled != nil {
 		enabled = *req.Enabled
 	}
-	id, err := h.scheduleMgr.AddSchedule(req.Name, req.EnvID, req.Cron, req.TaskPrompt, req.Role, req.LarkBotID, req.LarkGroupName, req.LarkFolderID, req.ResponsibleUser, enabled, req.NotificationChannelIDs)
+	id, err := h.scheduleMgr.AddSchedule(req.Name, req.EnvID, req.ModelID, req.Cron, req.TaskPrompt, req.Role, req.LarkBotID, req.LarkGroupName, req.LarkFolderID, req.ResponsibleUser, enabled, req.NotificationChannelIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -568,7 +580,13 @@ func (h *Handler) TriggerScheduleByID(ctx context.Context, scheduleID string) er
 	if createdBy == "" {
 		createdBy = "system"
 	}
-	sessionID, err := h.sessionMgr.CreateSession(s.TaskPrompt, s.EnvID, s.Role, "", "", scheduleID, createdBy)
+	modelName := ""
+	if s.ModelID != "" && h.store != nil {
+		if mc, _ := h.store.GetModel(s.ModelID); mc != nil {
+			modelName = mc.Name
+		}
+	}
+	sessionID, err := h.sessionMgr.CreateSession(s.TaskPrompt, s.EnvID, s.Role, s.ModelID, modelName, scheduleID, createdBy)
 	if err != nil {
 		if ok {
 			_ = lock.Unlock()
@@ -637,7 +655,13 @@ func (h *Handler) triggerSchedule(c *gin.Context) {
 	if u, exists := c.Get("username"); exists {
 		createdBy, _ = u.(string)
 	}
-	sessionID, err := h.sessionMgr.CreateSession(s.TaskPrompt, s.EnvID, s.Role, "", "", scheduleID, createdBy)
+	modelName := ""
+	if s.ModelID != "" && h.store != nil {
+		if mc, _ := h.store.GetModel(s.ModelID); mc != nil {
+			modelName = mc.Name
+		}
+	}
+	sessionID, err := h.sessionMgr.CreateSession(s.TaskPrompt, s.EnvID, s.Role, s.ModelID, modelName, scheduleID, createdBy)
 	if err != nil {
 		if ok {
 			_ = lock.Unlock()
@@ -671,6 +695,9 @@ func (h *Handler) updateSchedule(c *gin.Context) {
 	}
 	if req.EnvID != "" {
 		updates["env_id"] = req.EnvID
+	}
+	if req.ModelID != "" {
+		updates["model_id"] = req.ModelID
 	}
 	if req.Cron != "" {
 		updates["cron"] = req.Cron
@@ -706,15 +733,14 @@ func (h *Handler) deleteSchedule(c *gin.Context) {
 }
 
 // ---------- 目标环境 CRUD（需 store 非 nil）----------
+// 仅支持三种技能：Prometheus（prom_url）、Grafana（graf_url/graf_token）、K8s（k8s_cluster_id）
 type environmentReq struct {
-	Name           string                 `json:"name"`
-	PromURL        string                 `json:"prom_url"`
-	GrafURL        string                 `json:"graf_url"`
-	GrafToken      string                 `json:"graf_token"`
-	Cluster        string                 `json:"cluster"`
-	K8sClusterID   string                 `json:"k8s_cluster_id"` // 关联 K8s 集群 ID（来自 k8s 管理）
-	AllowedRoleIDs []string               `json:"allowed_role_ids"`
-	ExtraConfig    map[string]interface{} `json:"extra_config"` // 扩展配置，非 Prometheus/Grafana 时使用
+	Name           string   `json:"name"`
+	PromURL        string   `json:"prom_url"`
+	GrafURL        string   `json:"graf_url"`
+	GrafToken      string   `json:"graf_token"`
+	K8sClusterID   string   `json:"k8s_cluster_id"` // 关联 K8s 集群 ID（来自 k8s 管理）
+	AllowedRoleIDs []string `json:"allowed_role_ids"`
 }
 
 func (h *Handler) addEnvironment(c *gin.Context) {
@@ -732,10 +758,8 @@ func (h *Handler) addEnvironment(c *gin.Context) {
 		PromURL:        req.PromURL,
 		GrafURL:        req.GrafURL,
 		GrafToken:      req.GrafToken,
-		Cluster:        req.Cluster,
 		K8sClusterID:   req.K8sClusterID,
 		AllowedRoleIDs: req.AllowedRoleIDs,
-		ExtraConfig:    req.ExtraConfig,
 	}
 	if err := h.store.CreateEnvironment(e); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -765,10 +789,8 @@ func (h *Handler) updateEnvironment(c *gin.Context) {
 		PromURL:        req.PromURL,
 		GrafURL:        req.GrafURL,
 		GrafToken:      req.GrafToken,
-		Cluster:        req.Cluster,
 		K8sClusterID:   req.K8sClusterID,
 		AllowedRoleIDs: req.AllowedRoleIDs,
-		ExtraConfig:    req.ExtraConfig,
 	}
 	if err := h.store.UpdateEnvironment(e); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
