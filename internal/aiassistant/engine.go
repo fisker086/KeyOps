@@ -28,6 +28,7 @@ type Engine struct {
 	prom         *PrometheusClient
 	graf         *GrafanaClient
 	env          *Environment
+	promHistory  []interface{}          // 本轮会话内真实 execute_promql_query 结果（用于分析工具防幻觉）
 	runners  map[string]tools.Runner // 各工具集执行器（如 k8s），由 app 注入
 	baseURL  string                 // 用于错误时日志
 	apiKey   string                 // 用于错误时日志（401 时 key 错误，打印无妨）
@@ -92,6 +93,63 @@ func (e *Engine) logLLMConfig(err error) {
 		e.model, e.baseURL, e.apiKey, err)
 }
 
+func (e *Engine) createChatCompletion(ctx context.Context, req openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
+	resp, err := e.client.CreateChatCompletion(ctx, req)
+	if err == nil {
+		return resp, nil
+	}
+
+	// Gemini/Vertex 在部分网关上对 stop 字段兼容性较差，命中 INVALID_ARGUMENT 时做一次无 stop 兼容重试。
+	if len(req.Stop) > 0 && strings.Contains(strings.ToLower(e.model), "gemini") && strings.Contains(strings.ToLower(err.Error()), "invalid_argument") {
+		reqNoStop := req
+		reqNoStop.Stop = nil
+		if resp2, err2 := e.client.CreateChatCompletion(ctx, reqNoStop); err2 == nil {
+			logger.Warnf("ai_assistant compat retry success: model=%s base_url=%s (without stop)", e.model, e.baseURL)
+			return resp2, nil
+		} else {
+			err = fmt.Errorf("%v; retry_without_stop failed: %v", err, err2)
+		}
+	}
+
+	// 对网关/网络瞬时错误做一次轻量重试，减少偶发抖动。
+	if isTransientLLMError(err) {
+		time.Sleep(300 * time.Millisecond)
+		if resp2, err2 := e.client.CreateChatCompletion(ctx, req); err2 == nil {
+			logger.Warnf("ai_assistant transient retry success: model=%s base_url=%s", e.model, e.baseURL)
+			return resp2, nil
+		} else {
+			err = fmt.Errorf("%v; retry_transient failed: %v", err, err2)
+		}
+	}
+	return openai.ChatCompletionResponse{}, err
+}
+
+func isTransientLLMError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "status code: 500") ||
+		strings.Contains(s, "status code: 502") ||
+		strings.Contains(s, "status code: 503") ||
+		strings.Contains(s, "status code: 504") ||
+		strings.Contains(s, "timeout") ||
+		strings.Contains(s, "temporarily unavailable") ||
+		strings.Contains(s, "connection reset")
+}
+
+func (e *Engine) formatLLMError(err error) string {
+	if err == nil {
+		return "LLM Error: unknown"
+	}
+	raw := err.Error()
+	lower := strings.ToLower(raw)
+	if strings.Contains(lower, "invalid_argument") {
+		return "LLM 请求参数无效（INVALID_ARGUMENT）。请检查模型名称、Base URL、项目/区域配置，或切换到稳定模型版本。原始错误: " + raw
+	}
+	return "LLM Error: " + raw
+}
+
 // isMetaQuestion 判断是否为“身份/能力”类问题，此类问题应直接回答，不进入工具循环。
 func isMetaQuestion(task string) bool {
 	t := strings.TrimSpace(task)
@@ -121,14 +179,20 @@ func (e *Engine) Run(ctx context.Context, task, role, systemPromptOverride strin
 	if systemPrompt == "" {
 		systemPrompt = GetFallbackSystemPrompt()
 	}
-	// 单 Agent 多 Skills：根据环境配置注入当前可用工具，避免 LLM 调用未配置的工具
+	// 单 Agent 多 Skills：工具/技能说明在前，数据库 system_prompt 在后，保证数据库定制可覆盖
 	if avail := GetAvailableToolsPrompt(e.env, e.runners); avail != "" {
-		systemPrompt = systemPrompt + avail
+		systemPrompt = avail + "\n\n---\n\n" + systemPrompt
 	}
 	messages := []openai.ChatCompletionMessage{
 		{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},
 		{Role: openai.ChatMessageRoleUser, Content: task},
 	}
+	requireProm := role == "inspector" && e.prom != nil
+	requireGraf := role == "inspector" && e.graf != nil
+	requireK8s := role == "inspector" && e.env != nil && e.env.K8sClusterID != "" && e.runners["k8s"] != nil
+	usedPromData := false
+	usedGrafData := false
+	usedK8sData := false
 
 	// 身份/能力类问题：单轮直接回答，不调用工具，避免答非所问
 	if isMetaQuestion(task) {
@@ -141,10 +205,10 @@ func (e *Engine) Run(ctx context.Context, task, role, systemPromptOverride strin
 			Temperature: 0.1,
 			Stop:        []string{"Observation:"},
 		}
-		resp, err := e.client.CreateChatCompletion(ctx, req)
+		resp, err := e.createChatCompletion(ctx, req)
 		if err != nil {
 			e.logLLMConfig(err)
-			errMsg := fmt.Sprintf("LLM Error: %v", err)
+			errMsg := e.formatLLMError(err)
 			if callback != nil {
 				callback("error", map[string]interface{}{"message": errMsg})
 			}
@@ -172,10 +236,10 @@ func (e *Engine) Run(ctx context.Context, task, role, systemPromptOverride strin
 			Temperature: 0.1,
 			Stop:        []string{"Observation:"},
 		}
-		resp, err := e.client.CreateChatCompletion(ctx, req)
+		resp, err := e.createChatCompletion(ctx, req)
 		if err != nil {
 			e.logLLMConfig(err)
-			errMsg := fmt.Sprintf("LLM Error: %v", err)
+			errMsg := e.formatLLMError(err)
 			if callback != nil {
 				callback("error", map[string]interface{}{"message": errMsg})
 			}
@@ -193,6 +257,27 @@ func (e *Engine) Run(ctx context.Context, task, role, systemPromptOverride strin
 			callback("thought", map[string]interface{}{"step": step + 1, "content": content, "thought": thought})
 		}
 		if strings.Contains(content, "Final Answer:") {
+			missing := make([]string, 0, 3)
+			if requireProm && !usedPromData {
+				missing = append(missing, "Prometheus 指标查询（execute_promql_query）")
+			}
+			if requireGraf && !usedGrafData {
+				missing = append(missing, "Grafana 仪表盘数据（list_all_dashboards/get_dashboard_metadata）")
+			}
+			if requireK8s && !usedK8sData {
+				missing = append(missing, "K8s 集群数据（k8s_* 工具）")
+			}
+			if len(missing) > 0 && step < e.maxSteps-1 {
+				observation := "Error: 巡检数据源不完整，仍缺少 " + strings.Join(missing, " + ") + "。请先补齐数据采集后再给出 Final Answer。"
+				if callback != nil {
+					callback("observation", map[string]interface{}{"content": observation})
+				}
+				messages = append(messages,
+					openai.ChatCompletionMessage{Role: openai.ChatMessageRoleAssistant, Content: content},
+					openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: "Observation: " + observation},
+				)
+				continue
+			}
 			if callback != nil {
 				callback("final_answer", map[string]interface{}{"content": content})
 			}
@@ -203,6 +288,15 @@ func (e *Engine) Run(ctx context.Context, task, role, systemPromptOverride strin
 		if actionName != "" {
 			if callback != nil {
 				callback("action", map[string]interface{}{"name": actionName, "input": parseJSON(actionInputStr)})
+			}
+			if actionName == "execute_promql_query" {
+				usedPromData = true
+			}
+			if actionName == "list_all_dashboards" || actionName == "get_dashboard_metadata" {
+				usedGrafData = true
+			}
+			if strings.HasPrefix(actionName, "k8s_") {
+				usedK8sData = true
 			}
 			observation = e.executeTool(actionName, actionInputStr)
 		} else {
@@ -277,6 +371,17 @@ func parseJSON(s string) map[string]interface{} {
 	return m
 }
 
+func isOverlyBroadPromQL(query string) bool {
+	q := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(query), " ", ""))
+	if strings.Contains(q, "{__name__=~'.+'}") || strings.Contains(q, "{__name__=~\".+\"}") {
+		return true
+	}
+	if strings.Contains(q, "topk(") && strings.Contains(q, "__name__=~") {
+		return true
+	}
+	return false
+}
+
 func (e *Engine) executeTool(name, inputStr string) interface{} {
 	input := parseJSON(inputStr)
 	if input == nil && inputStr != "" {
@@ -284,12 +389,19 @@ func (e *Engine) executeTool(name, inputStr string) interface{} {
 	}
 	switch name {
 	case "detect_anomaly":
-		if input["result_list"] != nil {
-			return DetectAnomaly(input["result_list"])
+		// 防止模型伪造 result_list：强制基于上一条真实 execute_promql_query 结果分析
+		if len(e.promHistory) > 0 {
+			return DetectAnomaly(e.promHistory[len(e.promHistory)-1])
 		}
-		return "Error: result_list required"
+		return "Error: detect_anomaly 必须基于上一条 execute_promql_query 的真实 Observation 数据，请先执行指标查询。"
 	case "check_correlation":
-		return CheckCorrelation(input["result_a"], input["result_b"])
+		// 防止模型伪造 result_a/result_b：强制基于最近两条真实 PromQL 结果计算
+		if len(e.promHistory) >= 2 {
+			a := e.promHistory[len(e.promHistory)-2]
+			b := e.promHistory[len(e.promHistory)-1]
+			return CheckCorrelation(a, b)
+		}
+		return "Error: check_correlation 需要至少两条 execute_promql_query 的真实 Observation 数据。"
 	case "find_metrics_by_keyword":
 		if e.prom == nil {
 			return "Error: Prometheus not configured"
@@ -312,6 +424,9 @@ func (e *Engine) executeTool(name, inputStr string) interface{} {
 		if query == "" {
 			return "Error: 'query' parameter must be a string."
 		}
+		if isOverlyBroadPromQL(query) {
+			return "Error: PromQL 查询范围过大（疑似全量扫描，如 {__name__=~'.+'}）。请先用 find_metrics_by_keyword 缩小指标范围后再查询。"
+		}
 		duration, _ := input["duration"].(string)
 		if duration == "" {
 			duration = "1h"
@@ -321,6 +436,9 @@ func (e *Engine) executeTool(name, inputStr string) interface{} {
 			step = "1m"
 		}
 		out, _ := e.prom.ExecutePromQLQuery(query, duration, step, input["start_time"], input["end_time"])
+		if _, isStr := out.(string); !isStr {
+			e.promHistory = append(e.promHistory, out)
+		}
 		return out
 	case "list_all_dashboards":
 		if e.graf == nil {

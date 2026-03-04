@@ -10,9 +10,10 @@ import (
 
 // SkillID 技能标识，与目标环境配置对应
 const (
-	SkillPrometheus = "prometheus"
-	SkillGrafana    = "grafana"
-	SkillK8s        = "k8s"
+	SkillPrometheus  = "prometheus"
+	SkillGrafana     = "grafana"
+	SkillK8s         = "k8s"
+	SkillK8sInstall  = "k8s-install"
 )
 
 // GetEnabledSkills 根据环境配置返回已启用的技能列表，供 UI 展示
@@ -32,7 +33,27 @@ func GetEnabledSkills(env *Environment, runners map[string]tools.Runner) []strin
 			skills = append(skills, SkillK8s)
 		}
 	}
+	// K8s 安装：环境 id 为 k8s-install 或配置了 k8s_install_nodes
+	if env.ID == "k8s-install" || hasK8sInstallNodes(env.ExtraConfig) {
+		skills = append(skills, SkillK8sInstall)
+	}
 	return skills
+}
+
+func hasK8sInstallNodes(extra map[string]interface{}) bool {
+	if extra == nil {
+		return false
+	}
+	n, ok := extra["k8s_install_nodes"].(map[string]interface{})
+	if !ok || n == nil {
+		return false
+	}
+	for _, k := range []string{"master", "worker", "etcd"} {
+		if arr, ok := n[k].([]interface{}); ok && len(arr) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // GetAvailableToolsPrompt 根据环境配置返回「当前可用技能」的提示词片段，仅包含已配置的工具

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fisker086/keyops/pkg/logger"
 )
 
 // PrometheusClient Prometheus HTTP 客户端
@@ -22,7 +24,7 @@ type PrometheusClient struct {
 // NewPrometheusClient 创建
 func NewPrometheusClient(baseURL string, verifySSL bool) *PrometheusClient {
 	baseURL = strings.TrimSuffix(baseURL, "/")
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	if !verifySSL {
 		client.Transport = &http.Transport{}
 		// 生产环境可注入 InsecureSkipVerify
@@ -43,6 +45,7 @@ type PromQueryRangeResult struct {
 
 // ExecutePromQLQuery 执行范围查询
 func (p *PrometheusClient) ExecutePromQLQuery(query, duration, step string, startTime, endTime interface{}) (interface{}, error) {
+	begin := time.Now()
 	var start, end int64
 	now := time.Now().Unix()
 	if startTime != nil {
@@ -71,17 +74,41 @@ func (p *PrometheusClient) ExecutePromQLQuery(query, duration, step string, star
 	}
 	u := p.baseURL + "/api/v1/query_range"
 	reqURL := u + "?query=" + url.QueryEscape(query) + "&start=" + strconv.FormatInt(start, 10) + "&end=" + strconv.FormatInt(end, 10) + "&step=" + url.QueryEscape(step)
-	resp, err := p.httpClient.Get(reqURL)
+	logger.Infof("ai_assistant prom request: api=query_range base=%s query=%q duration=%s step=%s start=%d end=%d",
+		p.baseURL, truncateForLog(query, 180), duration, step, start, end)
+	var (
+		resp *http.Response
+		err  error
+	)
+	for attempt := 1; attempt <= 2; attempt++ {
+		resp, err = p.httpClient.Get(reqURL)
+		if err == nil {
+			break
+		}
+		if attempt == 1 && isPromTimeoutErr(err) {
+			logger.Warnf("ai_assistant prom request timeout, retry once: api=query_range base=%s elapsed=%s",
+				p.baseURL, time.Since(begin))
+			time.Sleep(250 * time.Millisecond)
+			continue
+		}
+		break
+	}
 	if err != nil {
+		logger.Warnf("ai_assistant prom request failed: api=query_range base=%s err=%v elapsed=%s",
+			p.baseURL, err, time.Since(begin))
 		return fmt.Sprintf("Error executing PromQL: %v", err), nil
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	var result PromQueryRangeResult
 	if err := json.Unmarshal(body, &result); err != nil {
+		logger.Warnf("ai_assistant prom decode failed: api=query_range base=%s status=%d elapsed=%s",
+			p.baseURL, resp.StatusCode, time.Since(begin))
 		return string(body), nil
 	}
 	if result.Status != "success" {
+		logger.Warnf("ai_assistant prom non-success: api=query_range base=%s status=%d prom_status=%s elapsed=%s",
+			p.baseURL, resp.StatusCode, result.Status, time.Since(begin))
 		return "Error: " + string(body), nil
 	}
 	// 转为与 Python 一致的 []map: metric + values
@@ -100,6 +127,8 @@ func (p *PrometheusClient) ExecutePromQLQuery(query, duration, step string, star
 			"values": values,
 		})
 	}
+	logger.Infof("ai_assistant prom response: api=query_range base=%s status=%d series=%d elapsed=%s",
+		p.baseURL, resp.StatusCode, len(out), time.Since(begin))
 	return out, nil
 }
 
@@ -215,9 +244,37 @@ func toFloat(v interface{}) (int64, float64) {
 
 // FindMetricsByKeyword 按关键字搜索指标名
 func (p *PrometheusClient) FindMetricsByKeyword(keyword string) (interface{}, error) {
+	begin := time.Now()
+	keyword = strings.TrimSpace(keyword)
+	// 快路径：关键词像完整指标名时，避免全量拉取 __name__ 列表导致慢查询和截断告警
+	if isLikelyMetricName(keyword) {
+		u := p.baseURL + "/api/v1/label/__name__/values?match[]=" + url.QueryEscape(fmt.Sprintf("{__name__=\"%s\"}", keyword))
+		logger.Infof("ai_assistant prom request: api=label_values_exact base=%s keyword=%q", p.baseURL, truncateForLog(keyword, 80))
+		resp, err := p.httpClient.Get(u)
+		if err == nil {
+			defer resp.Body.Close()
+			var result struct {
+				Data []string `json:"data"`
+			}
+			if decErr := json.NewDecoder(resp.Body).Decode(&result); decErr == nil {
+				for _, m := range result.Data {
+					if m == keyword {
+						logger.Infof("ai_assistant prom response: api=label_values_exact base=%s matched=1 elapsed=%s",
+							p.baseURL, time.Since(begin))
+						return []string{keyword}, nil
+					}
+				}
+			}
+		}
+		// 若快路径失败，回退到通用 contains 搜索逻辑
+	}
+
 	u := p.baseURL + "/api/v1/label/__name__/values"
+	logger.Infof("ai_assistant prom request: api=label_values base=%s keyword=%q", p.baseURL, truncateForLog(keyword, 80))
 	resp, err := p.httpClient.Get(u)
 	if err != nil {
+		logger.Warnf("ai_assistant prom request failed: api=label_values base=%s err=%v elapsed=%s",
+			p.baseURL, err, time.Since(begin))
 		return fmt.Sprintf("Error fetching metrics: %v", err), nil
 	}
 	defer resp.Body.Close()
@@ -233,14 +290,39 @@ func (p *PrometheusClient) FindMetricsByKeyword(keyword string) (interface{}, er
 			out = append(out, m)
 		}
 	}
+	logger.Infof("ai_assistant prom response: api=label_values base=%s matched=%d elapsed=%s",
+		p.baseURL, len(out), time.Since(begin))
 	return out, nil
+}
+
+func isLikelyMetricName(s string) bool {
+	if s == "" {
+		return false
+	}
+	// Prometheus metric name: [a-zA-Z_:][a-zA-Z0-9_:]*
+	for i, r := range s {
+		if i == 0 {
+			if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_' || r == ':') {
+				return false
+			}
+			continue
+		}
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == ':') {
+			return false
+		}
+	}
+	return true
 }
 
 // GetMetricDimension 查询指标的标签维度
 func (p *PrometheusClient) GetMetricDimension(metricName string) (interface{}, error) {
+	begin := time.Now()
 	u := p.baseURL + "/api/v1/series?match[]=" + url.QueryEscape(metricName)
+	logger.Infof("ai_assistant prom request: api=series base=%s metric=%q", p.baseURL, truncateForLog(metricName, 120))
 	resp, err := p.httpClient.Get(u)
 	if err != nil {
+		logger.Warnf("ai_assistant prom request failed: api=series base=%s err=%v elapsed=%s",
+			p.baseURL, err, time.Since(begin))
 		return fmt.Sprintf("Error fetching dimensions: %v", err), nil
 	}
 	defer resp.Body.Close()
@@ -263,7 +345,25 @@ func (p *PrometheusClient) GetMetricDimension(metricName string) (interface{}, e
 			break
 		}
 	}
+	logger.Infof("ai_assistant prom response: api=series base=%s unique_dimensions=%d elapsed=%s",
+		p.baseURL, len(unique), time.Since(begin))
 	return unique, nil
+}
+
+func truncateForLog(s string, max int) string {
+	s = strings.TrimSpace(s)
+	if max <= 0 || len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
+}
+
+func isPromTimeoutErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "context deadline exceeded") || strings.Contains(msg, "client.timeout exceeded")
 }
 
 func parseDurationSec(d string) int64 {

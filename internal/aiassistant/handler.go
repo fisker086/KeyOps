@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -735,12 +736,13 @@ func (h *Handler) deleteSchedule(c *gin.Context) {
 // ---------- 目标环境 CRUD（需 store 非 nil）----------
 // 仅支持三种技能：Prometheus（prom_url）、Grafana（graf_url/graf_token）、K8s（k8s_cluster_id）
 type environmentReq struct {
-	Name           string   `json:"name"`
-	PromURL        string   `json:"prom_url"`
-	GrafURL        string   `json:"graf_url"`
-	GrafToken      string   `json:"graf_token"`
-	K8sClusterID   string   `json:"k8s_cluster_id"` // 关联 K8s 集群 ID（来自 k8s 管理）
-	AllowedRoleIDs []string `json:"allowed_role_ids"`
+	Name           string                 `json:"name"`
+	PromURL        string                 `json:"prom_url"`
+	GrafURL        string                 `json:"graf_url"`
+	GrafToken      string                 `json:"graf_token"`
+	K8sClusterID   string                 `json:"k8s_cluster_id"` // 关联 K8s 集群 ID（来自 k8s 管理）
+	AllowedRoleIDs []string               `json:"allowed_role_ids"`
+	ExtraConfig    map[string]interface{} `json:"extra_config"`    // 扩展配置，如 K8s 安装节点（master/worker/etcd）
 }
 
 func (h *Handler) addEnvironment(c *gin.Context) {
@@ -760,6 +762,7 @@ func (h *Handler) addEnvironment(c *gin.Context) {
 		GrafToken:      req.GrafToken,
 		K8sClusterID:   req.K8sClusterID,
 		AllowedRoleIDs: req.AllowedRoleIDs,
+		ExtraConfig:    req.ExtraConfig,
 	}
 	if err := h.store.CreateEnvironment(e); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -791,6 +794,7 @@ func (h *Handler) updateEnvironment(c *gin.Context) {
 		GrafToken:      req.GrafToken,
 		K8sClusterID:   req.K8sClusterID,
 		AllowedRoleIDs: req.AllowedRoleIDs,
+		ExtraConfig:    req.ExtraConfig,
 	}
 	if err := h.store.UpdateEnvironment(e); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -816,7 +820,8 @@ func (h *Handler) deleteEnvironment(c *gin.Context) {
 type expertReq struct {
 	Name           string   `json:"name"`
 	Description    string   `json:"description"`
-	SystemPrompt  string   `json:"system_prompt"`
+	SystemPrompt   string   `json:"system_prompt"`
+	SkillID        string   `json:"skill_id"`        // 关联技能（如 k8s-install），非空时前置注入
 	AllowedRoleIDs []string `json:"allowed_role_ids"` // 允许使用该专家的平台角色ID列表，空表示所有角色可用
 }
 
@@ -834,6 +839,7 @@ func (h *Handler) addExpert(c *gin.Context) {
 		Name:           req.Name,
 		Description:    req.Description,
 		SystemPrompt:   req.SystemPrompt,
+		SkillID:        strings.TrimSpace(req.SkillID),
 		AllowedRoleIDs: req.AllowedRoleIDs,
 	}
 	if err := h.store.CreateExpert(e); err != nil {
@@ -863,6 +869,7 @@ func (h *Handler) updateExpert(c *gin.Context) {
 		Name:           req.Name,
 		Description:    req.Description,
 		SystemPrompt:   req.SystemPrompt,
+		SkillID:        strings.TrimSpace(req.SkillID),
 		AllowedRoleIDs: req.AllowedRoleIDs,
 	}
 	if err := h.store.UpdateExpert(e); err != nil {
@@ -960,7 +967,20 @@ func (h *Handler) runAgentCore(sessionID string, taskOverride string) {
 	systemPrompt := ""
 	if h.store != nil {
 		if ex, _ := h.store.GetExpert(s.Role); ex != nil {
-			systemPrompt = ex.SystemPrompt
+			// 技能知识库在前，数据库 system_prompt 在后（可覆盖）。由 expert.skill_id 驱动，无需硬编码角色
+			if skill := GetSkillContent(ex.SkillID); skill != "" {
+				systemPrompt = skill + "\n\n---\n\n" + ex.SystemPrompt
+			} else {
+				systemPrompt = ex.SystemPrompt
+			}
+			// 运行时统一增强：巡检/排障类专家在给出 RCA 时需附可执行修复命令。
+			// 用户明确授权且存在可执行类工具时，可执行低风险修复并反馈结果。
+			if s.Role == "sre" || s.Role == "inspector" || s.Role == "k8s-expert" {
+				systemPrompt += "\n\n## 运行时增强约束（必须遵守）：\n" +
+					"1. 你的结论必须结合当前目标环境与 Observation 指标，给出可执行的修复命令（按系统/集群环境区分）。\n" +
+					"2. 当用户明确授权“请直接执行/帮我处理”且当前环境存在可执行类工具时，可执行低风险修复动作；执行前先说明动作与风险，执行后回报结果与验证。\n" +
+					"3. 若当前环境无可执行类工具或动作风险过高，必须明确说明限制，并提供人工执行命令、回滚命令与验证命令。"
+			}
 		}
 	}
 	engine.Run(context.Background(), task, s.Role, systemPrompt, callback)

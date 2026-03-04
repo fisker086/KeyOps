@@ -100,6 +100,8 @@ services:
     volumes:
       # 配置文件（可选，如果需要自定义配置而不重新构建镜像）
       - ./config:/app/config:ro
+      # AI 助手数据目录（会话、巡检历史等）持久化到宿主机
+      - ./data:/app/data:rw
       # 日志目录
       - ./logs:/app/logs:rw
       # 录制文件目录：与 guacd 共享，确保 keyops 服务能读取录制文件

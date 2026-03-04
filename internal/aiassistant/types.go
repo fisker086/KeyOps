@@ -89,6 +89,7 @@ type Expert struct {
 	Name           string   `json:"name"`
 	Description    string   `json:"description"`
 	SystemPrompt   string   `json:"system_prompt"`
+	SkillID        string   `json:"skill_id,omitempty"`        // 关联技能（如 k8s-install），非空时前置注入技能知识库，数据库 system_prompt 在后可覆盖
 	IsCustom       bool     `json:"is_custom,omitempty"`
 	AllowedRoleIDs []string `json:"allowed_role_ids,omitempty"` // 允许使用该专家的平台角色ID列表，空表示所有角色可用
 }

@@ -34,6 +34,7 @@ type ExpertRecord struct {
 	Name           string    `gorm:"size:100;not null"`
 	Description    string    `gorm:"size:500"`
 	SystemPrompt   string    `gorm:"type:text;not null"`
+	SkillID        string    `gorm:"size:64"` // 关联技能（如 k8s-install），非空时前置注入技能知识库
 	IsCustom       bool      `gorm:"default:false"`
 	AllowedRoleIDs string    `gorm:"type:text"` // JSON 数组，空或 null 表示所有角色可用
 	Sort           int       `gorm:"default:0"`
@@ -127,6 +128,8 @@ func (s *Store) upgradeExpertPromptsForSkills() error {
 			}
 		}
 	}
+	// 确保 k8s-installer 有 skill_id，由数据库驱动技能注入，无需硬编码角色
+	s.db.Model(&ExpertRecord{}).Where("id = ?", "k8s-installer").Updates(map[string]interface{}{"skill_id": SkillK8sInstall})
 	return nil
 }
 
@@ -318,6 +321,7 @@ func expertRecordToExpert(r *ExpertRecord) Expert {
 		Name:           r.Name,
 		Description:    r.Description,
 		SystemPrompt:   r.SystemPrompt,
+		SkillID:        strings.TrimSpace(r.SkillID),
 		IsCustom:       r.IsCustom,
 		AllowedRoleIDs: parseAllowedRoleIDs(r.AllowedRoleIDs),
 	}
@@ -395,6 +399,7 @@ func (s *Store) CreateExpert(e *Expert) error {
 		Name:           e.Name,
 		Description:    e.Description,
 		SystemPrompt:   e.SystemPrompt,
+		SkillID:        strings.TrimSpace(e.SkillID),
 		IsCustom:       true,
 		AllowedRoleIDs: marshalAllowedRoleIDs(e.AllowedRoleIDs),
 	}).Error
@@ -409,6 +414,7 @@ func (s *Store) UpdateExpert(e *Expert) error {
 		"name":             e.Name,
 		"description":      e.Description,
 		"system_prompt":    e.SystemPrompt,
+		"skill_id":         strings.TrimSpace(e.SkillID),
 		"allowed_role_ids": marshalAllowedRoleIDs(e.AllowedRoleIDs),
 	}).Error
 }

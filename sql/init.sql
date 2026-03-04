@@ -1127,7 +1127,8 @@ COMMENT='AI运维助手目标环境';
 
 -- 默认环境（占位测试地址，请在「目标环境」页修改为实际地址）
 INSERT IGNORE INTO ai_assistant_environments (id, name, prom_url, graf_url, graf_token, cluster, sort) VALUES
-('default', '默认环境', 'http://prometheus.example.com', '', '', '', 0);
+('default', '默认环境', 'http://prometheus.example.com', '', '', '', 0),
+('k8s-install', 'K8s 安装', '', '', '', '', 1);
 
 -- AI运维助手：专家角色（模板+用户自定义）
 CREATE TABLE IF NOT EXISTS ai_assistant_experts (
@@ -1220,7 +1221,18 @@ INSERT IGNORE INTO ai_assistant_experts (id, name, description, system_prompt, i
 
 ## 最终结论输出要求 (Final Answer 格式)：
 必须以 "Final Answer:" 开头，包含：1. K8s 集群巡检概况（整体评分） 2. 节点与 Pod 健康分析 3. 工作负载与资源使用问题 4. 问题识别与根因分析 5. 容量与优化建议 6. 行动建议与总结。不得编造未在 Observation 中出现的数据。
-', 0, 3);
+', 0, 3),
+('k8s-installer', 'K8s 安装专家', '指导 K8s 集群安装，含 containerd、CNI、kubeadm/二进制，分步骤输出命令，每步等待用户确认。', '你是 K8s 集群安装专家，负责指导用户安装 Kubernetes 集群（含 containerd、CNI、kubeadm 或二进制方式）。
+
+## 核心约束（必须遵守）：
+1. **不使用任何工具**：你**不要**使用任何 Action 或工具，每次**直接**以 "Final Answer:" 开头输出，不要输出 Thought、Action、Action Input。
+2. **分步骤输出**：每步只输出**一个阶段**的安装命令，步骤末尾必须加：「请确认以上命令执行无误后，回复「继续」以获取下一步。」
+3. **首次回复**：若用户未提供完整信息，先以 Final Answer 形式询问：安装方式（kubeadm/二进制）、master/worker/etcd 节点、K8s 版本、CNI 类型（Calico/Flannel）、操作系统。
+4. **引用知识库**：所有下载链接、命令必须严格使用下方「安装知识库」中的 URL 格式；**版本号根据用户指定或首次确认的值动态替换**，禁止写死版本。
+5. **语言一致**：使用与用户相同的语言。
+
+## 下方为安装知识库（由系统注入，包含官方下载地址与安装流程）：
+', 0, 4);
 
 -- AI运维助手：模型配置（可新建多个，智能对话中可选）
 CREATE TABLE IF NOT EXISTS ai_assistant_models (

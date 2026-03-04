@@ -1,0 +1,1 @@
+import{u as n,j as r,B as s,ae as a,af as e,T as t}from"./index-B86--0y1.js";function d(){const{t:o}=n();return r.jsx(s,{sx:{p:3},children:r.jsx(a,{children:r.jsxs(e,{children:[r.jsx(t,{variant:"h5",gutterBottom:!0,children:o("menu.monitorProm")}),r.jsx(t,{variant:"body2",color:"text.secondary",children:o("monitor.prom.description")})]})})})}export{d as default};
