@@ -1,0 +1,1 @@
+import{u as t,j as r,B as a,ae as o,af as n,T as s}from"./index-ChpTFc7l.js";function l(){const{t:e}=t();return r.jsx(a,{sx:{p:3},children:r.jsx(o,{children:r.jsxs(n,{children:[r.jsx(s,{variant:"h5",gutterBottom:!0,children:e("menu.billResource")}),r.jsx(s,{variant:"body2",color:"text.secondary",children:e("bill.resource.description")})]})})})}export{l as default};

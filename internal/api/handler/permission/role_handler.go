@@ -27,11 +27,8 @@ func NewRoleHandler(repo *repository.RoleRepository) *RoleHandler {
 func (h *RoleHandler) ListRoles(c *gin.Context) {
 	withMembers := c.Query("withMembers") == "true"
 
-	var roles []model.Role
-	var err error
-
 	if withMembers {
-		// FindAllWithMembers 返回 RoleWithMembers，需要转换为 Role
+		// 返回 RoleWithMembers，保留 memberCount（勿只取内嵌 Role，否则会丢失统计）
 		rolesWithMembers, err := h.repo.FindAllWithMembers()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, model.Response{
@@ -41,21 +38,22 @@ func (h *RoleHandler) ListRoles(c *gin.Context) {
 			})
 			return
 		}
-		// 转换为 Role 列表（RoleWithMembers 嵌入了 Role，可以直接使用）
-		roles = make([]model.Role, len(rolesWithMembers))
-		for i, rwm := range rolesWithMembers {
-			roles[i] = rwm.Role
-		}
-	} else {
-		roles, err = h.repo.FindAll()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, model.Response{
-				Code:    http.StatusInternalServerError,
-				Message: "Failed to fetch roles",
-				Data:    nil,
-			})
-			return
-		}
+		c.JSON(http.StatusOK, model.Response{
+			Code:    http.StatusOK,
+			Message: "Success",
+			Data:    rolesWithMembers,
+		})
+		return
+	}
+
+	roles, err := h.repo.FindAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to fetch roles",
+			Data:    nil,
+		})
+		return
 	}
 
 	c.JSON(http.StatusOK, model.Response{

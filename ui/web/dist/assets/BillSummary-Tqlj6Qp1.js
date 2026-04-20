@@ -1,0 +1,1 @@
+import{u as t,j as r,B as n,ae as e,af as o,T as s}from"./index-ChpTFc7l.js";function l(){const{t:a}=t();return r.jsx(n,{sx:{p:3},children:r.jsx(e,{children:r.jsxs(o,{children:[r.jsx(s,{variant:"h5",gutterBottom:!0,children:a("menu.billSummary")}),r.jsx(s,{variant:"body2",color:"text.secondary",children:a("bill.summary.description")})]})})})}export{l as default};

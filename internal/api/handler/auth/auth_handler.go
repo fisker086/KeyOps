@@ -103,6 +103,23 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Success(user))
 }
 
+// GetMyPermissions 返回当前登录用户的分组与主机权限（Web 终端等场景；不暴露他人数据）
+func (h *AuthHandler) GetMyPermissions(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, model.Error(401, "未登录"))
+		return
+	}
+
+	userWithPermissions, err := h.service.GetUserWithGroupsAndHosts(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.Error(404, "用户不存在"))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Success(userWithPermissions))
+}
+
 // GetPlatformLoginRecords 获取平台登录记录
 func (h *AuthHandler) GetPlatformLoginRecords(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))

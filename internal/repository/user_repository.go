@@ -358,74 +358,76 @@ func (r *UserRepository) GetUserHosts(userID string) ([]string, error) {
 	return hostIDs, nil
 }
 
-// GetUserHostGroupIDs 获取用户通过授权规则有权限访问的主机组ID列表
+// GetUserHostGroupIDs 获取用户可访问的主机组 ID：授权规则（permission_rule_host_groups）+ 旧表 user_group_permissions
 func (r *UserRepository) GetUserHostGroupIDs(userID string) ([]string, error) {
-	// 1. 获取用户所属的角色ID列表
+	hostGroupIDMap := make(map[string]bool)
+
+	// 1. 角色 → 有效授权规则 → permission_rule_host_groups
 	var roleMembers []model.RoleMember
 	err := r.db.Where("user_id = ?", userID).Find(&roleMembers).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user roles: %w", err)
 	}
 
-	if len(roleMembers) == 0 {
-		return []string{}, nil
+	if len(roleMembers) > 0 {
+		roleIDs := make([]string, 0, len(roleMembers))
+		for _, member := range roleMembers {
+			roleIDs = append(roleIDs, member.RoleID)
+		}
+
+		var permissionRules []struct {
+			ID string `gorm:"column:id"`
+		}
+		now := time.Now()
+		err = r.db.Table("permission_rules").
+			Select("id").
+			Where("role_id IN (?) AND enabled = ?", roleIDs, true).
+			Where("(valid_from IS NULL OR valid_from <= ?) AND (valid_to IS NULL OR valid_to >= ?)", now, now).
+			Find(&permissionRules).Error
+		if err != nil {
+			return nil, fmt.Errorf("failed to get permission rules: %w", err)
+		}
+
+		if len(permissionRules) > 0 {
+			ruleIDs := make([]string, 0, len(permissionRules))
+			for _, rule := range permissionRules {
+				ruleIDs = append(ruleIDs, rule.ID)
+			}
+
+			var hostGroupRelations []struct {
+				HostGroupID string `gorm:"column:host_group_id"`
+			}
+			err = r.db.Table("permission_rule_host_groups").
+				Select("DISTINCT host_group_id").
+				Where("permission_rule_id IN (?)", ruleIDs).
+				Find(&hostGroupRelations).Error
+			if err != nil {
+				return nil, fmt.Errorf("failed to get host groups from rules: %w", err)
+			}
+			for _, rel := range hostGroupRelations {
+				if rel.HostGroupID != "" {
+					hostGroupIDMap[rel.HostGroupID] = true
+				}
+			}
+		}
 	}
 
-	// 提取角色ID
-	roleIDs := make([]string, 0, len(roleMembers))
-	for _, member := range roleMembers {
-		roleIDs = append(roleIDs, member.RoleID)
+	// 2. 旧版 user_group_permissions（无角色或未配规则时仍可能仅有此项）
+	var legacyRows []model.UserGroupPermission
+	if err := r.db.Where("user_id = ?", userID).Find(&legacyRows).Error; err != nil {
+		return nil, fmt.Errorf("failed to get legacy user group permissions: %w", err)
+	}
+	for _, row := range legacyRows {
+		if row.GroupID != "" {
+			hostGroupIDMap[row.GroupID] = true
+		}
 	}
 
-	// 2. 根据用户组ID查询有效的授权规则
-	var permissionRules []struct {
-		ID string `gorm:"column:id"`
-	}
-	now := time.Now()
-
-	err = r.db.Table("permission_rules").
-		Select("id").
-		Where("role_id IN (?) AND enabled = ?", roleIDs, true).
-		Where("(valid_from IS NULL OR valid_from <= ?) AND (valid_to IS NULL OR valid_to >= ?)", now, now).
-		Find(&permissionRules).Error
-	if err != nil {
-		return nil, fmt.Errorf("failed to get permission rules: %w", err)
-	}
-
-	if len(permissionRules) == 0 {
-		return []string{}, nil
-	}
-
-	// 提取授权规则ID
-	ruleIDs := make([]string, 0, len(permissionRules))
-	for _, rule := range permissionRules {
-		ruleIDs = append(ruleIDs, rule.ID)
-	}
-
-	// 3. 从 permission_rule_host_groups 关联表中查询主机组ID
-	var hostGroupRelations []struct {
-		HostGroupID string `gorm:"column:host_group_id"`
-	}
-	err = r.db.Table("permission_rule_host_groups").
-		Select("DISTINCT host_group_id").
-		Where("permission_rule_id IN (?)", ruleIDs).
-		Find(&hostGroupRelations).Error
-	if err != nil {
-		return nil, fmt.Errorf("failed to get host groups from rules: %w", err)
-	}
-
-	// 提取主机组ID（去重）
-	hostGroupIDMap := make(map[string]bool)
-	for _, rel := range hostGroupRelations {
-		hostGroupIDMap[rel.HostGroupID] = true
-	}
-
-	hostGroupIDs := make([]string, 0, len(hostGroupIDMap))
+	out := make([]string, 0, len(hostGroupIDMap))
 	for id := range hostGroupIDMap {
-		hostGroupIDs = append(hostGroupIDs, id)
+		out = append(out, id)
 	}
-
-	return hostGroupIDs, nil
+	return out, nil
 }
 
 // AddUserToHost 将用户添加到单个主机权限
@@ -464,10 +466,17 @@ func (r *UserRepository) GetUserWithGroupsAndHosts(userID string) (*model.UserWi
 		return nil, err
 	}
 
+	// Web 终端等与 SSH 一致：可访问的主机组来自授权规则（非 role id）
+	hostGroupIDs, err := r.GetUserHostGroupIDs(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &model.UserWithGroups{
-		User:     *user,
-		GroupIDs: roleIDs,
-		HostIDs:  hostIDs,
+		User:         *user,
+		GroupIDs:     roleIDs,
+		HostGroupIDs: hostGroupIDs,
+		HostIDs:      hostIDs,
 	}, nil
 }
 

@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/fisker086/keyops/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type RoleRepository struct {
@@ -105,6 +106,12 @@ func (r *RoleRepository) FindByIDWithMembers(id string) (*model.RoleWithMembers,
 	return &role, nil
 }
 
+// roleMemberConflict 与表 uk_role_user(role_id, user_id) 对齐，用于幂等插入
+var roleMemberConflict = clause.OnConflict{
+	Columns:   []clause.Column{{Name: "role_id"}, {Name: "user_id"}},
+	DoNothing: true,
+}
+
 // AddMember 添加成员到角色
 func (r *RoleRepository) AddMember(roleID, userID, addedBy string) error {
 	member := &model.RoleMember{
@@ -112,7 +119,7 @@ func (r *RoleRepository) AddMember(roleID, userID, addedBy string) error {
 		UserID:  userID,
 		AddedBy: addedBy,
 	}
-	return r.db.Create(member).Error
+	return r.db.Clauses(roleMemberConflict).Create(member).Error
 }
 
 // RemoveMember 从角色移除成员
@@ -158,7 +165,7 @@ func (r *RoleRepository) IsMember(roleID, userID string) (bool, error) {
 	return count > 0, err
 }
 
-// BatchAddMembers 批量添加成员
+// BatchAddMembers 批量添加成员（已在成员表中则跳过，避免 uk_role_user 重复键）
 func (r *RoleRepository) BatchAddMembers(roleID string, userIDs []string, addedBy string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for _, userID := range userIDs {
@@ -167,11 +174,8 @@ func (r *RoleRepository) BatchAddMembers(roleID string, userIDs []string, addedB
 				UserID:  userID,
 				AddedBy: addedBy,
 			}
-			if err := tx.Create(member).Error; err != nil {
-				// 忽略重复键错误
-				if err.Error() != "UNIQUE constraint failed" {
-					return err
-				}
+			if err := tx.Clauses(roleMemberConflict).Create(member).Error; err != nil {
+				return err
 			}
 		}
 		return nil

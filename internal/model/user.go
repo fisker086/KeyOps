@@ -94,8 +94,9 @@ func (UserHostPermission) TableName() string {
 // UserWithGroups 用户及其关联的分组
 type UserWithGroups struct {
 	User
-	GroupIDs []string `json:"groupIds" gorm:"-"`
-	HostIDs  []string `json:"hostIds" gorm:"-"` // 单独授权的主机ID列表
+	GroupIDs     []string `json:"groupIds" gorm:"-"`     // 角色 ID（历史字段名，勿与主机组混淆）
+	HostGroupIDs []string `json:"hostGroupIds" gorm:"-"` // 授权规则推导出的可访问主机组 ID
+	HostIDs      []string `json:"hostIds" gorm:"-"`      // 单独授权的主机 ID（user_host_permissions）
 }
 
 // LoginRequest 登录请求

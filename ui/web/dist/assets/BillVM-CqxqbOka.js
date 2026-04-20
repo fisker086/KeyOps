@@ -1,1 +1,0 @@
-import{u as a,j as r,B as n,ae as e,af as o,T as s}from"./index-B86--0y1.js";function l(){const{t}=a();return r.jsx(n,{sx:{p:3},children:r.jsx(e,{children:r.jsxs(o,{children:[r.jsx(s,{variant:"h5",gutterBottom:!0,children:t("menu.billVM")}),r.jsx(s,{variant:"body2",color:"text.secondary",children:t("bill.vm.description")})]})})})}export{l as default};

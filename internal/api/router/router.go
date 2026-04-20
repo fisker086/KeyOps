@@ -139,6 +139,7 @@ func Setup(
 	{
 		// 用户相关
 		authenticated.GET("/auth/me", authHandler.GetCurrentUser)
+		authenticated.GET("/auth/me/permissions", authHandler.GetMyPermissions)
 		authenticated.GET("/auth/login-records", authHandler.GetPlatformLoginRecords)
 
 		// 用户列表（用于黑名单选择用户）
@@ -390,16 +391,15 @@ func Setup(
 			systemUsers.DELETE("/:id", middleware.AdminMiddleware(), systemUserHandler.DeleteSystemUser) // 删除系统用户（管理员）
 		}
 
-		// 组织管理（部门管理）
+		// 组织管理：GET 供已登录用户（组织大盘、用户/应用表单选部门等）；增删改仅管理员（与 /applications 策略一致）
 		organizations := authenticated.Group("/organizations")
-		organizations.Use(middleware.AdminMiddleware())
 		{
 			organizations.GET("", organizationHandler.ListOrganizations)         // 获取组织列表
-			organizations.GET("/tree", organizationHandler.GetOrganizationTree)  // 获取组织树
-			organizations.GET("/:id", organizationHandler.GetOrganization)       // 获取单个组织
-			organizations.POST("", organizationHandler.CreateOrganization)       // 创建组织
-			organizations.PUT("/:id", organizationHandler.UpdateOrganization)    // 更新组织
-			organizations.DELETE("/:id", organizationHandler.DeleteOrganization) // 删除组织
+			organizations.GET("/tree", organizationHandler.GetOrganizationTree) // 获取组织树
+			organizations.GET("/:id", organizationHandler.GetOrganization)      // 获取单个组织
+			organizations.POST("", middleware.AdminMiddleware(), organizationHandler.CreateOrganization)
+			organizations.PUT("/:id", middleware.AdminMiddleware(), organizationHandler.UpdateOrganization)
+			organizations.DELETE("/:id", middleware.AdminMiddleware(), organizationHandler.DeleteOrganization)
 		}
 
 		// 应用服务管理：GET 对已登录用户开放（列表/详情按运维/测试/研发负责人过滤），增删改仅管理员
