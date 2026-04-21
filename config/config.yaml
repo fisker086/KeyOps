@@ -75,6 +75,15 @@ security:
   
   session_timeout: 3600        # 会话超时时间（秒）
 
+  # 认证方式：password / ldap / sso。非空时覆盖「系统设置-认证」里存在数据库的配置（登录页 /api/auth/methods 以此为准）。
+  # 留空则完全以数据库为准。也可用环境变量 AUTH_METHOD（优先级高于本项）。修改后需重启 API。
+  # auth_method: "password" 
+  # admin_whitelist：按邮箱自动给「管理员」角色（仅提升、不降级）；密码登录、LDAP、SSO 成功后均会检查。
+  # 仅按邮箱匹配：英文逗号分隔多个完整邮箱，与 users.email 比对（不区分大小写，首尾空格忽略）；须含 @；邮箱为空则不命中。
+  # 例：admin_whitelist: "ops@company.com,admin@company.com"
+  # 环境变量 ADMIN_WHITELIST 非空时覆盖本字段（格式相同）。
+  admin_whitelist: ""
+
 # ============================================================================
 # 日志配置
 # ============================================================================

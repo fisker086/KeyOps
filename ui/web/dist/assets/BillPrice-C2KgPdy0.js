@@ -1,0 +1,1 @@
+import{u as s,j as r,B as a,ae as i,af as n,T as e}from"./index-DMv2Ja0R.js";function l(){const{t}=s();return r.jsx(a,{sx:{p:3},children:r.jsx(i,{children:r.jsxs(n,{children:[r.jsx(e,{variant:"h5",gutterBottom:!0,children:t("menu.billPrice")}),r.jsx(e,{variant:"body2",color:"text.secondary",children:t("bill.price.description")})]})})})}export{l as default};

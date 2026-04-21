@@ -1,1 +1,0 @@
-import{u as t,j as r,B as n,ae as s,af as a,T as o}from"./index-ChpTFc7l.js";function d(){const{t:e}=t();return r.jsx(n,{sx:{p:3},children:r.jsx(s,{children:r.jsxs(a,{children:[r.jsx(o,{variant:"h5",gutterBottom:!0,children:e("menu.monitorRecordRule")}),r.jsx(o,{variant:"body2",color:"text.secondary",children:e("monitor.recordRule.description")})]})})})}export{d as default};

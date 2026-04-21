@@ -10,8 +10,8 @@ import (
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
 	authService "github.com/fisker086/keyops/internal/service/auth"
+	pkgconfig "github.com/fisker086/keyops/pkg/config"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type AuthHandler struct {
@@ -393,7 +393,7 @@ func (h *AuthHandler) InitiateSSO(c *gin.Context) {
 	var authUrl, clientId, redirectUrl, scopes string
 
 	for _, setting := range authSettings {
-		switch setting.Key {
+		switch repository.LogicalSettingKey("auth", setting.Key) {
 		case "ssoEnabled":
 			enabled = (setting.Value == "true")
 		case "ssoAuthUrl":
@@ -405,6 +405,11 @@ func (h *AuthHandler) InitiateSSO(c *gin.Context) {
 		case "ssoScopes":
 			scopes = setting.Value
 		}
+	}
+
+	if o := pkgconfig.SecurityAuthMethodOverride(); o != "" && o != "sso" {
+		c.JSON(http.StatusBadRequest, model.Error(400, "当前认证方式已强制为本地登录，无法发起 SSO"))
+		return
 	}
 
 	if !enabled {
@@ -421,8 +426,12 @@ func (h *AuthHandler) InitiateSSO(c *gin.Context) {
 		scopes = "openid profile email"
 	}
 
-	// 生成 state 参数用于防止 CSRF 攻击
-	state := uuid.New().String()
+	// state：nonce + 站内 next（与 hashcheck oidc 一致），回调后安全落地
+	state, err := encodeSSOState(c.Query("next"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Error(500, "生成 SSO state 失败"))
+		return
+	}
 
 	// 构造授权 URL（使用 url.Values 自动处理编码）
 	params := url.Values{}
@@ -470,10 +479,9 @@ func (h *AuthHandler) SSOCallback(c *gin.Context) {
 		return
 	}
 
-	// TODO: 验证 state 参数防止 CSRF 攻击
-	// 目前先跳过 state 验证，后续可以通过 Redis 或内存缓存实现
+	nextPath := decodeSSONextFromState(state)
 	if state == "" {
-		fmt.Printf(" [SSO] 缺少 state 参数（安全警告）\n")
+		fmt.Printf(" [SSO] 缺少 state 参数，将使用默认落地路径 /\n")
 	}
 
 	// 获取客户端信息（用于记录登录IP和UserAgent）
@@ -490,11 +498,10 @@ func (h *AuthHandler) SSOCallback(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf(" [SSO] 登录成功，重定向到前端\n")
+	fmt.Printf(" [SSO] 登录成功，重定向到前端 path=%s\n", nextPath)
 
-	// 重定向到前端首页，并在 URL 中传递 token
-	// 前端需要从 URL 中获取 token 并保存到 localStorage
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/?sso_token=%s", loginResp.Token))
+	// 经 /login 落地：附带 sso_token 与 next，避免 / 被鉴权拦截导致丢失 token
+	c.Redirect(http.StatusTemporaryRedirect, redirectLoginWithSSOToken(nextPath, loginResp.Token))
 }
 
 // ===== User-Group Permission Management =====
@@ -661,10 +668,13 @@ func (h *AuthHandler) GetSSOConfig(c *gin.Context) {
 
 	authMethod := ""
 	for _, setting := range authSettings {
-		if setting.Key == "authMethod" {
+		if repository.LogicalSettingKey("auth", setting.Key) == "authMethod" {
 			authMethod = setting.Value
 			break
 		}
+	}
+	if o := pkgconfig.SecurityAuthMethodOverride(); o != "" {
+		authMethod = o
 	}
 
 	c.JSON(http.StatusOK, model.Success(gin.H{
@@ -685,10 +695,13 @@ func (h *AuthHandler) GetAuthMethod(c *gin.Context) {
 
 	authMethod := "password" // 默认
 	for _, setting := range authSettings {
-		if setting.Key == "authMethod" {
+		if repository.LogicalSettingKey("auth", setting.Key) == "authMethod" {
 			authMethod = setting.Value
 			break
 		}
+	}
+	if o := pkgconfig.SecurityAuthMethodOverride(); o != "" {
+		authMethod = o
 	}
 
 	c.JSON(http.StatusOK, model.Success(gin.H{

@@ -142,6 +142,14 @@ type SecurityConfig struct {
 
 	// SessionTimeout 会话超时时间（秒）
 	SessionTimeout int `yaml:"session_timeout"`
+
+	// AdminWhitelist 自动管理员白名单：英文逗号分隔完整邮箱，与 users.email 比对（不区分大小写）；须含 @。
+	// 密码 / LDAP / SSO 登录成功且邮箱命中时提升为 admin。环境变量 ADMIN_WHITELIST 非空时覆盖本字段。
+	AdminWhitelist string `yaml:"admin_whitelist"`
+
+	// AuthMethod 认证方式：password / ldap / sso。非空时覆盖数据库中的认证方式（与 AUTH_METHOD 一致，AUTH_METHOD 优先）。
+	// 留空则完全以系统设置（数据库）为准。用于 config 或环境强制恢复登录方式。
+	AuthMethod string `yaml:"auth_method"`
 }
 
 // SetDefaults 设置安全配置的默认值
@@ -293,6 +301,16 @@ func Load(configPath string) (*Config, error) {
 	}
 	if v := os.Getenv("DEPLOY_GIT_CACHE_DIR"); v != "" {
 		config.Deploy.Git.CacheDir = v
+	}
+
+	// ADMIN_WHITELIST：与 admin_whitelist 相同（逗号分隔完整邮箱，见 SecurityConfig.AdminWhitelist）
+	if v := os.Getenv("ADMIN_WHITELIST"); v != "" {
+		config.Security.AdminWhitelist = v
+	}
+
+	// AUTH_METHOD：password / ldap / sso，覆盖 config.yaml 的 security.auth_method（用于容器紧急指定）
+	if v := os.Getenv("AUTH_METHOD"); v != "" {
+		config.Security.AuthMethod = v
 	}
 
 	GlobalConfig = &config

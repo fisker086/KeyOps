@@ -1,0 +1,1 @@
+import{u as n,j as r,B as e,ae as s,af as a,T as t}from"./index-DMv2Ja0R.js";function d(){const{t:o}=n();return r.jsx(e,{sx:{p:3},children:r.jsx(s,{children:r.jsxs(a,{children:[r.jsx(t,{variant:"h5",gutterBottom:!0,children:o("menu.monitorProbe")}),r.jsx(t,{variant:"body2",color:"text.secondary",children:o("monitor.probe.description")})]})})})}export{d as default};

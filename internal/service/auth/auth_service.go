@@ -1,18 +1,14 @@
 package auth
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +16,7 @@ import (
 	"github.com/fisker086/keyops/internal/auth"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	pkgconfig "github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/sshkey"
 	"github.com/fisker086/keyops/pkg/twofactor"
 	"github.com/golang-jwt/jwt/v5"
@@ -37,17 +34,20 @@ type Claims struct {
 }
 
 type AuthService struct {
-	repo         *repository.UserRepository
-	settingRepo  *repository.SettingRepository
-	TwoFactorSvc *twofactor.TwoFactorService
-	jwtSecret    []byte // JWT签名密钥
-	aesKey       []byte // AES-256加密密钥（32字节）
+	repo             *repository.UserRepository
+	settingRepo      *repository.SettingRepository
+	TwoFactorSvc     *twofactor.TwoFactorService
+	jwtSecret        []byte // JWT签名密钥
+	aesKey           []byte // AES-256加密密钥（32字节）
+	adminWhitelist []string // 小写邮箱列表，来自 security.admin_whitelist 或 ADMIN_WHITELIST
 }
 
 // NewAuthService 创建认证服务
 // jwtSecret: JWT签名密钥（建议64字节或更长，更安全）
+// adminWhitelistRaw: 管理员白名单
 // AES-256加密密钥会自动从此密钥提取前32字节用于加密SSH私钥等敏感数据
-func NewAuthService(repo *repository.UserRepository, settingRepo *repository.SettingRepository, jwtSecret string) *AuthService {
+// 认证方式覆盖见 pkg/config.SecurityAuthMethodOverride()（AUTH_METHOD / security.auth_method）
+func NewAuthService(repo *repository.UserRepository, settingRepo *repository.SettingRepository, jwtSecret string, adminWhitelistRaw string) *AuthService {
 	// 处理JWT密钥
 	jwtKey := []byte(jwtSecret)
 	if len(jwtKey) == 0 {
@@ -67,11 +67,57 @@ func NewAuthService(repo *repository.UserRepository, settingRepo *repository.Set
 	}
 
 	return &AuthService{
-		repo:         repo,
-		settingRepo:  settingRepo,
-		TwoFactorSvc: twofactor.NewTwoFactorService("ZJump"),
-		jwtSecret:    jwtKey,
-		aesKey:       aesKey,
+		repo:           repo,
+		settingRepo:    settingRepo,
+		TwoFactorSvc:   twofactor.NewTwoFactorService("ZJump"),
+		jwtSecret:      jwtKey,
+		aesKey:         aesKey,
+		adminWhitelist: parseAdminWhitelist(adminWhitelistRaw),
+	}
+}
+
+// parseAdminWhitelist 将逗号分隔的邮箱拆成小写条目；不含 @ 的项忽略（避免误配用户名）。
+func parseAdminWhitelist(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" && strings.Contains(p, "@") {
+			out = append(out, strings.ToLower(p))
+		}
+	}
+	return out
+}
+
+func (s *AuthService) isAdminEmailWhitelisted(email string) bool {
+	if len(s.adminWhitelist) == 0 {
+		return false
+	}
+	e := strings.ToLower(strings.TrimSpace(email))
+	if e == "" {
+		return false
+	}
+	for _, entry := range s.adminWhitelist {
+		if entry == e {
+			return true
+		}
+	}
+	return false
+}
+
+// applyAdminWhitelistOnLogin 密码/LDAP 登录成功后：邮箱在白名单则提升为 admin（仅提升，不写库失败则回滚内存角色）
+func (s *AuthService) applyAdminWhitelistOnLogin(user *model.User) {
+	if user == nil || !s.isAdminEmailWhitelisted(user.Email) || user.Role == "admin" {
+		return
+	}
+	prev := user.Role
+	user.Role = "admin"
+	if err := s.repo.UpdateUser(user); err != nil {
+		fmt.Printf(" [Login] admin_whitelist 更新角色失败: %v\n", err)
+		user.Role = prev
 	}
 }
 
@@ -148,8 +194,11 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 	// 获取认证配置（从auth category读取）
 	authSettings, _ := s.settingRepo.GetByCategory("auth")
 
-	// 获取authMethod配置，默认为password
+	// 与 GetAuthMethods 一致：config/环境覆盖优先，否则数据库 authMethod
 	authMethod := s.getSettingValue(authSettings, "authMethod", "password")
+	if o := pkgconfig.SecurityAuthMethodOverride(); o != "" {
+		authMethod = o
+	}
 
 	var user *model.User
 	var err error
@@ -178,6 +227,9 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 			return nil, errors.New("用户名或密码错误")
 		}
 	}
+
+	// 与 SSO 一致：admin_whitelist 按邮箱提升管理员（密码登录、LDAP 登录均生效）
+	s.applyAdminWhitelistOnLogin(user)
 
 	// 检查用户是否过期
 	if user.ExpiresAt != nil && user.ExpiresAt.Before(time.Now()) {
@@ -567,7 +619,7 @@ func (s *AuthService) createOrUpdateUserFromLDAP(ldapUser *auth.LDAPUser) (*mode
 // getSettingValue 获取配置值，支持默认值
 func (s *AuthService) getSettingValue(settings []model.Setting, key, defaultValue string) string {
 	for _, setting := range settings {
-		if setting.Key == key {
+		if repository.LogicalSettingKey(setting.Category, setting.Key) == key {
 			return setting.Value
 		}
 	}
@@ -577,7 +629,7 @@ func (s *AuthService) getSettingValue(settings []model.Setting, key, defaultValu
 // isAuthMethodEnabled 检查认证方式是否启用（已废弃，保留兼容性）
 func (s *AuthService) isAuthMethodEnabled(settings []model.Setting, key string) bool {
 	for _, setting := range settings {
-		if setting.Key == key {
+		if repository.LogicalSettingKey(setting.Category, setting.Key) == key {
 			return setting.Value == "true"
 		}
 	}
@@ -925,279 +977,44 @@ type SSOUserInfo struct {
 	AvatarURL string `json:"avatar_url"` // 头像
 }
 
-// FeishuTokenResponse 飞书令牌响应
-type FeishuTokenResponse struct {
-	Code int              `json:"code"`
-	Msg  string           `json:"msg"`
-	Data *FeishuTokenData `json:"data"`
-}
 
-type FeishuTokenData struct {
-	AccessToken      string `json:"access_token"`
-	TokenType        string `json:"token_type"`
-	ExpiresIn        int    `json:"expires_in"`
-	RefreshToken     string `json:"refresh_token"`
-	RefreshExpiresIn int    `json:"refresh_expires_in"`
-	Scope            string `json:"scope"`
-}
 
-// FeishuUserInfoResponse 飞书用户信息响应
-type FeishuUserInfoResponse struct {
-	Code int             `json:"code"`
-	Msg  string          `json:"msg"`
-	Data *FeishuUserData `json:"data"`
-}
-
-type FeishuUserData struct {
-	Sub         string `json:"sub"`
-	Name        string `json:"name"`
-	Picture     string `json:"picture"`
-	OpenID      string `json:"open_id"`
-	UnionID     string `json:"union_id"`
-	EnName      string `json:"en_name"`
-	TenantKey   string `json:"tenant_key"`
-	AvatarURL   string `json:"avatar_url"`
-	AvatarThumb string `json:"avatar_thumb"`
-	AvatarBig   string `json:"avatar_big"`
-	Email       string `json:"email"`
-	Mobile      string `json:"mobile"`
-}
-
-// ExchangeCodeForToken 使用授权码换取访问令牌
+// ExchangeCodeForToken 使用授权码换取访问令牌（入口，分发到各 provider）
 func (s *AuthService) ExchangeCodeForToken(code, provider, clientID, clientSecret, tokenURL, redirectURL string) (string, error) {
-	fmt.Printf(" [SSO] 开始换取 Token: provider=%s, tokenURL=%s\n", provider, tokenURL)
+	p := normalizeSSOProvider(provider)
+	fmt.Printf(" [SSO] 开始换取 Token: provider=%s (normalized=%s)\n", provider, p)
 
-	// 根据不同的服务提供商构造请求
-	if strings.Contains(strings.ToLower(provider), "feishu") || strings.Contains(strings.ToLower(provider), "lark") {
+	switch p {
+	case SSOProviderFeishu, SSOProviderLark:
 		return s.exchangeFeishuToken(code, clientID, clientSecret, tokenURL)
+	case SSOProviderDingTalk:
+		return s.exchangeDingTalkToken(code, clientID, clientSecret, tokenURL)
+	case SSOProviderWeCom:
+		return s.exchangeWeComCorpToken(clientID, clientSecret, tokenURL)
 	}
-
-	// 标准 OAuth2 Token Exchange（适用于大多数服务提供商）
-	data := url.Values{}
-	data.Set("grant_type", "authorization_code")
-	data.Set("code", code)
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("redirect_uri", redirectURL)
-
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", fmt.Errorf("创建请求失败: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("请求失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("读取响应失败: %w", err)
-	}
-
-	fmt.Printf("📥 [SSO] Token Response: %s\n", string(body))
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("获取token失败 (HTTP %d): %s", resp.StatusCode, string(body))
-	}
-
-	// 解析响应
-	var tokenResp struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		ExpiresIn   int    `json:"expires_in"`
-		Error       string `json:"error"`
-		ErrorDesc   string `json:"error_description"`
-	}
-
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
-		return "", fmt.Errorf("解析token响应失败: %w", err)
-	}
-
-	if tokenResp.Error != "" {
-		return "", fmt.Errorf("获取token失败: %s - %s", tokenResp.Error, tokenResp.ErrorDesc)
-	}
-
-	if tokenResp.AccessToken == "" {
-		return "", errors.New("响应中未包含access_token")
-	}
-
-	fmt.Printf(" [SSO] Token 获取成功\n")
-	return tokenResp.AccessToken, nil
+	return s.exchangeOIDCToken(code, clientID, clientSecret, tokenURL, redirectURL)
 }
 
-// exchangeFeishuToken 飞书专用的 Token Exchange
-func (s *AuthService) exchangeFeishuToken(code, appID, appSecret, tokenURL string) (string, error) {
-	requestBody := map[string]interface{}{
-		"grant_type": "authorization_code",
-		"code":       code,
+// GetSSOUserInfo 获取 SSO 用户信息（入口，分发到各 provider）
+func (s *AuthService) GetSSOUserInfo(accessToken, provider, userInfoURL, oauthCode, agentID string) (*SSOUserInfo, error) {
+	p := normalizeSSOProvider(provider)
+	fmt.Printf(" [SSO] 获取用户信息: provider=%s (normalized=%s)\n", provider, p)
+
+	switch p {
+	case SSOProviderFeishu, SSOProviderLark:
+		return s.getFeishuUserInfo(accessToken, userInfoURL)
+	case SSOProviderDingTalk:
+		return s.getDingTalkUserInfo(accessToken, userInfoURL)
+	case SSOProviderWeCom:
+		return s.getWeComUserInfo(accessToken, oauthCode, agentID)
 	}
-
-	bodyBytes, err := json.Marshal(requestBody)
-	if err != nil {
-		return "", fmt.Errorf("构造请求体失败: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", tokenURL, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return "", fmt.Errorf("创建请求失败: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", encodeBasicAuth(appID, appSecret)))
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("请求失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("读取响应失败: %w", err)
-	}
-
-	fmt.Printf("📥 [Feishu SSO] Token Response: %s\n", string(body))
-
-	var tokenResp FeishuTokenResponse
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
-		return "", fmt.Errorf("解析飞书token响应失败: %w", err)
-	}
-
-	if tokenResp.Code != 0 {
-		return "", fmt.Errorf("飞书返回错误 (code: %d): %s", tokenResp.Code, tokenResp.Msg)
-	}
-
-	if tokenResp.Data == nil || tokenResp.Data.AccessToken == "" {
-		return "", errors.New("飞书响应中未包含access_token")
-	}
-
-	fmt.Printf(" [Feishu SSO] Token 获取成功\n")
-	return tokenResp.Data.AccessToken, nil
+	return s.getOIDCUserInfo(accessToken, userInfoURL)
 }
 
 // encodeBasicAuth 编码 Basic Auth（使用 Base64）
 func encodeBasicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-// GetSSOUserInfo 获取 SSO 用户信息
-func (s *AuthService) GetSSOUserInfo(accessToken, provider, userInfoURL string) (*SSOUserInfo, error) {
-	fmt.Printf(" [SSO] 获取用户信息: provider=%s, userInfoURL=%s\n", provider, userInfoURL)
-
-	// 根据不同的服务提供商处理
-	if strings.Contains(strings.ToLower(provider), "feishu") || strings.Contains(strings.ToLower(provider), "lark") {
-		return s.getFeishuUserInfo(accessToken, userInfoURL)
-	}
-
-	// 标准 OAuth2 UserInfo 请求
-	req, err := http.NewRequest("GET", userInfoURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("创建请求失败: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("请求失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("读取响应失败: %w", err)
-	}
-
-	fmt.Printf("📥 [SSO] UserInfo Response: %s\n", string(body))
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("获取用户信息失败 (HTTP %d): %s", resp.StatusCode, string(body))
-	}
-
-	// 解析标准 OIDC UserInfo
-	var userInfo SSOUserInfo
-	if err := json.Unmarshal(body, &userInfo); err != nil {
-		return nil, fmt.Errorf("解析用户信息失败: %w", err)
-	}
-
-	if userInfo.Sub == "" && userInfo.Email == "" {
-		return nil, errors.New("用户信息中缺少必要字段（sub或email）")
-	}
-
-	fmt.Printf(" [SSO] 用户信息获取成功: email=%s, name=%s\n", userInfo.Email, userInfo.Name)
-	return &userInfo, nil
-}
-
-// getFeishuUserInfo 获取飞书用户信息
-func (s *AuthService) getFeishuUserInfo(accessToken, userInfoURL string) (*SSOUserInfo, error) {
-	req, err := http.NewRequest("GET", userInfoURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("创建请求失败: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("请求失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("读取响应失败: %w", err)
-	}
-
-	fmt.Printf("📥 [Feishu SSO] UserInfo Response: %s\n", string(body))
-
-	var userInfoResp FeishuUserInfoResponse
-	if err := json.Unmarshal(body, &userInfoResp); err != nil {
-		return nil, fmt.Errorf("解析飞书用户信息失败: %w", err)
-	}
-
-	if userInfoResp.Code != 0 {
-		return nil, fmt.Errorf("飞书返回错误 (code: %d): %s", userInfoResp.Code, userInfoResp.Msg)
-	}
-
-	if userInfoResp.Data == nil {
-		return nil, errors.New("飞书响应中未包含用户数据")
-	}
-
-	// 转换为通用格式
-	userData := userInfoResp.Data
-	userInfo := &SSOUserInfo{
-		Sub:       userData.Sub,
-		OpenID:    userData.OpenID,
-		UnionID:   userData.UnionID,
-		Email:     userData.Email,
-		Name:      userData.Name,
-		Mobile:    userData.Mobile,
-		AvatarURL: userData.AvatarURL,
-	}
-
-	// 生成用户名：优先使用邮箱前缀，其次使用 OpenID
-	if userInfo.Email != "" {
-		parts := strings.Split(userInfo.Email, "@")
-		userInfo.Username = parts[0]
-	} else if userInfo.OpenID != "" {
-		userInfo.Username = "feishu_" + userInfo.OpenID
-	} else {
-		userInfo.Username = "sso_" + uuid.New().String()[:8]
-	}
-
-	fmt.Printf(" [Feishu SSO] 用户信息获取成功: email=%s, name=%s, openid=%s\n",
-		userInfo.Email, userInfo.Name, userInfo.OpenID)
-
-	return userInfo, nil
 }
 
 // CreateOrUpdateSSOUser 创建或更新 SSO 用户
@@ -1235,6 +1052,11 @@ func (s *AuthService) CreateOrUpdateSSOUser(ssoUserInfo *SSOUserInfo) (*model.Us
 			user.Email = ssoUserInfo.Email
 		}
 
+		// 白名单仅提升为 admin，不因不在名单而降级
+		if s.isAdminEmailWhitelisted(ssoUserInfo.Email) && user.Role != "admin" {
+			user.Role = "admin"
+		}
+
 		if err := s.repo.UpdateUser(user); err != nil {
 			return nil, fmt.Errorf("更新用户失败: %w", err)
 		}
@@ -1252,13 +1074,18 @@ func (s *AuthService) CreateOrUpdateSSOUser(ssoUserInfo *SSOUserInfo) (*model.Us
 		return nil, fmt.Errorf("密码加密失败: %w", err)
 	}
 
+	role := "user"
+	if s.isAdminEmailWhitelisted(ssoUserInfo.Email) {
+		role = "admin"
+	}
+
 	user = &model.User{
 		ID:       uuid.New().String(),
 		Username: ssoUserInfo.Username,
 		Password: string(hashedPassword),
 		Email:    ssoUserInfo.Email,
 		FullName: ssoUserInfo.Name,
-		Role:     "user", // 默认角色
+		Role:     role,
 		Status:   "active",
 	}
 
@@ -1287,9 +1114,28 @@ func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.Logi
 	tokenURL := s.getSettingValue(authSettings, "ssoTokenUrl", "")
 	userInfoURL := s.getSettingValue(authSettings, "ssoUserInfoUrl", "")
 	redirectURL := s.getSettingValue(authSettings, "ssoRedirectUrl", "")
+	agentID := s.getSettingValue(authSettings, "ssoAgentId", "")
 
-	if provider == "" || clientID == "" || clientSecret == "" || tokenURL == "" || userInfoURL == "" {
+	p := normalizeSSOProvider(provider)
+	if clientID == "" || clientSecret == "" || redirectURL == "" {
 		return nil, errors.New("SSO配置不完整")
+	}
+	switch p {
+	case SSOProviderWeCom:
+		if tokenURL == "" {
+			tokenURL = defaultWeComGetTokenURL
+		}
+	case SSOProviderDingTalk:
+		if tokenURL == "" {
+			tokenURL = defaultDingTalkTokenURL
+		}
+		if userInfoURL == "" {
+			userInfoURL = defaultDingTalkUserInfoURL
+		}
+	default:
+		if tokenURL == "" || userInfoURL == "" {
+			return nil, errors.New("SSO配置不完整")
+		}
 	}
 
 	// 1. 使用授权码换取访问令牌
@@ -1299,7 +1145,7 @@ func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.Logi
 	}
 
 	// 2. 使用访问令牌获取用户信息
-	ssoUserInfo, err := s.GetSSOUserInfo(accessToken, provider, userInfoURL)
+	ssoUserInfo, err := s.GetSSOUserInfo(accessToken, provider, userInfoURL, code, agentID)
 	if err != nil {
 		return nil, fmt.Errorf("获取用户信息失败: %w", err)
 	}

@@ -1,0 +1,1 @@
+import{U as t}from"./index-DMv2Ja0R.js";const e={list:s=>t.get("/api/build-master/lists",{params:s}),get:s=>t.get(`/api/build-master/lists/${s}`),getRecords:s=>t.get("/api/build-master/records",{params:{list_id:s}}),create:s=>t.post("/api/build-master/lists",s),update:(s,i)=>t.patch(`/api/build-master/lists/${s}`,i)};export{e as b};

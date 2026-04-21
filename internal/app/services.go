@@ -46,7 +46,7 @@ type Services struct {
 func InitializeServices(repos *Repositories, cfg *config.Config) *Services {
 	hostService := service.NewHostService(repos.Host)
 	sessionService := service.NewSessionService(repos.Session, repos.Host)
-	authService := service.NewAuthService(repos.User, repos.Setting, cfg.Security.JWTSecret)
+	authService := service.NewAuthService(repos.User, repos.Setting, cfg.Security.JWTSecret, cfg.Security.AdminWhitelist)
 
 	assetSyncService := service.NewAssetSyncService(repos.AssetSync, repos.Host)
 

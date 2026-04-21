@@ -14,6 +14,7 @@ import (
 	"github.com/fisker086/keyops/internal/notification"
 	"github.com/fisker086/keyops/internal/repository"
 	bastionService "github.com/fisker086/keyops/internal/service/bastion"
+	pkgconfig "github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/distributed"
 	pkgredis "github.com/fisker086/keyops/pkg/redis"
 	"github.com/gin-gonic/gin"
@@ -336,10 +337,15 @@ func (h *SettingHandler) GetAuthMethods(c *gin.Context) {
 	// 获取当前的认证方式，默认为 password
 	authMethod := "password"
 	for _, setting := range authSettings {
-		if setting.Key == "authMethod" {
+		if repository.LogicalSettingKey("auth", setting.Key) == "authMethod" {
 			authMethod = setting.Value
 			break
 		}
+	}
+
+	// config / 环境变量强制认证方式（覆盖数据库，便于误配 SSO 时自救）
+	if o := pkgconfig.SecurityAuthMethodOverride(); o != "" {
+		authMethod = o
 	}
 
 	// 根据 authMethod 判断各认证方式是否启用

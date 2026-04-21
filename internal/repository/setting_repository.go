@@ -1,10 +1,22 @@
 package repository
 
 import (
+	"strings"
+
 	"github.com/fisker086/keyops/internal/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+// LogicalSettingKey strips the "category." prefix from stored keys.
+// Settings saved via UpdateSettings use keys like "auth.authMethod"; older rows may use "authMethod".
+func LogicalSettingKey(category, key string) string {
+	prefix := category + "."
+	if strings.HasPrefix(key, prefix) {
+		return key[len(prefix):]
+	}
+	return key
+}
 
 type SettingRepository struct {
 	db *gorm.DB
