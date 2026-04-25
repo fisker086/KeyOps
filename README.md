@@ -1,4 +1,4 @@
-# KeyOps - Infrastructure Management Platform
+# SmartOps - Infrastructure Management Platform
 
 **English** (default) | [中文](README.zh.md)
 
