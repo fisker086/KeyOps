@@ -1,4 +1,4 @@
-# SmartOps - 基础设施管理平台
+# KeyOps - 基础设施管理平台
 
 [English](README.md) | **中文**
 
