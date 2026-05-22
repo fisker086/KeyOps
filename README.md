@@ -91,7 +91,6 @@
 | | 📉 Optimization | Cost optimization recommendations based on usage analysis | ✅ |
 | | 📋 Resource Breakdown | Resource count and expense distribution analysis | ✅ |
 | | 🔄 Bill Sync | Scheduled auto-sync of cloud bills with configurable frequency | ✅ |
-
 | **🔧 CMDB MCP** | 🖥️ CMDB Tools | CMDB (host/asset) query tools via Model Context Protocol | ✅ |
 | | 🛠️ K8s Tools | K8s resource operation tools via MCP | ✅ |
 | | 🔌 MCP Service | Standard MCP server for AI tool invocation, supports API key auth | ✅ |
