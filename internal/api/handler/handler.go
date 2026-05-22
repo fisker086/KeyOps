@@ -4,6 +4,8 @@ package handler
 
 // 重新导出所有 handler 类型，保持向后兼容
 import (
+	// ApiKey handlers
+	apiKeyHandler "github.com/fisker086/keyops/internal/api/handler/api_key"
 	// Auth handlers
 	authHandler "github.com/fisker086/keyops/internal/api/handler/auth"
 	// Bastion handlers
@@ -56,7 +58,6 @@ type HostGroupHandler = bastionHandler.HostGroupHandler
 type RoutingHandler = bastionHandler.RoutingHandler
 type ProxyHandler = bastionHandler.ProxyHandler
 type DashboardHandler = bastionHandler.DashboardHandler
-type HostMonitorHandler = bastionHandler.HostMonitorHandler
 
 var NewHostHandler = bastionHandler.NewHostHandler
 var NewSessionHandler = bastionHandler.NewSessionHandler
@@ -69,7 +70,6 @@ var NewHostGroupHandler = bastionHandler.NewHostGroupHandler
 var NewRoutingHandler = bastionHandler.NewRoutingHandler
 var NewProxyHandler = bastionHandler.NewProxyHandler
 var NewDashboardHandler = bastionHandler.NewDashboardHandler
-var NewHostMonitorHandler = bastionHandler.NewHostMonitorHandler
 
 // Ticket handlers
 type TicketHandler = ticketHandler.TicketHandler
@@ -118,8 +118,18 @@ var NewOnCallHandler = onCallHandler.NewOnCallHandler
 
 // Bill handlers
 type BillHandler = billHandler.BillHandler
+type ExpensesMapHandler = billHandler.ExpensesMapHandler
+type CloudAccountHandler = billHandler.CloudAccountHandler
+type ResourcesHandler = billHandler.ResourcesHandler
+type BillDashboardHandler = billHandler.DashboardHandler
+type FinOpsHandler = billHandler.FinOpsHandler
 
 var NewBillHandler = billHandler.NewBillHandler
+var NewExpensesMapHandler = billHandler.NewExpensesMapHandler
+var NewCloudAccountHandler = billHandler.NewCloudAccountHandler
+var NewResourcesHandler = billHandler.NewResourcesHandler
+var NewBillDashboardHandler = billHandler.NewDashboardHandler
+var NewFinOpsHandler = billHandler.NewFinOpsHandler
 
 // Permission handlers
 type PermissionHandler = permissionHandler.PermissionHandler
@@ -172,3 +182,8 @@ var NewReleaseHandler = releaseHandler.NewReleaseHandler
 type BuildMasterHandler = buildmasterHandler.BuildMasterHandler
 
 var NewBuildMasterHandler = buildmasterHandler.NewBuildMasterHandler
+
+// ApiKey handlers
+type ApiKeyHandler = apiKeyHandler.ApiKeyHandler
+
+var NewApiKeyHandler = apiKeyHandler.NewApiKeyHandler

@@ -3,12 +3,13 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"github.com/fisker086/keyops/pkg/logger"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
 	"github.com/google/uuid"
@@ -158,7 +159,7 @@ func (s *SessionService) GetLoginRecordsByUser(page, pageSize int, hostID, userI
 }
 
 // GetSessionHistories 获取SSH会话历史记录（用于首页展示）
-func (s *SessionService) GetSessionHistories(page, pageSize int, hostID string) ([]map[string]interface{}, int64, error) {
+func (s *SessionService) GetSessionHistories(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -200,6 +201,10 @@ func (s *SessionService) GetSessionRecordings(page, pageSize int, search string)
 	}
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 10
+	}
+
+	if s.repo.UsesMongo() {
+		return s.getSessionRecordingsMongo(page, pageSize, search)
 	}
 
 	// 直接从 session_recordings 表查询
@@ -318,7 +323,38 @@ func (s *SessionService) GetSessionRecordings(page, pageSize int, search string)
 }
 
 func (s *SessionService) GetSessionRecording(sessionID string) (*model.SessionRecording, error) {
-	// 直接从 session_recordings 表查询
+	if s.repo.UsesMongo() {
+		recording, err := s.repo.FindSessionRecordingBySessionID(sessionID)
+		if err != nil {
+			return nil, err
+		}
+		if recording.HostName == "" && recording.HostID != "" {
+			var host model.Host
+			if err := s.repo.GetDB().Select("name").Where("id = ?", recording.HostID).First(&host).Error; err == nil {
+				recording.HostName = host.Name
+			}
+		}
+		counts, err := s.repo.CountCommandsBySessions([]string{sessionID})
+		if err == nil {
+			recording.CommandCount = counts[sessionID]
+		}
+		if recording.Status == "closed" {
+			if recording.Duration == "进行中" || recording.Duration == "???" || recording.Duration == "" {
+				if recording.EndTime != nil {
+					diff := recording.EndTime.Sub(recording.StartTime)
+					minutes := int(diff.Minutes())
+					seconds := int(diff.Seconds()) % 60
+					recording.Duration = fmt.Sprintf("%dm %ds", minutes, seconds)
+					_ = s.repo.UpdateSessionRecordingFields(sessionID, map[string]interface{}{"duration": recording.Duration})
+				} else {
+					recording.Duration = "-"
+					_ = s.repo.UpdateSessionRecordingFields(sessionID, map[string]interface{}{"duration": "-"})
+				}
+			}
+		}
+		return recording, nil
+	}
+
 	var recording model.SessionRecording
 	if err := s.repo.GetDB().Where("session_id = ?", sessionID).First(&recording).Error; err != nil {
 		return nil, err
@@ -375,7 +411,8 @@ func (s *SessionService) CreateSessionRecording(recording *model.SessionRecordin
 }
 
 func (s *SessionService) UpdateSessionRecording(sessionID string, updates map[string]interface{}) error {
-	return s.repo.UpdateSessionRecording(sessionID, updates)
+	recBytes, _ := json.Marshal(updates)
+	return s.repo.UpdateSessionRecording(sessionID, recBytes)
 }
 
 // ===== Command Record Methods =====
@@ -389,7 +426,10 @@ func (s *SessionService) GetCommandRecords(page, pageSize int, search, hostFilte
 		pageSize = 10
 	}
 
-	// 从 command_histories 表查询（CommandRecord 的表名）
+	if s.repo.UsesMongo() {
+		return s.repo.FindCommandRecords(page, pageSize, search, hostFilter)
+	}
+
 	var records []model.CommandRecord
 	var total int64
 
@@ -428,21 +468,30 @@ func (s *SessionService) CreateCommandRecord(record *model.CommandRecord) error 
 }
 
 func (s *SessionService) GetCommandsBySession(sessionID string) ([]model.CommandRecord, error) {
-	// 直接从 command_records 表查询指定会话的命令
+	if s.repo.UsesMongo() {
+		return s.repo.FindCommandsBySession(sessionID)
+	}
 	var records []model.CommandRecord
 	if err := s.repo.GetDB().Where("session_id = ?", sessionID).Order("executed_at ASC").Find(&records).Error; err != nil {
 		return nil, err
 	}
-
 	return records, nil
 }
 
 // TerminateSession 终止会话
 func (s *SessionService) TerminateSession(sessionID string) error {
-	// 1. 从数据库查询会话信息（统一的 session_recordings 表）
 	var recording model.SessionRecording
-	if err := s.repo.GetDB().Where("session_id = ?", sessionID).First(&recording).Error; err != nil {
-		return fmt.Errorf("会话不存在: %w", err)
+	var err error
+	if s.repo.UsesMongo() {
+		rec, e := s.repo.FindSessionRecordingBySessionID(sessionID)
+		if e != nil {
+			return fmt.Errorf("会话不存在: %w", e)
+		}
+		recording = *rec
+	} else {
+		if err = s.repo.GetDB().Where("session_id = ?", sessionID).First(&recording).Error; err != nil {
+			return fmt.Errorf("会话不存在: %w", err)
+		}
 	}
 
 	// 2. 检查会话状态
@@ -504,19 +553,32 @@ func (s *SessionService) TerminateSession(sessionID string) error {
 	seconds := int(diff.Seconds()) % 60
 	duration := fmt.Sprintf("%dm %ds", minutes, seconds)
 
-	// 5.1 更新 session_recordings
 	sessionUpdates := map[string]interface{}{
 		"status":   "closed",
 		"end_time": now,
 		"duration": duration,
 	}
+	if s.repo.UsesMongo() {
+		if err := s.repo.UpdateSessionRecordingFields(sessionID, sessionUpdates); err != nil {
+			return fmt.Errorf("更新 session_recordings 状态失败: %w", err)
+		}
+		loginUpdates := map[string]interface{}{
+			"status":      "closed",
+			"logout_time": now,
+			"duration":    int(diff.Seconds()),
+		}
+		if err := s.repo.UpdateLoginBySessionID(sessionID, loginUpdates); err != nil {
+			logger.Errorf("[SessionService] 更新 login_records 失败: %v", err)
+		}
+		return nil
+	}
+
 	if err := s.repo.GetDB().Model(&model.SessionRecording{}).
 		Where("session_id = ?", sessionID).
 		Updates(sessionUpdates).Error; err != nil {
 		return fmt.Errorf("更新 session_recordings 状态失败: %w", err)
 	}
 
-	// 5.2 更新 login_records
 	loginUpdates := map[string]interface{}{
 		"status":      "closed",
 		"logout_time": now,
@@ -525,9 +587,70 @@ func (s *SessionService) TerminateSession(sessionID string) error {
 	if err := s.repo.GetDB().Table("login_records").
 		Where("session_id = ?", sessionID).
 		Updates(loginUpdates).Error; err != nil {
-		// 记录错误但不影响主流程
 		logger.Errorf("[SessionService] 更新 login_records 失败: %v", err)
 	}
 
 	return nil
+}
+
+func (s *SessionService) getSessionRecordingsMongo(page, pageSize int, search string) ([]model.SessionRecording, int64, error) {
+	recordings, total, err := s.repo.FindSessionRecordings(page, pageSize, search)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range recordings {
+		if recordings[i].Status == "closed" {
+			if recordings[i].Duration == "进行中" || recordings[i].Duration == "???" || recordings[i].Duration == "" {
+				if recordings[i].EndTime != nil {
+					diff := recordings[i].EndTime.Sub(recordings[i].StartTime)
+					minutes := int(diff.Minutes())
+					seconds := int(diff.Seconds()) % 60
+					recordings[i].Duration = fmt.Sprintf("%dm %ds", minutes, seconds)
+					_ = s.repo.UpdateSessionRecordingFields(recordings[i].SessionID, map[string]interface{}{"duration": recordings[i].Duration})
+				} else {
+					recordings[i].Duration = "-"
+					_ = s.repo.UpdateSessionRecordingFields(recordings[i].SessionID, map[string]interface{}{"duration": "-"})
+				}
+			}
+		}
+	}
+	if len(recordings) > 0 {
+		hostIDs := make([]string, 0, len(recordings))
+		hostIDSet := make(map[string]bool)
+		for _, rec := range recordings {
+			if rec.HostID != "" && !hostIDSet[rec.HostID] {
+				hostIDs = append(hostIDs, rec.HostID)
+				hostIDSet[rec.HostID] = true
+			}
+		}
+		if len(hostIDs) > 0 {
+			hostNameMap := make(map[string]string)
+			var hosts []model.Host
+			s.repo.GetDB().Select("id, name").Where("id IN ?", hostIDs).Find(&hosts)
+			for _, host := range hosts {
+				hostNameMap[host.ID] = host.Name
+			}
+			for i := range recordings {
+				if recordings[i].HostName == "" || recordings[i].HostName == recordings[i].HostIP {
+					if name, ok := hostNameMap[recordings[i].HostID]; ok {
+						recordings[i].HostName = name
+					}
+				}
+			}
+		}
+	}
+	if len(recordings) > 0 {
+		sessionIDs := make([]string, len(recordings))
+		for i, rec := range recordings {
+			sessionIDs[i] = rec.SessionID
+		}
+		counts, err := s.repo.CountCommandsBySessions(sessionIDs)
+		if err != nil {
+			return nil, 0, err
+		}
+		for i := range recordings {
+			recordings[i].CommandCount = counts[recordings[i].SessionID]
+		}
+	}
+	return recordings, total, nil
 }

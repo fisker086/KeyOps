@@ -9,15 +9,91 @@ import (
 )
 
 type Config struct {
-	Server      ServerConfig      `yaml:"server"`
-	Database    DatabaseConfig    `yaml:"database"`
-	Redis       RedisConfig       `yaml:"redis"`
-	Security    SecurityConfig    `yaml:"security"`
-	Logging     LoggingConfig     `yaml:"logging"`
-	SSH         SSHConfig         `yaml:"ssh"`
-	Proxy    ProxyConfig    `yaml:"proxy"`
-	Sync     SyncConfig     `yaml:"sync"`
-	Deploy   DeployConfig   `yaml:"deploy"`
+	Server         ServerConfig         `yaml:"server"`
+	Database       DatabaseConfig       `yaml:"database"`
+	MongoDB        MongoDBConfig        `yaml:"mongodb"`
+	Redis          RedisConfig          `yaml:"redis"`
+	Security       SecurityConfig       `yaml:"security"`
+	Logging        LoggingConfig        `yaml:"logging"`
+	SSH            SSHConfig            `yaml:"ssh"`
+	Proxy          ProxyConfig          `yaml:"proxy"`
+	Sync           SyncConfig           `yaml:"sync"`
+	// Pulumi removed, replaced by pkg/resource engine
+	Deploy         DeployConfig         `yaml:"deploy"`
+	BastionStorage BastionStorageConfig `yaml:"bastion_storage"`
+	BillStorage    BillStorageConfig    `yaml:"bill_storage"`
+}
+
+// BastionStorageConfig 堡垒机存储配置
+type BastionStorageConfig struct {
+	Engine  string           `yaml:"engine"` // mysql / mongodb
+	MongoDB BastionMongoYAML `yaml:"mongodb"`
+}
+
+// BastionMongoYAML 堡垒机专用 Mongo 配置（含集合名）
+type BastionMongoYAML struct {
+	MongoConfig `yaml:",inline"`
+	// 以下为可选；空则 SetDefaults 填入默认集合名
+	CollectionLogins     string `yaml:"collection_logins"`
+	CollectionRecordings string `yaml:"collection_recordings"`
+	CollectionCommands   string `yaml:"collection_commands"`
+}
+
+func (c *BastionStorageConfig) GetEngine() string {
+	if c.Engine == "" {
+		return "mysql"
+	}
+	return c.Engine
+}
+
+func (c *BastionStorageConfig) SetDefaults() {
+	if c.Engine == "" {
+		c.Engine = "mysql"
+	}
+	if c.MongoDB.Database == "" {
+		c.MongoDB.Database = "keyops_bastion"
+	}
+	if c.Engine == "mongodb" && c.MongoDB.URI == "" {
+		c.MongoDB.URI = "mongodb://localhost:27017"
+	}
+	if c.MongoDB.CollectionLogins == "" {
+		c.MongoDB.CollectionLogins = "bastion_logins"
+	}
+	if c.MongoDB.CollectionRecordings == "" {
+		c.MongoDB.CollectionRecordings = "bastion_recordings"
+	}
+	if c.MongoDB.CollectionCommands == "" {
+		c.MongoDB.CollectionCommands = "bastion_commands"
+	}
+}
+
+func (c *BastionStorageConfig) GetMongoURI() string {
+	return c.MongoDB.GetURI()
+}
+
+// MongoConfig MongoDB 配置（内嵌到 bastion_storage 或 bill_storage）
+type MongoConfig struct {
+	URI      string `yaml:"uri"`
+	Database string `yaml:"database"`
+}
+
+func (c *MongoConfig) GetURI() string {
+	return c.URI
+}
+
+// BillStorageConfig 账单存储配置（复用 MongoConfig）
+type BillStorageConfig struct {
+	MongoConfig `yaml:",inline"`
+}
+
+func (c *BillStorageConfig) SetDefaults() {
+	if c.Database == "" {
+		c.Database = "keyops_bill"
+	}
+}
+
+func (c *BillStorageConfig) GetURI() string {
+	return c.URI
 }
 
 // DeployConfig 非容器部署相关配置（Git 拉取 Playbook 等）
@@ -28,9 +104,9 @@ type DeployConfig struct {
 // DeployGitConfig Git 拉取认证与缓存
 // 拉私有仓库时使用 Username + Password（或 Personal Access Token）
 type DeployGitConfig struct {
-	Username string `yaml:"username"`   // Git 用户名
-	Password string `yaml:"password"`   // 密码或 token
-	CacheDir string `yaml:"cache_dir"`  // 仓库本地缓存目录
+	Username string `yaml:"username"`  // Git 用户名
+	Password string `yaml:"password"`  // 密码或 token
+	CacheDir string `yaml:"cache_dir"` // 仓库本地缓存目录
 }
 
 // SetDefaults 设置非容器部署配置默认值
@@ -195,9 +271,51 @@ func (c *ProxyConfig) SetDefaults() {
 // 所有 RDP 相关配置（guacd_host, guacd_port, recording_enabled 等）都通过数据库管理
 
 type SyncConfig struct {
-	Interval    int `yaml:"interval"`     // 同步间隔（秒），默认60秒
-	CleanupDays int `yaml:"cleanup_days"` // 清理已同步数据的天数，默认7天
-	BatchSize   int `yaml:"batch_size"`   // 每次同步的批量大小，默认1000
+	Interval       int    `yaml:"interval"`         // 同步间隔（秒），默认60秒
+	CleanupDays    int    `yaml:"cleanup_days"`     // 清理已同步数据的天数，默认7天
+	BatchSize      int    `yaml:"batch_size"`       // 每次同步的批量大小，默认1000
+	BillSyncHour   int    `yaml:"bill_sync_hour"`   // 账单同步执行小时，默认2点
+	BillSyncMinute int    `yaml:"bill_sync_minute"` // 账单同步执行分钟，默认0分
+	BillSyncCron   string `yaml:"bill_sync_cron"`   // Cron表达式，支持5段或6段；为空时由hour/minute生成
+}
+
+func (c *SyncConfig) SetDefaults() {
+	if c.Interval == 0 {
+		c.Interval = 60
+	}
+	if c.CleanupDays == 0 {
+		c.CleanupDays = 7
+	}
+	if c.BatchSize == 0 {
+		c.BatchSize = 1000
+	}
+	if c.BillSyncHour == 0 {
+		c.BillSyncHour = 2
+	}
+	if c.BillSyncHour < 0 || c.BillSyncHour > 23 {
+		c.BillSyncHour = 2
+	}
+	if c.BillSyncMinute < 0 || c.BillSyncMinute > 59 {
+		c.BillSyncMinute = 0
+	}
+	if c.BillSyncCron == "" {
+		c.BillSyncCron = fmt.Sprintf("0 %d %d * * *", c.BillSyncMinute, c.BillSyncHour)
+	}
+}
+
+type MongoDBConfig struct {
+	URI      string `yaml:"uri"`
+	Database string `yaml:"database"`
+}
+
+func (c *MongoDBConfig) SetDefaults() {
+	if c.Database == "" {
+		c.Database = "zjump_bill"
+	}
+}
+
+func (c *MongoDBConfig) GetURI() string {
+	return c.URI
 }
 
 var GlobalConfig *Config
@@ -219,6 +337,10 @@ func Load(configPath string) (*Config, error) {
 	config.Security.SetDefaults()
 	config.Proxy.SetDefaults()
 	config.Deploy.SetDefaults()
+	config.MongoDB.SetDefaults()
+	config.BastionStorage.SetDefaults()
+	config.BillStorage.SetDefaults()
+	config.Sync.SetDefaults()
 
 	// 验证配置
 	if err := config.Redis.Validate(); err != nil {
@@ -290,6 +412,31 @@ func Load(configPath string) (*Config, error) {
 	// 重新验证Redis配置（环境变量可能改变了配置）
 	if err := config.Redis.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid redis config: %w", err)
+	}
+
+	// 支持通过环境变量覆盖 MongoDB 配置
+	if v := os.Getenv("MONGO_URI"); v != "" {
+		config.MongoDB.URI = v
+	}
+	if v := os.Getenv("MONGO_DATABASE"); v != "" {
+		config.MongoDB.Database = v
+	}
+	if v := os.Getenv("BILL_MONGO_URI"); v != "" {
+		config.BillStorage.URI = v
+	}
+	if v := os.Getenv("BILL_MONGO_DATABASE"); v != "" {
+		config.BillStorage.Database = v
+	}
+	if v := os.Getenv("BILL_SYNC_CRON"); v != "" {
+		config.Sync.BillSyncCron = v
+	}
+
+	// 堡垒机存储配置环境变量
+	if v := os.Getenv("BASTION_STORAGE_ENGINE"); v != "" {
+		config.BastionStorage.Engine = v
+	}
+	if v := os.Getenv("BASTION_MONGO_URI"); v != "" {
+		config.BastionStorage.MongoDB.URI = v
 	}
 
 	// 非容器部署 - Git 拉取认证（环境变量覆盖，敏感信息可不写进配置文件）

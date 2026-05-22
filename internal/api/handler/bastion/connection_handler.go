@@ -3,6 +3,7 @@ package bastion
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -30,6 +31,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/ssh"
 	"gorm.io/gorm"
 )
@@ -51,6 +53,7 @@ type ConnectionHandler struct {
 	blacklistMgr   *blacklist.Manager
 	systemUserRepo *repository.SystemUserRepository
 	settingRepo    *repository.SettingRepository
+	sessionRepo    *repository.SessionRepository // 堡垒机登录/会话审计（MySQL 或 Mongo）
 }
 
 // NewConnectionHandler 创建连接处理器
@@ -63,6 +66,7 @@ func NewConnectionHandler(
 	notificationMgr *notification.NotificationManager,
 	systemUserRepo *repository.SystemUserRepository,
 	settingRepo *repository.SettingRepository,
+	sessionRepo *repository.SessionRepository,
 ) *ConnectionHandler {
 	// 初始化黑名单管理器（从数据库读取，带高级检测防绕过）
 	blacklistMgr := blacklist.NewManagerFromDB(db)
@@ -81,7 +85,12 @@ func NewConnectionHandler(
 		blacklistMgr:   blacklistMgr,
 		systemUserRepo: systemUserRepo,
 		settingRepo:    settingRepo,
+		sessionRepo:    sessionRepo,
 	}
+}
+
+func (h *ConnectionHandler) bastionMongo() bool {
+	return h.sessionRepo != nil && h.sessionRepo.UsesMongo()
 }
 
 // HandleConnection 处理 WebSocket 连接（统一入口）
@@ -280,7 +289,11 @@ func (h *ConnectionHandler) handleDirectConnection(ws *websocket.Conn, hostID st
 		LoginTime: startTime,
 		Status:    "connecting", // 初始状态为连接中
 	}
-	if err := database.DB.Create(loginRecord).Error; err != nil {
+	if h.bastionMongo() {
+		if err := h.sessionRepo.CreateLoginRecord(loginRecord); err != nil {
+			log.Printf("[Connection] Failed to create login record (mongo): %v", err)
+		}
+	} else if err := database.DB.Create(loginRecord).Error; err != nil {
 		log.Printf("[Connection] Failed to create login record: %v", err)
 	}
 	log.Printf("[Connection] Login record created: session=%s, host=%s(%s), user=%s",
@@ -292,29 +305,58 @@ func (h *ConnectionHandler) handleDirectConnection(ws *websocket.Conn, hostID st
 	}
 	connectionType := map[bool]string{true: "rdp", false: "ssh_client"}[protocolType == protocol.ProtocolRDP]
 
-	// 注意：session_id 是唯一键，如果已存在则更新，不存在则创建
-	// 使用 FirstOrCreate 避免记录不存在时的错误日志
-	var existingRecording model.SessionRecording
-	result := database.DB.Where("session_id = ?", sessionID).FirstOrCreate(&existingRecording, model.SessionRecording{
-		ID:             uuid.New().String(),
-		SessionID:      sessionID,
-		ConnectionType: connectionType,
-		UserID:         userInfo.UserID,
-		HostID:         host.ID,
-		HostName:       host.Name,
-		HostIP:         host.IP,
-		Username:       userInfo.Username,
-		StartTime:      startTime,
-		Status:         "connecting",
-		Duration:       "进行中",
-	})
-
-	if result.Error != nil {
-		log.Printf("[Connection] Failed to create or query session recording: %v", result.Error)
+	now := time.Now()
+	if h.bastionMongo() {
+		_, findErr := h.sessionRepo.FindSessionRecordingBySessionID(sessionID)
+		if findErr != nil && errors.Is(findErr, mongo.ErrNoDocuments) {
+			rec := model.SessionRecording{
+				ID:             uuid.New().String(),
+				SessionID:      sessionID,
+				ConnectionType: connectionType,
+				UserID:         userInfo.UserID,
+				HostID:         host.ID,
+				HostName:       host.Name,
+				HostIP:         host.IP,
+				Username:       userInfo.Username,
+				StartTime:      startTime,
+				Status:         "connecting",
+				Duration:       "进行中",
+				CreatedAt:      now,
+				UpdatedAt:      now,
+			}
+			if err := h.sessionRepo.CreateSessionRecording(&rec); err != nil {
+				log.Printf("[Connection] Failed to create session recording (mongo): %v", err)
+			}
+		} else if findErr != nil {
+			log.Printf("[Connection] Failed to query session recording (mongo): %v", findErr)
+		} else {
+			if err := h.sessionRepo.UpdateSessionRecordingFields(sessionID, map[string]interface{}{
+				"connection_type": connectionType,
+				"status":          "connecting",
+				"start_time":      startTime,
+			}); err != nil {
+				log.Printf("[Connection] Failed to update session recording (mongo): %v", err)
+			}
+		}
 	} else {
-		// 如果记录已存在，更新连接类型和状态
-		if result.RowsAffected == 0 {
-			// 记录已存在，更新连接类型和状态
+		var existingRecording model.SessionRecording
+		result := database.DB.Where("session_id = ?", sessionID).FirstOrCreate(&existingRecording, model.SessionRecording{
+			ID:             uuid.New().String(),
+			SessionID:      sessionID,
+			ConnectionType: connectionType,
+			UserID:         userInfo.UserID,
+			HostID:         host.ID,
+			HostName:       host.Name,
+			HostIP:         host.IP,
+			Username:       userInfo.Username,
+			StartTime:      startTime,
+			Status:         "connecting",
+			Duration:       "进行中",
+		})
+
+		if result.Error != nil {
+			log.Printf("[Connection] Failed to create or query session recording: %v", result.Error)
+		} else if result.RowsAffected == 0 {
 			updates := map[string]interface{}{
 				"connection_type": connectionType,
 				"status":          "connecting",
@@ -353,51 +395,77 @@ func (h *ConnectionHandler) handleDirectConnection(ws *websocket.Conn, hostID st
 			seconds := int(diff.Seconds()) % 60
 			duration := fmt.Sprintf("%dm %ds", minutes, seconds)
 
-			result := database.DB.Model(&model.SessionRecording{}).
-				Where("session_id = ?", sessionID).
-				Updates(map[string]interface{}{
-					"end_time":  logoutTime,
-					"status":    "closed",
-					"duration":  duration,
-					"recording": recording,
-				})
-			if result.Error != nil {
-				log.Printf("[Connection]  Failed to update session recording: %v", result.Error)
+			sessUpdates := map[string]interface{}{
+				"end_time":  logoutTime,
+				"status":    "closed",
+				"duration":  duration,
+				"recording": recording,
+			}
+			if h.bastionMongo() {
+				if err := h.sessionRepo.UpdateSessionRecordingFields(sessionID, sessUpdates); err != nil {
+					log.Printf("[Connection]  Failed to update session recording (mongo): %v", err)
+				} else {
+					log.Printf("[Connection]  Session recording updated: session=%s (mongo)", sessionID)
+				}
 			} else {
-				log.Printf("[Connection]  Session recording updated: session=%s, affected_rows=%d",
-					sessionID, result.RowsAffected)
+				result := database.DB.Model(&model.SessionRecording{}).
+					Where("session_id = ?", sessionID).
+					Updates(sessUpdates)
+				if result.Error != nil {
+					log.Printf("[Connection]  Failed to update session recording: %v", result.Error)
+				} else {
+					log.Printf("[Connection]  Session recording updated: session=%s, affected_rows=%d",
+						sessionID, result.RowsAffected)
+				}
 			}
 
-			// 2. 更新登录记录为完成状态
-			result = database.DB.Model(&model.LoginRecord{}).
-				Where("session_id = ?", sessionID).
-				Updates(map[string]interface{}{
-					"logout_time": logoutTime,
-					"status":      "completed",
-					"duration":    durationSec,
-				})
-			if result.Error != nil {
-				log.Printf("[Connection]  Failed to update login record to completed: %v", result.Error)
+			loginDone := map[string]interface{}{
+				"logout_time": logoutTime,
+				"status":      "completed",
+				"duration":    durationSec,
+			}
+			if h.bastionMongo() {
+				if err := h.sessionRepo.UpdateLoginBySessionID(sessionID, loginDone); err != nil {
+					log.Printf("[Connection]  Failed to update login record to completed (mongo): %v", err)
+				} else {
+					log.Printf("[Connection]  Login record updated to completed: session=%s (mongo)", sessionID)
+				}
 			} else {
-				log.Printf("[Connection]  Login record updated to completed: session=%s, affected_rows=%d",
-					sessionID, result.RowsAffected)
+				result := database.DB.Model(&model.LoginRecord{}).
+					Where("session_id = ?", sessionID).
+					Updates(loginDone)
+				if result.Error != nil {
+					log.Printf("[Connection]  Failed to update login record to completed: %v", result.Error)
+				} else {
+					log.Printf("[Connection]  Login record updated to completed: session=%s, affected_rows=%d",
+						sessionID, result.RowsAffected)
+				}
 			}
 
 			log.Printf("[Connection]  Session %s closed successfully (duration: %v)", sessionID, duration)
 		} else {
-			// 连接失败，只更新登录记录
-			result := database.DB.Model(&model.LoginRecord{}).
-				Where("session_id = ?", sessionID).
-				Updates(map[string]interface{}{
-					"logout_time": logoutTime,
-					"status":      "failed",
-					"duration":    durationSec,
-				})
-			if result.Error != nil {
-				log.Printf("[Connection]  Failed to update login record to failed: %v", result.Error)
+			loginFail := map[string]interface{}{
+				"logout_time": logoutTime,
+				"status":      "failed",
+				"duration":    durationSec,
+			}
+			if h.bastionMongo() {
+				if err := h.sessionRepo.UpdateLoginBySessionID(sessionID, loginFail); err != nil {
+					log.Printf("[Connection]  Failed to update login record to failed (mongo): %v", err)
+				} else {
+					log.Printf("[Connection]  Login record updated to failed: session=%s, duration=%ds (mongo)",
+						sessionID, durationSec)
+				}
 			} else {
-				log.Printf("[Connection]  Login record updated to failed: session=%s, duration=%ds, affected_rows=%d",
-					sessionID, durationSec, result.RowsAffected)
+				result := database.DB.Model(&model.LoginRecord{}).
+					Where("session_id = ?", sessionID).
+					Updates(loginFail)
+				if result.Error != nil {
+					log.Printf("[Connection]  Failed to update login record to failed: %v", result.Error)
+				} else {
+					log.Printf("[Connection]  Login record updated to failed: session=%s, duration=%ds, affected_rows=%d",
+						sessionID, durationSec, result.RowsAffected)
+				}
 			}
 
 			log.Printf("[Connection]  Session %s failed (duration: %ds)", sessionID, durationSec)
@@ -732,46 +800,85 @@ func (h *ConnectionHandler) proxySSHConnection(ws *websocket.Conn, host *model.H
 			"terminal_cols":   120,
 			"terminal_rows":   30,
 		}
-		result := database.DB.Model(&model.SessionRecording{}).
-			Where("session_id = ?", sessionID).
-			Updates(updates)
-
-		if result.Error != nil {
-			log.Printf("[Connection]  Failed to update session recording: %v", result.Error)
-		} else if result.RowsAffected > 0 {
-			log.Printf("[Connection]  Session recording updated: session=%s, host=%s, type=webshell, rows_affected=%d",
-				sessionID, host.Name, result.RowsAffected)
-		} else {
-			// 如果记录不存在（理论上不应该发生），尝试创建
-			log.Printf("[Connection]  Session recording not found, creating new record for session %s", sessionID)
-			recording := &model.SessionRecording{
-				ID:             uuid.New().String(),
-				SessionID:      sessionID,
-				ConnectionType: "webshell",
-				UserID:         userInfo.UserID,
-				HostID:         host.ID,
-				HostName:       host.Name,
-				HostIP:         host.IP,
-				Username:       userInfo.Username,
-				StartTime:      startTime,
-				Status:         "active",
-				Duration:       "进行中",
-				TerminalCols:   120,
-				TerminalRows:   30,
+		if h.bastionMongo() {
+			if err := h.sessionRepo.UpdateSessionRecordingFields(sessionID, updates); err != nil {
+				log.Printf("[Connection]  Failed to update session recording (mongo): %v", err)
 			}
-			if err := database.DB.Create(recording).Error; err != nil {
-				log.Printf("[Connection]  Failed to create session recording: %v", err)
+			_, ferr := h.sessionRepo.FindSessionRecordingBySessionID(sessionID)
+			if ferr != nil && errors.Is(ferr, mongo.ErrNoDocuments) {
+				log.Printf("[Connection]  Session recording not found, creating new record for session %s", sessionID)
+				tnow := time.Now()
+				recording := &model.SessionRecording{
+					ID:             uuid.New().String(),
+					SessionID:      sessionID,
+					ConnectionType: "webshell",
+					UserID:         userInfo.UserID,
+					HostID:         host.ID,
+					HostName:       host.Name,
+					HostIP:         host.IP,
+					Username:       userInfo.Username,
+					StartTime:      startTime,
+					Status:         "active",
+					Duration:       "进行中",
+					TerminalCols:   120,
+					TerminalRows:   30,
+					CreatedAt:      tnow,
+					UpdatedAt:      tnow,
+				}
+				if err := h.sessionRepo.CreateSessionRecording(recording); err != nil {
+					log.Printf("[Connection]  Failed to create session recording (mongo): %v", err)
+				} else {
+					log.Printf("[Connection]  Session recording created: id=%s, session=%s, host=%s, type=webshell (mongo)",
+						recording.ID, sessionID, host.Name)
+				}
+			} else if ferr != nil {
+				log.Printf("[Connection]  Failed to load session recording after update (mongo): %v", ferr)
 			} else {
-				log.Printf("[Connection]  Session recording created: id=%s, session=%s, host=%s, type=webshell",
-					recording.ID, sessionID, host.Name)
+				log.Printf("[Connection]  Session recording updated: session=%s, host=%s, type=webshell (mongo)", sessionID, host.Name)
 			}
-		}
+			if err := h.sessionRepo.UpdateLoginStatusBySessionID(sessionID, "active"); err != nil {
+				log.Printf("[Connection] Failed to update login record status (mongo): %v", err)
+			}
+		} else {
+			result := database.DB.Model(&model.SessionRecording{}).
+				Where("session_id = ?", sessionID).
+				Updates(updates)
 
-		// 更新登录记录状态为 active
-		if err := database.DB.Model(&model.LoginRecord{}).
-			Where("session_id = ?", sessionID).
-			Update("status", "active").Error; err != nil {
-			log.Printf("[Connection] Failed to update login record status: %v", err)
+			if result.Error != nil {
+				log.Printf("[Connection]  Failed to update session recording: %v", result.Error)
+			} else if result.RowsAffected > 0 {
+				log.Printf("[Connection]  Session recording updated: session=%s, host=%s, type=webshell, rows_affected=%d",
+					sessionID, host.Name, result.RowsAffected)
+			} else {
+				log.Printf("[Connection]  Session recording not found, creating new record for session %s", sessionID)
+				recording := &model.SessionRecording{
+					ID:             uuid.New().String(),
+					SessionID:      sessionID,
+					ConnectionType: "webshell",
+					UserID:         userInfo.UserID,
+					HostID:         host.ID,
+					HostName:       host.Name,
+					HostIP:         host.IP,
+					Username:       userInfo.Username,
+					StartTime:      startTime,
+					Status:         "active",
+					Duration:       "进行中",
+					TerminalCols:   120,
+					TerminalRows:   30,
+				}
+				if err := database.DB.Create(recording).Error; err != nil {
+					log.Printf("[Connection]  Failed to create session recording: %v", err)
+				} else {
+					log.Printf("[Connection]  Session recording created: id=%s, session=%s, host=%s, type=webshell",
+						recording.ID, sessionID, host.Name)
+				}
+			}
+
+			if err := database.DB.Model(&model.LoginRecord{}).
+				Where("session_id = ?", sessionID).
+				Update("status", "active").Error; err != nil {
+				log.Printf("[Connection] Failed to update login record status: %v", err)
+			}
 		}
 
 		// 更新主机统计信息

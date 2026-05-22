@@ -1,12 +1,18 @@
 package app
 
 import (
+	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/database"
+	"github.com/fisker086/keyops/pkg/logger"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Repositories 包含所有 Repository 实例
 type Repositories struct {
+	ApiKey           *repository.ApiKeyRepository
+	RefreshToken     *repository.RefreshTokenRepository
 	Host             *repository.HostRepository
 	Session          *repository.SessionRepository
 	User             *repository.UserRepository
@@ -22,6 +28,7 @@ type Repositories struct {
 	K8sCluster       *repository.K8sClusterRepository
 	Deployment       *repository.DeploymentRepository
 	Bill             *repository.BillRepository
+	CloudAccount     *repository.CloudAccountRepository  // 新增：云账户仓库
 	Monitor          *repository.MonitorRepository
 	Organization     *repository.OrganizationRepository
 	Application          *repository.ApplicationRepository
@@ -56,12 +63,49 @@ type Repositories struct {
 	BuildMaster           *repository.BuildMasterRepository
 }
 
-// InitializeRepositories 初始化所有 Repository
-func InitializeRepositories() *Repositories {
+// InitializeRepositories 初始化所有 Repository（根据配置选择存储引擎）
+func InitializeRepositories(cfg *config.Config, bastionMongo *mongo.Client) *Repositories {
+	cfg.BastionStorage.SetDefaults()
+	var sessionRepo *repository.SessionRepository
+	if cfg.BastionStorage.GetEngine() == "mongodb" && bastionMongo != nil {
+		dbName := cfg.BastionStorage.MongoDB.Database
+		logins := cfg.BastionStorage.MongoDB.CollectionLogins
+		recs := cfg.BastionStorage.MongoDB.CollectionRecordings
+		cmds := cfg.BastionStorage.MongoDB.CollectionCommands
+		sessionRepo = repository.NewSessionRepository(
+			database.DB,
+			bastionMongo.Database(dbName).Collection(logins),
+			bastionMongo.Database(dbName).Collection(recs),
+			bastionMongo.Database(dbName).Collection(cmds),
+		)
+	} else {
+		sessionRepo = repository.NewSessionRepository(database.DB, nil, nil, nil)
+	}
+
+	if err := database.DB.AutoMigrate(&model.ApiKey{}); err != nil {
+		logger.Warnf("Failed to auto-migrate ApiKey model: %v", err)
+	} else {
+		logger.Infof("ApiKey table auto-migrated")
+	}
+
+	if err := database.DB.AutoMigrate(&model.CloudAccount{}); err != nil {
+		logger.Warnf("Failed to auto-migrate CloudAccount model: %v", err)
+	} else {
+		logger.Infof("CloudAccount table auto-migrated")
+	}
+
+	if err := database.DB.AutoMigrate(&model.RefreshToken{}); err != nil {
+		logger.Warnf("Failed to auto-migrate RefreshToken model: %v", err)
+	} else {
+		logger.Infof("RefreshToken table auto-migrated")
+	}
+
 	return &Repositories{
-		Host:             repository.NewHostRepository(database.DB),
-		Session:          repository.NewSessionRepository(database.DB),
-		User:             repository.NewUserRepository(database.DB),
+		ApiKey:          repository.NewApiKeyRepository(database.DB),
+		RefreshToken:    repository.NewRefreshTokenRepository(database.DB),
+		Host:            repository.NewHostRepository(database.DB),
+		Session:         sessionRepo,
+		User:            repository.NewUserRepository(database.DB),
 		Setting:          repository.NewSettingRepository(database.DB),
 		Proxy:            repository.NewProxyRepository(database.DB),
 		Role:             repository.NewRoleRepository(database.DB),
@@ -74,6 +118,7 @@ func InitializeRepositories() *Repositories {
 		K8sCluster:       repository.NewK8sClusterRepository(database.DB),
 		Deployment:       repository.NewDeploymentRepository(database.DB),
 		Bill:             repository.NewBillRepository(database.DB),
+		CloudAccount:     repository.NewCloudAccountRepository(database.DB), // 新增
 		Monitor:          repository.NewMonitorRepository(database.DB),
 		Organization:     repository.NewOrganizationRepository(database.DB),
 		Application:          repository.NewApplicationRepository(database.DB),

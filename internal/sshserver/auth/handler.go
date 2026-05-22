@@ -110,10 +110,9 @@ func (h *PasswordHandler) Authenticate(username string, credential interface{}, 
 		Password: password,
 	}
 
-	loginResp, err := h.authService.Login(loginReq, clientIP, "SSH-Client")
+	loginResp, _, err := h.authService.Login(loginReq, clientIP, "SSH-Client")
 	if err != nil {
 		logger.Infof("[Password Handler] Authentication failed for user %s: %v", username, err)
-		// 记录失败尝试
 		h.recordAttempt(clientIP, "password", false, false, true)
 		return nil, fmt.Errorf("password authentication failed")
 	}
@@ -282,7 +281,7 @@ func (h *MFAHandler) Authenticate(username string, credential interface{}, clien
 		BackupCode:    backupCode,
 	}
 
-	loginResp, err := h.authService.Login(loginReq, clientIP, "SSH-MFA")
+	loginResp, _, err := h.authService.Login(loginReq, clientIP, "SSH-MFA")
 	if err != nil {
 		logger.Infof("[MFA Handler] MFA verification failed for user %s: %v", username, err)
 		return nil, fmt.Errorf("MFA verification failed: %w", err)

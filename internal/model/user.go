@@ -110,9 +110,8 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	Token string `json:"token"`
-	User  User   `json:"user"`
-	// 2FA相关字段
+	AccessToken string `json:"accessToken,omitempty"`
+	User        User   `json:"user"`
 	RequiresTwoFactor   bool `json:"requiresTwoFactor,omitempty"`
 	TwoFactorEnabled    bool `json:"twoFactorEnabled,omitempty"`
 	NeedsTwoFactorSetup bool `json:"needsTwoFactorSetup,omitempty"`
@@ -176,6 +175,20 @@ type TwoFactorConfig struct {
 
 func (TwoFactorConfig) TableName() string {
 	return "two_factor_config"
+}
+
+// RefreshToken refresh token 记录（用于服务端维护 jti 白名单/黑名单）
+type RefreshToken struct {
+	ID        string    `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	JTI       string    `json:"jti" gorm:"type:varchar(100);uniqueIndex;not null"`
+	UserID    string    `json:"userId" gorm:"type:varchar(36);not null;index"`
+	Revoked   bool      `json:"revoked" gorm:"type:boolean;default:false"`
+	ExpiresAt time.Time `json:"expiresAt" gorm:"type:timestamp;not null;index"`
+	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
+}
+
+func (RefreshToken) TableName() string {
+	return "refresh_tokens"
 }
 
 // TwoFactorSetupRequest 2FA设置请求

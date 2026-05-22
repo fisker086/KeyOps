@@ -269,7 +269,13 @@ func AutoMigrateAll() error {
 		&model.BillSummary{},
 		&model.BillSummaryDetail{},
 		&model.BillRecord{},
+		&model.CloudAccount{},
+		&model.BillPricing{},
+		&model.BillResource{},
 		&model.BillPrice{},
+		&model.Budget{},
+		&model.Pool{},
+		&model.Policy{},
 		&model.Monitor{},
 		&model.Organization{},
 		&model.Application{},
@@ -337,7 +343,8 @@ func AutoMigrateAll() error {
 			// 已存在时仍参与迁移，以自动添加新字段
 			if tableName == "release_runs" || tableName == "application_deploy_bindings" ||
 				tableName == "release_pipeline_definitions" || tableName == "build_master_lists" ||
-				tableName == "build_master_operation_logs" {
+				tableName == "build_master_operation_logs" ||
+				tableName == "bill_records" || tableName == "bill_resources" || tableName == "bill_price" {
 				tablesToMigrate = append(tablesToMigrate, table)
 			}
 		}
@@ -598,11 +605,6 @@ func createDefaultBlacklistRules() error {
 // createDefaultSettings 创建默认系统设置
 func createDefaultSettings() error {
 	settings := []model.Setting{
-		{Key: "host_monitor_enabled", Value: "false", Category: "host_monitor", Type: "boolean"},
-		{Key: "host_monitor_interval", Value: "5", Category: "host_monitor", Type: "number"},
-		{Key: "host_monitor_method", Value: "tcp", Category: "host_monitor", Type: "string"},
-		{Key: "host_monitor_timeout", Value: "3", Category: "host_monitor", Type: "number"},
-		{Key: "host_monitor_concurrent", Value: "20", Category: "host_monitor", Type: "number"},
 		{Key: "expiration_check_enabled", Value: "true", Category: "expiration", Type: "boolean"},
 		{Key: "expiration_check_interval", Value: "3600", Category: "expiration", Type: "number"},
 		{Key: "user_expiration_auto_disable", Value: "true", Category: "expiration", Type: "boolean"},

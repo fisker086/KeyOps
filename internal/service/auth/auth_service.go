@@ -25,21 +25,37 @@ import (
 	"gorm.io/gorm"
 )
 
-// JWT Claims
+// JWT Claims（access_token）
 type Claims struct {
+	Type     string `json:"type"` // "access"
 	UserID   string `json:"userId"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
+// RefreshClaims refresh_token 专用 claims
+type RefreshClaims struct {
+	Type   string `json:"type"` // "refresh"
+	UserID string `json:"userId"`
+	JTI    string `json:"jti"`
+	jwt.RegisteredClaims
+}
+
+const (
+	AccessTokenExpiry  = 15 * time.Minute
+	RefreshTokenExpiry = 7 * 24 * time.Hour
+	MaxActiveSessions  = 5
+)
+
 type AuthService struct {
 	repo             *repository.UserRepository
 	settingRepo      *repository.SettingRepository
+	refreshTokenRepo *repository.RefreshTokenRepository
 	TwoFactorSvc     *twofactor.TwoFactorService
-	jwtSecret        []byte // JWT签名密钥
-	aesKey           []byte // AES-256加密密钥（32字节）
-	adminWhitelist []string // 小写邮箱列表，来自 security.admin_whitelist 或 ADMIN_WHITELIST
+	jwtSecret        []byte
+	aesKey           []byte
+	adminWhitelist   []string
 }
 
 // NewAuthService 创建认证服务
@@ -47,7 +63,7 @@ type AuthService struct {
 // adminWhitelistRaw: 管理员白名单
 // AES-256加密密钥会自动从此密钥提取前32字节用于加密SSH私钥等敏感数据
 // 认证方式覆盖见 pkg/config.SecurityAuthMethodOverride()（AUTH_METHOD / security.auth_method）
-func NewAuthService(repo *repository.UserRepository, settingRepo *repository.SettingRepository, jwtSecret string, adminWhitelistRaw string) *AuthService {
+func NewAuthService(repo *repository.UserRepository, settingRepo *repository.SettingRepository, refreshTokenRepo *repository.RefreshTokenRepository, jwtSecret string, adminWhitelistRaw string) *AuthService {
 	// 处理JWT密钥
 	jwtKey := []byte(jwtSecret)
 	if len(jwtKey) == 0 {
@@ -67,12 +83,13 @@ func NewAuthService(repo *repository.UserRepository, settingRepo *repository.Set
 	}
 
 	return &AuthService{
-		repo:           repo,
-		settingRepo:    settingRepo,
-		TwoFactorSvc:   twofactor.NewTwoFactorService("ZJump"),
-		jwtSecret:      jwtKey,
-		aesKey:         aesKey,
-		adminWhitelist: parseAdminWhitelist(adminWhitelistRaw),
+		repo:             repo,
+		settingRepo:      settingRepo,
+		refreshTokenRepo: refreshTokenRepo,
+		TwoFactorSvc:     twofactor.NewTwoFactorService("ZJump"),
+		jwtSecret:        jwtKey,
+		aesKey:           aesKey,
+		adminWhitelist:   parseAdminWhitelist(adminWhitelistRaw),
 	}
 }
 
@@ -188,9 +205,8 @@ func (s *AuthService) Register(req *model.RegisterRequest) (*model.User, error) 
 }
 
 // Login 用户登录（支持账户密码、LDAP、SSO）
-// 优先尝试数据库用户认证，如果失败再根据authMethod配置尝试LDAP或SSO
-// 这样即使选择了LDAP或SSO作为主要认证方式，数据库管理员账户仍然可以登录
-func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) (*model.LoginResponse, error) {
+// 返回 (LoginResponse, refreshToken, error)，refreshToken 应由 handler 写入 HttpOnly Cookie
+func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) (*model.LoginResponse, string, error) {
 	// 获取认证配置（从auth category读取）
 	authSettings, _ := s.settingRepo.GetByCategory("auth")
 
@@ -211,50 +227,41 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 		// 数据库用户认证失败，根据authMethod配置尝试其他认证方式
 		switch authMethod {
 		case "ldap":
-			// LDAP认证
 			user, err = s.authenticateWithLDAP(req.Username, req.Password, authSettings)
 			if err != nil {
-				return nil, fmt.Errorf("LDAP认证失败: %w", err)
+				return nil, "", fmt.Errorf("LDAP认证失败: %w", err)
 			}
 		case "sso":
-			// SSO认证（不支持密码登录，需要通过 OAuth2 流程）
-			return nil, errors.New("SSO认证需要通过授权流程，请使用SSO登录按钮。数据库用户请使用数据库账户登录")
+			return nil, "", errors.New("SSO认证需要通过授权流程，请使用SSO登录按钮。数据库用户请使用数据库账户登录")
 		default:
-			// password模式，数据库用户认证失败就直接返回错误
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
-			return nil, errors.New("用户名或密码错误")
+			return nil, "", errors.New("用户名或密码错误")
 		}
 	}
 
 	// 与 SSO 一致：admin_whitelist 按邮箱提升管理员（密码登录、LDAP 登录均生效）
 	s.applyAdminWhitelistOnLogin(user)
 
-	// 检查用户是否过期
 	if user.ExpiresAt != nil && user.ExpiresAt.Before(time.Now()) {
-		return nil, errors.New("账号已过期，请联系管理员")
+		return nil, "", errors.New("账号已过期，请联系管理员")
 	}
 
 	// 检查全局2FA配置
 	var globalConfig model.TwoFactorConfig
 	if err := s.repo.GetDB().First(&globalConfig).Error; err == nil && globalConfig.Enabled {
-		// 全局2FA已启用，检查用户是否已设置2FA
 		if !user.TwoFactorEnabled {
-			// 用户未设置2FA，允许登录但标记需要设置2FA
-			// 生成临时token，让用户能够进入系统设置2FA
-			token, err := s.GenerateToken(user)
+			token, err := s.GenerateAccessToken(user)
 			if err != nil {
-				return nil, fmt.Errorf("生成Token失败: %w", err)
+				return nil, "", fmt.Errorf("生成Token失败: %w", err)
 			}
 
-			// 更新最后登录时间
 			now := time.Now()
 			if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
 				fmt.Printf("更新最后登录时间失败: %v\n", err)
 			}
 
-			// 创建平台登录记录
 			loginRecord := &model.PlatformLoginRecord{
 				ID:        uuid.New().String(),
 				UserID:    user.ID,
@@ -269,29 +276,26 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 			}
 
 			return &model.LoginResponse{
-				Token:               token,
+				AccessToken:         token,
 				User:                *user,
-				RequiresTwoFactor:   false, // 允许登录
+				RequiresTwoFactor:   false,
 				TwoFactorEnabled:    false,
-				NeedsTwoFactorSetup: true, // 标记需要设置2FA
-			}, nil
+				NeedsTwoFactorSetup: true,
+			}, "", nil
 		}
 
-		// 用户已启用2FA，需要验证2FA代码
 		if req.TwoFactorCode == "" && req.BackupCode == "" {
 			return &model.LoginResponse{
 				RequiresTwoFactor: true,
 				TwoFactorEnabled:  true,
 				User:              *user,
-			}, nil
+			}, "", nil
 		}
 
-		// 检查2FA配置是否完整
 		if user.TwoFactorSecret == "" && user.TwoFactorBackupCodes == "" {
-			// 2FA已启用但配置不完整，允许登录但标记需要重新设置2FA
-			token, err := s.GenerateToken(user)
+			token, err := s.GenerateAccessToken(user)
 			if err != nil {
-				return nil, fmt.Errorf("生成Token失败: %w", err)
+				return nil, "", fmt.Errorf("生成Token失败: %w", err)
 			}
 
 			now := time.Now()
@@ -313,34 +317,30 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 			}
 
 			return &model.LoginResponse{
-				Token:               token,
+				AccessToken:         token,
 				User:                *user,
 				RequiresTwoFactor:   false,
 				TwoFactorEnabled:    true,
-				NeedsTwoFactorSetup: true, // 标记需要重新设置2FA
-			}, nil
+				NeedsTwoFactorSetup: true,
+			}, "", nil
 		}
 
-		// 验证2FA代码
-		if !s.validateTwoFactorCode(user, req.TwoFactorCode, req.BackupCode) {
-			return nil, errors.New("2FA验证失败")
+			if !s.validateTwoFactorCode(user, req.TwoFactorCode, req.BackupCode) {
+			return nil, "", errors.New("2FA验证失败")
 		}
 	} else if user.TwoFactorEnabled {
-		// 用户个人启用了2FA，需要验证
 		if req.TwoFactorCode == "" && req.BackupCode == "" {
 			return &model.LoginResponse{
 				RequiresTwoFactor: true,
 				TwoFactorEnabled:  true,
 				User:              *user,
-			}, nil
+			}, "", nil
 		}
 
-		// 检查2FA配置是否完整
 		if user.TwoFactorSecret == "" && user.TwoFactorBackupCodes == "" {
-			// 2FA已启用但配置不完整，允许登录但标记需要重新设置2FA
-			token, err := s.GenerateToken(user)
+			token, err := s.GenerateAccessToken(user)
 			if err != nil {
-				return nil, fmt.Errorf("生成Token失败: %w", err)
+				return nil, "", fmt.Errorf("生成Token失败: %w", err)
 			}
 
 			now := time.Now()
@@ -362,34 +362,30 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 			}
 
 			return &model.LoginResponse{
-				Token:               token,
+				AccessToken:         token,
 				User:                *user,
 				RequiresTwoFactor:   false,
 				TwoFactorEnabled:    true,
-				NeedsTwoFactorSetup: true, // 标记需要重新设置2FA
-			}, nil
+				NeedsTwoFactorSetup: true,
+			}, "", nil
 		}
 
-		// 验证2FA代码
 		if !s.validateTwoFactorCode(user, req.TwoFactorCode, req.BackupCode) {
-			return nil, errors.New("2FA验证失败")
+			return nil, "", errors.New("2FA验证失败")
 		}
 	}
 
-	// 生成 JWT Token
-	token, err := s.GenerateToken(user)
+	// 生成双 Token
+	accessTkn, refreshTkn, err := s.GenerateTokenPair(user)
 	if err != nil {
-		return nil, fmt.Errorf("生成Token失败: %w", err)
+		return nil, "", fmt.Errorf("生成Token失败: %w", err)
 	}
 
-	// 更新最后登录时间和IP
 	now := time.Now()
 	if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
-		// 记录错误但不影响登录
 		fmt.Printf("更新最后登录时间失败: %v\n", err)
 	}
 
-	// 创建平台登录记录（记录用户登录堡垒机平台，不是连接虚拟机）
 	loginRecord := &model.PlatformLoginRecord{
 		ID:        uuid.New().String(),
 		UserID:    user.ID,
@@ -400,14 +396,18 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 		Status:    "active",
 	}
 	if err := s.repo.CreatePlatformLoginRecord(loginRecord); err != nil {
-		// 记录错误但不影响登录
 		fmt.Printf(" [Login] 创建平台登录记录失败: %v\n", err)
 	}
 
+	// 限制活跃会话数
+	if err := s.enforceSessionLimit(user.ID); err != nil {
+		fmt.Printf(" [Login] session limit enforcement: %v\n", err)
+	}
+
 	return &model.LoginResponse{
-		Token: token,
-		User:  *user,
-	}, nil
+		AccessToken: accessTkn,
+		User:        *user,
+	}, refreshTkn, nil
 }
 
 // authenticateWithPassword 使用密码认证（默认方式）
@@ -636,33 +636,176 @@ func (s *AuthService) isAuthMethodEnabled(settings []model.Setting, key string) 
 	return false
 }
 
-// Logout 用户登出
-func (s *AuthService) Logout(userID string) error {
-	return s.repo.UpdatePlatformLoginRecordLogoutByUser(userID)
+// ===== Dual Token methods =====
+
+// GenerateTokenPair 生成 access_token（15分钟）和 refresh_token（7天）
+func (s *AuthService) GenerateTokenPair(user *model.User) (accessToken, refreshToken string, err error) {
+	// 1. access_token
+	accessToken, err = s.GenerateAccessToken(user)
+	if err != nil {
+		return "", "", err
+	}
+
+	// 2. refresh_token
+	jti := uuid.New().String()
+	now := time.Now()
+	refreshClaims := &RefreshClaims{
+		Type:   "refresh",
+		UserID: user.ID,
+		JTI:    jti,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(RefreshTokenExpiry)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			Issuer:    "zjump",
+			ID:        jti,
+		},
+	}
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshToken, err = t.SignedString(s.jwtSecret)
+	if err != nil {
+		return "", "", err
+	}
+
+	// 3. 入库
+	if err := s.refreshTokenRepo.Create(&model.RefreshToken{
+		ID:        uuid.New().String(),
+		JTI:       jti,
+		UserID:    user.ID,
+		Revoked:   false,
+		ExpiresAt: now.Add(RefreshTokenExpiry),
+	}); err != nil {
+		return "", "", fmt.Errorf("保存 refresh token 失败: %w", err)
+	}
+
+	return accessToken, refreshToken, nil
 }
 
-// GenerateToken 生成 JWT Token
-func (s *AuthService) GenerateToken(user *model.User) (string, error) {
-	// 设置过期时间为7天（168小时），适合堡垒机场景
-	// 用户一般需要长时间操作服务器，不应频繁重新登录
-	expirationTime := time.Now().Add(7 * 24 * time.Hour)
-
+// GenerateAccessToken 仅生成 access_token（用于 2FA 中间态等场景）
+func (s *AuthService) GenerateAccessToken(user *model.User) (string, error) {
+	now := time.Now()
 	claims := &Claims{
+		Type:     "access",
 		UserID:   user.ID,
 		Username: user.Username,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(now.Add(AccessTokenExpiry)),
+			IssuedAt:  jwt.NewNumericDate(now),
 			Issuer:    "zjump",
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.jwtSecret)
 }
 
-// ValidateToken 验证 JWT Token
+// ValidateRefreshToken 验证 refresh_token 签名、过期、type、DB 白名单
+func (s *AuthService) ValidateRefreshToken(tokenString string) (*RefreshClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &RefreshClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return s.jwtSecret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := token.Claims.(*RefreshClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("无效的 refresh_token")
+	}
+	if claims.Type != "refresh" {
+		return nil, errors.New("token 类型错误")
+	}
+
+	// 查 DB 白名单
+	rt, err := s.refreshTokenRepo.FindByJTI(claims.JTI)
+	if err != nil {
+		return nil, errors.New("refresh_token 不存在或已被撤销")
+	}
+	if rt.Revoked {
+		return nil, errors.New("refresh_token 已被撤销")
+	}
+	if time.Now().After(rt.ExpiresAt) {
+		return nil, errors.New("refresh_token 已过期")
+	}
+
+	return claims, nil
+}
+
+// RefreshTokenPair 刷新令牌：校验旧 refresh → 撤销旧 jti → 签发新 pair → 清理超量会话
+func (s *AuthService) RefreshTokenPair(refreshTokenString string) (newAccessToken, newRefreshToken string, err error) {
+	claims, err := s.ValidateRefreshToken(refreshTokenString)
+	if err != nil {
+		return "", "", err
+	}
+
+	// 撤销旧 jti（rotation）
+	if err := s.refreshTokenRepo.RevokeByJTI(claims.JTI); err != nil {
+		return "", "", fmt.Errorf("撤销旧 refresh_token 失败: %w", err)
+	}
+
+	// 查用户
+	user, err := s.repo.FindUserByID(claims.UserID)
+	if err != nil {
+		return "", "", errors.New("用户不存在")
+	}
+	if user.Status != "active" {
+		return "", "", errors.New("用户已被禁用")
+	}
+
+	// 签发新 pair
+	newAccessToken, newRefreshToken, err = s.GenerateTokenPair(user)
+	if err != nil {
+		return "", "", err
+	}
+
+	// 限制活跃会话数
+	if err := s.enforceSessionLimit(user.ID); err != nil {
+		fmt.Printf(" [Refresh] session limit enforcement: %v\n", err)
+	}
+
+	return newAccessToken, newRefreshToken, nil
+}
+
+// RevokeRefreshToken 按 jti 撤销
+func (s *AuthService) RevokeRefreshToken(jti string) error {
+	return s.refreshTokenRepo.RevokeByJTI(jti)
+}
+
+// EnforceSessionLimitForUser 检查活跃 refresh 会话数，超出则撤销最旧的。
+func (s *AuthService) EnforceSessionLimitForUser(userID string) error {
+	return s.enforceSessionLimit(userID)
+}
+
+// enforceSessionLimit 检查活跃会话数，超出则撤销最旧的
+func (s *AuthService) enforceSessionLimit(userID string) error {
+	count, err := s.refreshTokenRepo.CountActiveByUser(userID)
+	if err != nil {
+		return err
+	}
+	if count <= MaxActiveSessions {
+		return nil
+	}
+	excess := int(count) - MaxActiveSessions
+	tokens, err := s.refreshTokenRepo.FindOldestActiveByUser(userID, excess)
+	if err != nil {
+		return err
+	}
+	for _, t := range tokens {
+		if err := s.refreshTokenRepo.RevokeByJTI(t.JTI); err != nil {
+			fmt.Printf(" [SessionLimit] revoke jti=%s failed: %v\n", t.JTI, err)
+		}
+	}
+	return nil
+}
+
+// Logout 用户登出（仅撤销当前 refresh jti；refreshJTI 为空时只更新登录记录）
+func (s *AuthService) Logout(userID, refreshJTI string) error {
+	_ = s.repo.UpdatePlatformLoginRecordLogoutByUser(userID)
+	if refreshJTI == "" {
+		return nil
+	}
+	return s.refreshTokenRepo.RevokeByJTI(refreshJTI)
+}
+
+// ValidateToken 验证 access JWT（拒绝 refresh_token）
 func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return s.jwtSecret, nil
@@ -672,11 +815,18 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		return claims, nil
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		return nil, errors.New("无效的Token")
+	}
+	if claims.Type == "refresh" {
+		return nil, errors.New("无效的Token")
+	}
+	if claims.Type != "" && claims.Type != "access" {
+		return nil, errors.New("无效的Token")
 	}
 
-	return nil, errors.New("无效的Token")
+	return claims, nil
 }
 
 // GetPlatformLoginRecords 获取平台登录记录
@@ -1098,16 +1248,14 @@ func (s *AuthService) CreateOrUpdateSSOUser(ssoUserInfo *SSOUserInfo) (*model.Us
 }
 
 // LoginWithSSO SSO 登录主流程
-func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.LoginResponse, error) {
+func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.LoginResponse, string, error) {
 	fmt.Printf(" [SSO] 开始 SSO 登录流程\n")
 
-	// 获取 SSO 配置（从 auth category 读取）
 	authSettings, err := s.settingRepo.GetByCategory("auth")
 	if err != nil {
-		return nil, fmt.Errorf("获取SSO配置失败: %w", err)
+		return nil, "", fmt.Errorf("获取SSO配置失败: %w", err)
 	}
 
-	// 解析配置（字段名有 sso 前缀）
 	provider := s.getSettingValue(authSettings, "ssoProvider", "")
 	clientID := s.getSettingValue(authSettings, "ssoClientId", "")
 	clientSecret := s.getSettingValue(authSettings, "ssoClientSecret", "")
@@ -1118,7 +1266,7 @@ func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.Logi
 
 	p := normalizeSSOProvider(provider)
 	if clientID == "" || clientSecret == "" || redirectURL == "" {
-		return nil, errors.New("SSO配置不完整")
+		return nil, "", errors.New("SSO配置不完整")
 	}
 	switch p {
 	case SSOProviderWeCom:
@@ -1134,46 +1282,44 @@ func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.Logi
 		}
 	default:
 		if tokenURL == "" || userInfoURL == "" {
-			return nil, errors.New("SSO配置不完整")
+			return nil, "", errors.New("SSO配置不完整")
 		}
 	}
 
-	// 1. 使用授权码换取访问令牌
 	accessToken, err := s.ExchangeCodeForToken(code, provider, clientID, clientSecret, tokenURL, redirectURL)
 	if err != nil {
-		return nil, fmt.Errorf("获取访问令牌失败: %w", err)
+		return nil, "", fmt.Errorf("获取访问令牌失败: %w", err)
 	}
 
-	// 2. 使用访问令牌获取用户信息
 	ssoUserInfo, err := s.GetSSOUserInfo(accessToken, provider, userInfoURL, code, agentID)
 	if err != nil {
-		return nil, fmt.Errorf("获取用户信息失败: %w", err)
+		return nil, "", fmt.Errorf("获取用户信息失败: %w", err)
 	}
 
-	// 3. 创建或更新本地用户
 	user, err := s.CreateOrUpdateSSOUser(ssoUserInfo)
 	if err != nil {
-		return nil, fmt.Errorf("创建或更新用户失败: %w", err)
+		return nil, "", fmt.Errorf("创建或更新用户失败: %w", err)
 	}
 
-	// 检查用户是否过期
 	if user.ExpiresAt != nil && user.ExpiresAt.Before(time.Now()) {
-		return nil, errors.New("账号已过期，请联系管理员")
+		return nil, "", errors.New("账号已过期，请联系管理员")
 	}
 
-	// 4. 生成 JWT Token
-	token, err := s.GenerateToken(user)
+	if user.Status != "active" {
+		return nil, "", errors.New("用户已被禁用")
+	}
+
+	// 生成双 Token
+	accessTkn, refreshTkn, err := s.GenerateTokenPair(user)
 	if err != nil {
-		return nil, fmt.Errorf("生成Token失败: %w", err)
+		return nil, "", fmt.Errorf("生成Token失败: %w", err)
 	}
 
-	// 5. 更新最后登录时间
 	now := time.Now()
 	if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
 		fmt.Printf(" [SSO] 更新最后登录时间失败: %v\n", err)
 	}
 
-	// 6. 创建平台登录记录
 	loginRecord := &model.PlatformLoginRecord{
 		ID:        uuid.New().String(),
 		UserID:    user.ID,
@@ -1187,12 +1333,16 @@ func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.Logi
 		fmt.Printf(" [SSO] 创建平台登录记录失败: %v\n", err)
 	}
 
+	if err := s.enforceSessionLimit(user.ID); err != nil {
+		fmt.Printf(" [SSO] session limit enforcement: %v\n", err)
+	}
+
 	fmt.Printf(" [SSO] 登录成功: userID=%s, username=%s\n", user.ID, user.Username)
 
 	return &model.LoginResponse{
-		Token: token,
-		User:  *user,
-	}, nil
+		AccessToken: accessTkn,
+		User:        *user,
+	}, refreshTkn, nil
 }
 
 // ===== SSH Key Management =====

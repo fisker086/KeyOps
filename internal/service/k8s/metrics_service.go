@@ -8,6 +8,62 @@ import (
 	"strings"
 )
 
+// NodeMetrics 节点指标
+type NodeMetrics struct {
+	Name     string            `json:"name"`
+	Usage    NodeResourceUsage `json:"usage"`
+}
+
+type NodeResourceUsage struct {
+	CPU    string `json:"cpu"`
+	Memory string `json:"memory"`
+}
+
+// GetNodeMetricsList 获取所有节点指标
+func (s *K8sService) GetNodeMetricsList(clusterID string, clusterName string) ([]NodeMetrics, error) {
+	cluster, err := s.GetClusterConfig(clusterID, clusterName)
+	if err != nil && (clusterID == "" && clusterName == "") {
+		return nil, fmt.Errorf("请提供 cluster_id 或 cluster_name")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	metricsURL := strings.TrimSuffix(cluster.APIServer, "/") + "/apis/metrics.k8s.io/v1beta1/nodes"
+	httpReq, client, err := s.createK8sHTTPClient(cluster, metricsURL)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusServiceUnavailable {
+			return nil, fmt.Errorf("metrics-server 不可用")
+		}
+		return nil, fmt.Errorf("API请求失败: %s, 响应: %s", resp.Status, string(body))
+	}
+
+	var metricsResponse struct {
+		Items []NodeMetrics `json:"items"`
+	}
+
+	if err := json.Unmarshal(body, &metricsResponse); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	return metricsResponse.Items, nil
+}
+
 // GetPodMetrics 获取Pod指标
 func (s *K8sService) GetPodMetrics(clusterID string, clusterName string, namespace string, podName, metricsName string, lastTime, step uint) (interface{}, error) {
 	cluster, err := s.GetClusterConfig(clusterID, clusterName)

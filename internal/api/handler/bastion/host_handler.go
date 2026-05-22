@@ -11,17 +11,11 @@ import (
 )
 
 type HostHandler struct {
-	service        *bastionService.HostService
-	monitorService *bastionService.HostMonitorService
+	service *bastionService.HostService
 }
 
 func NewHostHandler(service *bastionService.HostService) *HostHandler {
 	return &HostHandler{service: service}
-}
-
-// SetMonitorService 设置监控服务（用于创建主机后立即检查状态）
-func (h *HostHandler) SetMonitorService(monitorService *bastionService.HostMonitorService) {
-	h.monitorService = monitorService
 }
 
 func (h *HostHandler) CreateHost(c *gin.Context) {
@@ -54,13 +48,6 @@ func (h *HostHandler) CreateHost(c *gin.Context) {
 	if err := h.service.CreateHost(&host); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
-	}
-
-	// 创建成功后，异步触发一次状态检查
-	if h.monitorService != nil {
-		go func(hostID string) {
-			_, _ = h.monitorService.CheckHostStatusNow(hostID)
-		}(host.ID)
 	}
 
 	c.JSON(http.StatusOK, model.Success(host))

@@ -186,25 +186,34 @@ definitions:
     - ApprovalTypeDeployment
   github_com_fisker086_keyops_internal_model.BillPrice:
     properties:
-      cluster:
-        description: 集群
-        type: string
       createdAt:
+        type: string
+      currency:
+        description: 货币：USD, CNY
         type: string
       description:
         description: 描述
         type: string
+      effective_date:
+        description: 生效日期
+        type: string
       id:
         type: integer
-      price:
-        description: 单价
-        type: number
+      region:
+        description: 区域
+        type: string
       resource_type:
         description: 资源类型
         type: string
-      scale:
-        description: 规格，如 1:2, 1:4
+      spec:
+        description: 规格，如 1:2, 1:4 (对应scale)
         type: string
+      unit:
+        description: 单位：GB, Hour
+        type: string
+      unit_price:
+        description: 单价 (对应price)
+        type: number
       updatedAt:
         type: string
       vendor:
@@ -212,6 +221,77 @@ definitions:
         type: string
     required:
     - vendor
+    type: object
+  github_com_fisker086_keyops_internal_model.Budget:
+    properties:
+      alert_channel_ids:
+        description: JSON数组：[1,2,3]
+        type: string
+      alert_threshold:
+        description: 告警阈值百分比
+        type: number
+      amount:
+        type: number
+      createdAt:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      org_id:
+        type: string
+      owner:
+        type: string
+      period:
+        description: monthly/quarterly/yearly
+        type: string
+      start_date:
+        type: string
+      status:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  github_com_fisker086_keyops_internal_model.CloudAccount:
+    properties:
+      access_key_id:
+        type: string
+      account_id:
+        type: string
+      bucket_name:
+        type: string
+      bucket_prefix:
+        type: string
+      cloud_type:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      last_import_at:
+        type: string
+      last_import_error:
+        type: string
+      name:
+        type: string
+      notify_channel_id:
+        type: integer
+      notify_enabled:
+        type: boolean
+      region:
+        type: string
+      report_name:
+        type: string
+      secret_access_key:
+        type: string
+      status:
+        type: string
+      sync_cron:
+        type: string
+      updatedAt:
+        type: string
     type: object
   github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest:
     properties:
@@ -836,6 +916,61 @@ definitions:
       username:
         type: string
     type: object
+  github_com_fisker086_keyops_internal_model.Policy:
+    properties:
+      action:
+        description: stop/terminate/tag
+        type: string
+      conditions:
+        description: JSON条件
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      name:
+        type: string
+      schedule:
+        description: cron表达式
+        type: string
+      target_resources:
+        description: 目标资源筛选
+        type: string
+      type:
+        description: ttl/power_off/tag
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  github_com_fisker086_keyops_internal_model.Pool:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      limit_amount:
+        description: 费用限制
+        type: number
+      members:
+        description: JSON数组
+        type: string
+      name:
+        type: string
+      org_id:
+        type: string
+      owner:
+        type: string
+      status:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   github_com_fisker086_keyops_internal_model.QueryLog:
     properties:
       affectedRows:
@@ -879,7 +1014,8 @@ definitions:
     properties:
       code:
         type: integer
-      data: {}
+      data:
+        description: 不使用 omitempty：Go 对空 slice 会视为“空值”而省略字段，前端会收不到 data 导致列表解析失败
       message:
         type: string
     type: object
@@ -1496,6 +1632,27 @@ definitions:
       validTo:
         type: string
     type: object
+  internal_api_handler_bill.ValidateCloudAccountReq:
+    properties:
+      access_key_id:
+        type: string
+      bucket_name:
+        type: string
+      bucket_prefix:
+        type: string
+      cloud_type:
+        type: string
+      region:
+        type: string
+      report_name:
+        type: string
+      secret_access_key:
+        type: string
+    required:
+    - access_key_id
+    - cloud_type
+    - secret_access_key
+    type: object
   internal_api_handler_k8s.AddPermissionRequest:
     properties:
       action:
@@ -2100,6 +2257,436 @@ paths:
       summary: 更新审批
       tags:
       - 审批管理
+  /api/bill/budgets:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有预算及当前状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取预算列表
+      tags:
+      - bill
+    post:
+      consumes:
+      - application/json
+      description: 创建新的预算
+      parameters:
+      - description: 预算信息
+        in: body
+        name: budget
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Budget'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 创建预算
+      tags:
+      - bill
+  /api/bill/budgets/:id:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定的预算
+      parameters:
+      - description: 预算ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 删除预算
+      tags:
+      - bill
+    put:
+      consumes:
+      - application/json
+      description: 更新预算信息
+      parameters:
+      - description: 预算ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 预算信息
+        in: body
+        name: budget
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Budget'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 更新预算
+      tags:
+      - bill
+  /api/bill/check-budget-alerts:
+    get:
+      consumes:
+      - application/json
+      description: 手动检查所有预算的告警状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 手动检查预算告警
+      tags:
+      - bill
+  /api/bill/cloud-accounts:
+    get:
+      consumes:
+      - application/json
+      description: 获取云账户列表，含资源数、最近导入与状态等详情
+      parameters:
+      - description: 云类型筛选
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 列出云账户
+      tags:
+      - bill
+    post:
+      consumes:
+      - application/json
+      description: 创建新的云账户
+      parameters:
+      - description: 云账户信息
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CloudAccount'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 添加云账户
+      tags:
+      - bill
+  /api/bill/cloud-accounts/:id:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定的云账户
+      parameters:
+      - description: 云账户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 删除云账户
+      tags:
+      - bill
+    get:
+      consumes:
+      - application/json
+      description: 获取单个云账户的详细信息
+      parameters:
+      - description: 云账户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取云账户详情
+      tags:
+      - bill
+    put:
+      consumes:
+      - application/json
+      description: 更新云账户信息（密钥为空则保留原值）
+      parameters:
+      - description: 云账户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 云账户信息
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CloudAccount'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 更新云账户
+      tags:
+      - bill
+  /api/bill/cloud-accounts/:id/sync:
+    post:
+      consumes:
+      - application/json
+      description: 从云厂商同步账单数据
+      parameters:
+      - description: 云账户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 同步云账户账单
+      tags:
+      - bill
+  /api/bill/cloud-accounts/validate:
+    post:
+      consumes:
+      - application/json
+      description: 验证云账户凭证是否有效（不落库）
+      parameters:
+      - description: 凭证信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handler_bill.ValidateCloudAccountReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 验证云账户凭证
+      tags:
+      - bill
+  /api/bill/dashboard:
+    get:
+      consumes:
+      - application/json
+      description: 获取本月费用、预测、环比、Top资源等信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取费用 Dashboard 数据
+      tags:
+      - bill
+  /api/bill/policies:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有策略（TTL、电源管理等）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取策略列表
+      tags:
+      - bill
+    post:
+      consumes:
+      - application/json
+      description: 创建新的策略
+      parameters:
+      - description: 策略信息
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Policy'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 创建策略
+      tags:
+      - bill
+  /api/bill/policies/:id:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定的策略
+      parameters:
+      - description: 策略ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 删除策略
+      tags:
+      - bill
+    put:
+      consumes:
+      - application/json
+      description: 更新策略信息
+      parameters:
+      - description: 策略ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 策略信息
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Policy'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 更新策略
+      tags:
+      - bill
+  /api/bill/pools:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有资源池及费用信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取资源池列表
+      tags:
+      - bill
+    post:
+      consumes:
+      - application/json
+      description: 创建新的资源池
+      parameters:
+      - description: 资源池信息
+        in: body
+        name: pool
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Pool'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 创建资源池
+      tags:
+      - bill
+  /api/bill/pools/:id:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定的资源池
+      parameters:
+      - description: 资源池ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 删除资源池
+      tags:
+      - bill
+    put:
+      consumes:
+      - application/json
+      description: 更新资源池信息
+      parameters:
+      - description: 资源池ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 资源池信息
+        in: body
+        name: pool
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Pool'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 更新资源池
+      tags:
+      - bill
   /api/bill/price:
     get:
       consumes:
@@ -2137,6 +2724,26 @@ paths:
       tags:
       - bill
   /api/bill/price/:id:
+    delete:
+      consumes:
+      - application/json
+      description: 删除单价配置
+      parameters:
+      - description: 单价ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 删除单价
+      tags:
+      - bill
     put:
       consumes:
       - application/json
@@ -2161,6 +2768,21 @@ paths:
           schema:
             $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 更新单价
+      tags:
+      - bill
+  /api/bill/recommendations:
+    get:
+      consumes:
+      - application/json
+      description: 获取资源优化建议（未使用、Rightsizing等）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取优化建议
       tags:
       - bill
   /api/bill/records:
@@ -2217,6 +2839,32 @@ paths:
       summary: 获取账单明细列表
       tags:
       - bill
+  /api/bill/region-expenses:
+    get:
+      consumes:
+      - application/json
+      description: 按区域聚合费用数据，用于费用地图展示
+      parameters:
+      - description: '开始日期 (格式: 2024-01-01)'
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: '结束日期 (格式: 2024-01-31)'
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取按区域的费用
+      tags:
+      - bill
   /api/bill/resource:
     get:
       consumes:
@@ -2230,6 +2878,84 @@ paths:
           schema:
             $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取我的资源列表
+      tags:
+      - bill
+  /api/bill/resources/expenses-breakdown:
+    get:
+      consumes:
+      - application/json
+      description: 按时间范围和分组维度获取费用分解数据
+      parameters:
+      - description: '开始日期 (格式: 2024-01-01)'
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: '结束日期 (格式: 2024-01-31)'
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - default: daily
+        description: 粒度 (daily/monthly)
+        in: query
+        name: granularity
+        type: string
+      - default: service_name
+        description: 分组维度 (service_name/service_code/cloud_type/region)
+        in: query
+        name: group_by
+        type: string
+      - description: 云厂商筛选
+        in: query
+        name: vendor
+        type: string
+      - description: 服务代码筛选
+        in: query
+        name: service_code
+        type: string
+      - description: 资源关键词筛选
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取资源费用分解
+      tags:
+      - bill
+  /api/bill/resources/resource-count-breakdown:
+    get:
+      consumes:
+      - application/json
+      description: 按时间范围和分组维度获取资源数量分解数据
+      parameters:
+      - description: 开始日期
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: 结束日期
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - description: 分组维度
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取资源数量分解
       tags:
       - bill
   /api/bill/statistics:
@@ -2284,6 +3010,36 @@ paths:
       summary: 获取月度账单汇总
       tags:
       - bill
+  /api/bill/traffic-expenses:
+    get:
+      consumes:
+      - application/json
+      description: 按流量聚合费用数据，用于费用地图展示
+      parameters:
+      - description: '开始日期 (格式: 2024-01-01)'
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: '结束日期 (格式: 2024-01-31)'
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - description: 资源ID筛选
+        in: query
+        name: resource_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取按流量/跨区的费用
+      tags:
+      - bill
   /api/bill/trend:
     get:
       consumes:
@@ -2326,6 +3082,31 @@ paths:
           schema:
             $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取费用趋势月份列表
+      tags:
+      - bill
+  /api/bill/trigger-sync:
+    post:
+      consumes:
+      - application/json
+      description: 手动触发指定云账户的账单同步
+      parameters:
+      - description: 云账户ID
+        in: query
+        name: cloud_account_id
+        required: true
+        type: string
+      - description: '账单日期 (格式: 2024-01-01)'
+        in: query
+        name: billing_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 手动触发账单同步
       tags:
       - bill
   /api/bill/vm:
@@ -5758,12 +6539,10 @@ paths:
       - description: 对象名称
         in: query
         name: object_name
-        required: true
         type: string
       - description: 对象类型
         in: query
         name: object_kind
-        required: true
         type: string
       produces:
       - application/json

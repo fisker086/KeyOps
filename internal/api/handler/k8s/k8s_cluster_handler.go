@@ -47,55 +47,37 @@ func (h *K8sClusterHandler) ListClusters(c *gin.Context) {
 		roles = []model.Role{}
 	}
 
+	// 检查是否是管理员
+	isAdmin := false
+	for _, role := range roles {
+		if role.ID == "role:admin" {
+			isAdmin = true
+			break
+		}
+	}
+
 	// 获取所有活跃的集群
 	allClusters, err := h.clusterService.ListClusters()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-
-	// 从 Casbin 获取用户有权限的集群（管理员也按权限管理控制，不特殊对待）
-	accessibleClusters := make([]model.K8sCluster, 0)
-	clusterIDMap := make(map[string]bool)
-
-	// 检查用户直接权限
-	userPermissions, err := h.permissionService.GetPermissions(userIDStr)
-	if err == nil {
-		for _, perm := range userPermissions {
-			if len(perm) >= 2 {
-				path := perm[1]
-				clusterID, _, _, _, err := k8sService.ParseResourcePath(path)
-				if err == nil && clusterID != "" {
-					clusterIDMap[clusterID] = true
-				}
-			}
-		}
+	if allClusters == nil {
+		allClusters = []model.K8sCluster{}
 	}
 
-	// 检查角色权限
-	for _, role := range roles {
-		rolePermissions, err := h.permissionService.GetPermissions(role.ID)
-		if err == nil {
-			for _, perm := range rolePermissions {
-				if len(perm) >= 2 {
-					path := perm[1]
-					clusterID, _, _, _, err := k8sService.ParseResourcePath(path)
-					if err == nil && clusterID != "" {
-						clusterIDMap[clusterID] = true
-					}
-				}
-			}
-		}
-	}
-
-	// 过滤出用户有权限的集群
+	// 管理员看到所有集群，普通用户只看自己创建的
+	var result []model.K8sCluster
 	for _, cluster := range allClusters {
-		if cluster.Status == "active" && clusterIDMap[cluster.ID] {
-			accessibleClusters = append(accessibleClusters, cluster)
+		if cluster.Status != "active" {
+			continue
+		}
+		if isAdmin || cluster.CreatedBy == userIDStr {
+			result = append(result, cluster)
 		}
 	}
 
-	c.JSON(http.StatusOK, model.Success(accessibleClusters))
+	c.JSON(http.StatusOK, model.Success(result))
 }
 
 // GetCluster 获取集群详情
@@ -242,6 +224,13 @@ func (h *K8sClusterHandler) CreateCluster(c *gin.Context) {
 	if err := h.clusterService.CreateCluster(cluster); err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
+	}
+
+	// 为创建者添加该集群的 admin 权限
+	if userIDStr != "" {
+		if _, err := h.permissionService.AddPermission(userIDStr, cluster.ID, "", k8sService.ResourceTypeNamespace, "", k8sService.ActionAdmin); err != nil {
+			// 权限添加失败只记录日志，不影响创建成功
+		}
 	}
 
 	// 重新获取集群信息，确保返回最新的数据（包括版本信息）
@@ -533,6 +522,9 @@ func (h *K8sClusterHandler) GetAllClustersSummary(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
+	if allClusters == nil {
+		allClusters = []model.K8sCluster{}
+	}
 
 	// 从 Casbin 获取用户有权限的集群
 	clusterIDMap := make(map[string]bool)
@@ -629,6 +621,9 @@ func (h *K8sClusterHandler) GetDashboardStatistics(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
+	}
+	if allClusters == nil {
+		allClusters = []model.K8sCluster{}
 	}
 
 	// 从 Casbin 获取用户有权限的集群

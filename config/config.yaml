@@ -8,6 +8,34 @@ server:
   mode: release                  # 运行模式: debug / release
 
 # ============================================================================
+# 堡垒机存储配置（用户自选引擎）
+# ============================================================================
+bastion_storage:
+  # 存储引擎：mysql / mongodb
+  #   - mysql: MySQL / PostgreSQL
+  #   - mongodb: MongoDB（适合会话录制、命令历史等大数据）
+  engine: mongodb
+
+  # MongoDB 配置（engine=mongodb 时生效）
+  # uri 支持完整连接串，可附带 timeout、authSource 等参数
+  # 示例: "mongodb://user:pass@localhost:27017?authSource=admin&connectTimeoutMS=5000"
+  mongodb:
+    uri: "mongodb://admin:123456@mongodb:27017/keyops_bastion?authSource=admin&connectTimeoutMS=5000"
+    database: keyops_bastion
+    collection_recordings: bastion_recordings
+    collection_commands: bastion_commands
+    collection_logins: bastion_logins
+
+# ============================================================================
+# 账单存储配置（MongoDB，用于 AWS/阿里云原始账单）
+# ============================================================================
+# uri 支持完整连接串，可附带 timeout、authSource 等参数
+# 示例: "mongodb://user:pass@localhost:27017/zjump_bill?authSource=admin&connectTimeoutMS=5000"
+bill_storage:
+  uri: "mongodb://admin:123456@mongodb:27017/keyops_bill?authSource=admin&connectTimeoutMS=5000"
+  database: keyops_bill
+
+# ============================================================================
 # 数据库配置（必需）
 # ============================================================================
 # 支持 MySQL 和 PostgreSQL
@@ -77,7 +105,7 @@ security:
 
   # 认证方式：password / ldap / sso。非空时覆盖「系统设置-认证」里存在数据库的配置（登录页 /api/auth/methods 以此为准）。
   # 留空则完全以数据库为准。也可用环境变量 AUTH_METHOD（优先级高于本项）。修改后需重启 API。
-  # auth_method: "password" 
+  auth_method: "password" 
   # admin_whitelist：按邮箱自动给「管理员」角色（仅提升、不降级）；密码登录、LDAP、SSO 成功后均会检查。
   # 仅按邮箱匹配：英文逗号分隔多个完整邮箱，与 users.email 比对（不区分大小写，首尾空格忽略）；须含 @；邮箱为空则不命中。
   # 例：admin_whitelist: "ops@company.com,admin@company.com"
@@ -128,3 +156,5 @@ sync:
   interval: 60                 # 同步间隔（秒，默认60秒）
   cleanup_days: 7              # 清理已同步数据的天数（默认7天）
   batch_size: 1000             # 每次同步的批量大小（默认1000）
+  bill_sync_hour: 2            # 账单同步执行小时（24小时制，默认2点）
+  bill_sync_minute: 0          # 账单同步执行分钟（默认0分）

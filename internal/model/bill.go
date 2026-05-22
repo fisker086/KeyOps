@@ -46,18 +46,22 @@ func (BillSummaryDetail) TableName() string {
 
 // BillRecord 账单消费记录
 type BillRecord struct {
-	ID            uint            `gorm:"column:id; primary_key; AUTO_INCREMENT" json:"id,omitempty"`
-	Vendor        string          `gorm:"column:vendor; type:varchar(50)" json:"vendor" binding:"required"`    // 云厂商，tencent、huawei-langgemap、huawei-bjlg
-	Cycle         string          `gorm:"column:cycle; type:varchar(10)" json:"cycle" binding:"required"`      // 账单月份
-	InstanceID    string          `gorm:"column:instance_id; type:varchar(200)" json:"instance_id"`            // 资源ID
-	ResourceName  string          `gorm:"column:resource_name; type:varchar(200)" json:"resource_name"`        // 资源名称
-	SpecDesc      string          `gorm:"column:spec_desc; type:text" json:"spec_desc"`                        // 资源配置
-	ConsumeAmount decimal.Decimal `gorm:"column:consume_amount; type:decimal(25,15)" json:"consume_amount"`    // 费用
-	ResourceType  string          `gorm:"column:resource_type; type:varchar(50)" json:"resource_type"`         // 资源类型
-	ResourceCode  string          `gorm:"column:resource_code; type:varchar(50)" json:"resource_code"`         // 资源类型代码
-	ServiceType   string          `gorm:"column:service_type; type:varchar(50)" json:"service_type,omitempty"` // 服务类型，腾讯云没有此字段
-	ServiceCode   string          `gorm:"column:service_code; type:varchar(50)" json:"service_code,omitempty"` // 服务类型代码，腾讯云没有此字段
-	Extra         string          `gorm:"column:extra; type:text" json:"extra"`                                // 扩展字段
+	ID             uint            `gorm:"column:id; primary_key; AUTO_INCREMENT" json:"id,omitempty"`
+	Vendor         string          `gorm:"column:vendor; type:varchar(50)" json:"vendor" binding:"required"`    // 云厂商，tencent、huawei-langgemap、huawei-bjlg
+	Cycle          string          `gorm:"column:cycle; type:varchar(10)" json:"cycle" binding:"required"`      // 账单月份
+	InstanceID     string          `gorm:"column:instance_id; type:varchar(200)" json:"instance_id"`            // 资源ID
+	ResourceName   string          `gorm:"column:resource_name; type:text" json:"resource_name"`        // 资源名称
+	SpecDesc       string          `gorm:"column:spec_desc; type:text" json:"spec_desc"`                        // 资源配置
+	ConsumeAmount  decimal.Decimal `gorm:"column:consume_amount; type:decimal(25,15)" json:"consume_amount"`    // 费用
+	ResourceType   string          `gorm:"column:resource_type; type:text" json:"resource_type"`         // 资源类型
+	ResourceCode   string          `gorm:"column:resource_code; type:text" json:"resource_code"`         // 资源类型代码
+	ServiceType    string          `gorm:"column:service_type; type:text" json:"service_type,omitempty"` // 服务类型，腾讯云没有此字段
+	ServiceCode    string          `gorm:"column:service_code; type:varchar(50)" json:"service_code,omitempty"` // 服务类型代码，腾讯云没有此字段
+	Region         string          `gorm:"column:region; type:varchar(50)" json:"region,omitempty"`             // 区域
+	AccountID      string          `gorm:"column:account_id; type:varchar(100)" json:"account_id,omitempty"`    // 云账户ID
+	CloudAccountID uint            `gorm:"column:cloud_account_id" json:"cloud_account_id,omitempty"`           // 系统云账户ID
+	Tags           string          `gorm:"column:tags; type:text" json:"tags,omitempty"`                        // 标签(JSON格式)
+	Extra          string          `gorm:"column:extra; type:text" json:"extra"`                                // 扩展字段
 	BaseModel
 }
 
@@ -68,19 +72,63 @@ func (BillRecord) TableName() string {
 
 // BillPrice 单价管理，适用于专有云
 type BillPrice struct {
-	ID          uint            `gorm:"column:id; primary_key; AUTO_INCREMENT" json:"id,omitempty"`
-	Vendor      string          `gorm:"column:vendor; type:varchar(50)" json:"vendor" binding:"required"` // 云厂商
-	ResourceType string         `gorm:"column:resource_type; type:varchar(50)" json:"resource_type"`   // 资源类型
-	Scale       string          `gorm:"column:scale; type:varchar(50)" json:"scale"`                     // 规格，如 1:2, 1:4
-	Cluster     string          `gorm:"column:cluster; type:varchar(50)" json:"cluster"`                 // 集群
-	Price       decimal.Decimal `gorm:"column:price; type:decimal(25,15)" json:"price"`                 // 单价
-	Description string          `gorm:"column:description; type:text" json:"description"`                // 描述
+	ID            uint            `gorm:"column:id; primary_key; AUTO_INCREMENT" json:"id,omitempty"`
+	Vendor        string          `gorm:"column:vendor; type:varchar(50)" json:"vendor" binding:"required"` // 云厂商
+	ResourceType  string          `gorm:"column:resource_type; type:varchar(50)" json:"resource_type"`      // 资源类型
+	Spec          string          `gorm:"column:spec; type:varchar(50)" json:"spec"`                        // 规格，如 1:2, 1:4 (对应scale)
+	UnitPrice     decimal.Decimal `gorm:"column:unit_price; type:decimal(25,15)" json:"unit_price"`         // 单价 (对应price)
+	Currency      string          `gorm:"column:currency; type:varchar(10)" json:"currency"`                // 货币：USD, CNY
+	Unit          string          `gorm:"column:unit; type:varchar(50)" json:"unit"`                        // 单位：GB, Hour
+	Region        string          `gorm:"column:region; type:varchar(50)" json:"region"`                    // 区域
+	EffectiveDate string          `gorm:"column:effective_date; type:date" json:"effective_date"`           // 生效日期
+	Description   string          `gorm:"column:description; type:text" json:"description"`                 // 描述
 	BaseModel
 }
 
 // TableName 统一加上bill_前缀
 func (BillPrice) TableName() string {
 	return "bill_price"
+}
+
+// BillPricing 云定价（来自 AWS/Azure 定价 API）
+type BillPricing struct {
+	ID           uint            `gorm:"column:id; primary_key; AUTO_INCREMENT" json:"id,omitempty"`
+	CloudType    string          `gorm:"column:cloud_type; type:varchar(50)" json:"cloud_type"`            // 云厂商：aws, alibaba, tencent
+	ServiceCode  string          `gorm:"column:service_code; type:varchar(50)" json:"service_code"`        // 服务代码
+	InstanceType string          `gorm:"column:instance_type; type:varchar(50)" json:"instance_type"`      // 实例类型
+	Region       string          `gorm:"column:region; type:varchar(50)" json:"region"`                    // 区域
+	PricePerUnit decimal.Decimal `gorm:"column:price_per_unit; type:decimal(25,15)" json:"price_per_unit"` // 单价
+	Currency     string          `gorm:"column:currency; type:varchar(10)" json:"currency"`                // 货币：USD, CNY
+	Unit         string          `gorm:"column:unit; type:varchar(50)" json:"unit"`                        // 单位：GB, Hour
+	SKU          string          `gorm:"column:sku; type:varchar(100)" json:"sku"`                         // SKU
+	BaseModel
+}
+
+func (BillPricing) TableName() string {
+	return "bill_pricing"
+}
+
+// BillResource 云资源清单
+type BillResource struct {
+	ID             uint      `gorm:"column:id; primary_key; AUTO_INCREMENT" json:"id,omitempty"`
+	Vendor         string    `gorm:"column:vendor; type:varchar(50)" json:"vendor"`                // 云厂商
+	CloudAccountID uint      `gorm:"column:cloud_account_id" json:"cloud_account_id"`              // 系统云账户ID
+	AccountID      string    `gorm:"column:account_id; type:varchar(100)" json:"account_id"`       // 云厂商账户ID
+	ResourceID     string    `gorm:"column:resource_id; type:text" json:"resource_id"`     // 资源ID
+	ResourceType   string    `gorm:"column:resource_type; type:text" json:"resource_type"`  // 资源类型
+	ResourceName   string    `gorm:"column:resource_name; type:text" json:"resource_name"` // 资源名称
+	InstanceType   string    `gorm:"column:instance_type; type:text" json:"instance_type"`  // 实例类型
+	Region         string    `gorm:"column:region; type:varchar(50)" json:"region"`                // 区域
+	Zone           string    `gorm:"column:zone; type:varchar(50)" json:"zone"`                    // 可用区
+	Tags           string    `gorm:"column:tags; type:text" json:"tags"`                           // 标签JSON
+	Status         string    `gorm:"column:status; type:varchar(50)" json:"status"`                // 状态
+	FirstSeen      time.Time `gorm:"column:first_seen" json:"first_seen,omitempty"`                // 首次出现在账单中的时间
+	LastSeen       time.Time `gorm:"column:last_seen" json:"last_seen,omitempty"`                  // 最近出现在账单中的时间
+	BaseModel
+}
+
+func (BillResource) TableName() string {
+	return "bill_resources"
 }
 
 // Scope functions for query building
@@ -112,4 +160,3 @@ func RecordsByServiceCode(serviceCode string) func(db *gorm.DB) *gorm.DB {
 		return db.Where("service_code = ?", serviceCode)
 	}
 }
-

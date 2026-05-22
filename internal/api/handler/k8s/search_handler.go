@@ -90,6 +90,9 @@ func (h *SearchHandler) GlobalSearch(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "获取集群列表失败: "+err.Error()))
 		return
 	}
+	if allClusters == nil {
+		allClusters = []model.K8sCluster{}
+	}
 
 	// 获取用户有权限的集群
 	clusterIDMap := make(map[string]bool)

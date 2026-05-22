@@ -7,6 +7,7 @@ import (
 	"github.com/fisker086/keyops/internal/aiassistant"
 	"github.com/fisker086/keyops/internal/api/handler"
 	"github.com/fisker086/keyops/internal/api/middleware"
+	"github.com/fisker086/keyops/internal/mcp"
 	"github.com/fisker086/keyops/internal/repository"
 	"github.com/fisker086/keyops/internal/service"
 	"github.com/fisker086/keyops/pkg/logger" // swagger docs
@@ -17,6 +18,9 @@ import (
 )
 
 func Setup(
+	mcpHandler *mcp.Handler,
+	apiKeyHandler *handler.ApiKeyHandler,
+	apiKeySvc *service.ApiKeyService,
 	hostHandler *handler.HostHandler,
 	dashboardHandler *handler.DashboardHandler,
 	sessionHandler *handler.SessionHandler,
@@ -32,7 +36,6 @@ func Setup(
 	fileHandler *handler.FileHandler,
 	assetSyncHandler *handler.AssetSyncHandler,
 	authService *service.AuthService,
-	hostMonitorHandler *handler.HostMonitorHandler,
 	systemUserHandler *handler.SystemUserHandler,
 	roleHandler *handler.RoleHandler,
 	permissionRuleHandler *handler.PermissionRuleHandler,
@@ -49,6 +52,11 @@ func Setup(
 	k8sSearchHandler *handler.K8sSearchHandler,
 	deploymentHandler *handler.DeploymentHandler,
 	billHandler *handler.BillHandler,
+	expensesMapHandler *handler.ExpensesMapHandler,
+	cloudAccountHandler *handler.CloudAccountHandler,
+	resourcesHandler *handler.ResourcesHandler,
+	billDashboardHandler *handler.BillDashboardHandler,
+	finOpsHandler *handler.FinOpsHandler,
 	monitorHandler *handler.MonitorHandler,
 	organizationHandler *handler.OrganizationHandler,
 	applicationHandler *handler.ApplicationHandler,
@@ -93,11 +101,11 @@ func Setup(
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
-			auth.POST("/logout", authHandler.Logout)
-			auth.GET("/method", authHandler.GetAuthMethod)     // 获取当前认证方式
-			auth.GET("/sso/config", authHandler.GetSSOConfig)  // 获取SSO配置状态
-			auth.GET("/sso/initiate", authHandler.InitiateSSO) // 发起 SSO 登录
-			auth.GET("/sso/callback", authHandler.SSOCallback) // SSO 回调
+			auth.POST("/refresh", authHandler.Refresh) // 刷新 access_token（从 Cookie 读 refresh）
+			auth.GET("/method", authHandler.GetAuthMethod)      // 获取当前认证方式
+			auth.GET("/sso/config", authHandler.GetSSOConfig)   // 获取SSO配置状态
+			auth.GET("/sso/initiate", authHandler.InitiateSSO)  // 发起 SSO 登录
+			auth.GET("/sso/callback", authHandler.SSOCallback)  // SSO 回调
 		}
 
 		// 公开的系统设置（登录页也需要）
@@ -138,6 +146,8 @@ func Setup(
 	authenticated.Use(middleware.AuthMiddleware(authService))
 	{
 		// 用户相关
+		authenticated.POST("/auth/logout", authHandler.Logout)
+		authenticated.POST("/auth/session/establish", authHandler.EstablishSession)
 		authenticated.GET("/auth/me", authHandler.GetCurrentUser)
 		authenticated.GET("/auth/me/permissions", authHandler.GetMyPermissions)
 		authenticated.GET("/auth/login-records", authHandler.GetPlatformLoginRecords)
@@ -175,8 +185,6 @@ func Setup(
 			hosts.PUT("/:id", hostHandler.UpdateHost)
 			hosts.DELETE("/:id", hostHandler.DeleteHost)
 			hosts.POST("/:id/test", hostHandler.TestConnection)
-			hosts.POST("/:id/check-status", hostMonitorHandler.CheckHostStatus)     // 手动检查主机状态
-			hosts.POST("/check-all-status", hostMonitorHandler.CheckAllHostsStatus) // 检查所有主机状态
 			hosts.GET("/:id/groups", hostGroupHandler.GetHostGroups)                // 获取主机所属分组
 		}
 
@@ -265,6 +273,14 @@ func Setup(
 			userSSHKey.DELETE("/users/:id/ssh-key", authHandler.DeleteSSHKey)                // 删除SSH密钥
 			userSSHKey.GET("/users/:id/ssh-key/download", authHandler.DownloadSSHPrivateKey) // 下载私钥
 			userSSHKey.PUT("/users/:id/auth-method", authHandler.UpdateUserAuthMethod)       // 更新认证方式
+		}
+
+		// API Key 管理
+		apiKeys := authenticated.Group("/api-keys")
+		{
+			apiKeys.GET("", apiKeyHandler.List)
+			apiKeys.POST("", apiKeyHandler.Create)
+			apiKeys.DELETE("/:id", apiKeyHandler.Revoke)
 		}
 
 		// 用户管理（需要管理员权限）
@@ -394,7 +410,7 @@ func Setup(
 		// 组织管理：GET 供已登录用户（组织大盘、用户/应用表单选部门等）；增删改仅管理员（与 /applications 策略一致）
 		organizations := authenticated.Group("/organizations")
 		{
-			organizations.GET("", organizationHandler.ListOrganizations)         // 获取组织列表
+			organizations.GET("", organizationHandler.ListOrganizations)        // 获取组织列表
 			organizations.GET("/tree", organizationHandler.GetOrganizationTree) // 获取组织树
 			organizations.GET("/:id", organizationHandler.GetOrganization)      // 获取单个组织
 			organizations.POST("", middleware.AdminMiddleware(), organizationHandler.CreateOrganization)
@@ -857,27 +873,62 @@ func Setup(
 		// 账单管理
 		bill := authenticated.Group("/bill")
 		{
-			// 账单明细
-			bill.GET("/records", billHandler.GetRecords) // 获取账单明细列表
-
-			// 月度账单
-			bill.GET("/summary", billHandler.GetSummary) // 获取月度账单汇总
-
-			// 费用统计
+			bill.GET("/records", billHandler.GetRecords)        // 获取账单明细列表
+			bill.GET("/summary", billHandler.GetSummary)        // 获取月度账单汇总
 			bill.GET("/statistics", billHandler.GetStatistics)  // 获取费用统计（当月总费用）
 			bill.GET("/trend", billHandler.GetTrend)            // 获取费用趋势
 			bill.GET("/trend/month", billHandler.GetTrendMonth) // 获取费用趋势月份列表
+			bill.GET("/vm", billHandler.GetVM)                  // 获取虚拟机分摊账单
 
-			// 虚拟机分摊
-			bill.GET("/vm", billHandler.GetVM) // 获取虚拟机分摊账单
+			// 费用分解
+			bill.GET("/breakdown/tags", billHandler.GetBreakdownByTags)         // 按标签分解
+			bill.GET("/breakdown/accounts", billHandler.GetBreakdownByAccounts) // 按云账户分解
+			bill.GET("/breakdown/region", billHandler.GetBreakdownByRegion)     // 按区域分解
+			bill.GET("/breakdown/service", billHandler.GetBreakdownByService)   // 按服务分解
 
-			// 单价管理
-			bill.GET("/price", billHandler.GetPriceList)    // 获取单价列表
-			bill.POST("/price", billHandler.CreatePrice)    // 创建单价
-			bill.PUT("/price/:id", billHandler.UpdatePrice) // 更新单价
+			cloud := bill.Group("/cloud-accounts")
+			{
+				cloud.GET("", cloudAccountHandler.ListCloudAccounts)              // 列出云账户（含费用详情）
+				cloud.POST("", cloudAccountHandler.AddCloudAccount)               // 添加云账户
+				cloud.GET("/:id", cloudAccountHandler.GetCloudAccount)            // 获取云账户详情
+				cloud.PUT("/:id", cloudAccountHandler.UpdateCloudAccount)         // 更新云账户
+				cloud.DELETE("/:id", cloudAccountHandler.DeleteCloudAccount)      // 删除云账户
+				cloud.POST("/validate", cloudAccountHandler.ValidateCloudAccount) // 验证凭证
+				cloud.POST("/:id/sync", cloudAccountHandler.SyncCloudAccount)     // 同步云账户账单
+			}
 
-			// 资源管理
-			bill.GET("/resource", billHandler.GetResource) // 获取我的资源列表
+			// 云账单同步和查询
+			bill.POST("/sync/:cloud_account_id", billHandler.SyncBilling)   // 同步账单
+			bill.POST("/trigger-sync", billHandler.TriggerSync)             // 手动触发账单同步（兼容文档）
+			bill.GET("/check-budget-alerts", billHandler.CheckBudgetAlerts) // 手动检查预算告警
+			bill.GET("/summary-by-cloud", billHandler.GetSummaryByCloud)    // 按云厂商汇总
+			bill.GET("/pricing", billHandler.GetPricing)                    // 获取定价信息
+
+			// 费用地图
+			bill.GET("/region-expenses", expensesMapHandler.GetRegionExpenses)   // 按区域费用
+			bill.GET("/traffic-expenses", expensesMapHandler.GetTrafficExpenses) // 按流量费用
+
+			// 资源费用分解
+			resources := bill.Group("/resources")
+			{
+				resources.GET("/expenses-breakdown", resourcesHandler.ExpensesBreakdown)            // 费用分解
+				resources.GET("/resource-count-breakdown", resourcesHandler.ResourceCountBreakdown) // 资源数量分解
+			}
+
+			// Dashboard
+			bill.GET("/dashboard", billDashboardHandler.GetDashboardData)         // Dashboard 数据
+			bill.GET("/recommendations", billDashboardHandler.GetRecommendations) // 优化建议
+
+			// Budgets
+			budgets := bill.Group("/budgets")
+			{
+				budgets.GET("", finOpsHandler.ListBudgets)
+				budgets.POST("", finOpsHandler.CreateBudget)
+				budgets.PUT("/:id", finOpsHandler.UpdateBudget)
+				budgets.DELETE("/:id", finOpsHandler.DeleteBudget)
+			}
+
+
 		}
 
 		// Jenkins管理
@@ -955,10 +1006,29 @@ func Setup(
 		}
 	}
 
+	// MCP endpoint（同时支持 X-API-Key 和 Authorization: Bearer）
+	// GET 用于 Cursor 等 MCP 客户端的连接检查，POST 用于 JSON-RPC 消息处理
+	authenticated.GET("/mcp/tools", mcpHandler.ListTools)
+	api.GET("/mcp", middleware.McpAuthMiddleware(authService, apiKeySvc), mcpHandler.HandleMCPGet)
+	api.POST("/mcp", middleware.McpAuthMiddleware(authService, apiKeySvc), mcpHandler.HandleMCP)
+	r.GET("/api/v1/mcp", middleware.McpAuthMiddleware(authService, apiKeySvc), mcpHandler.HandleMCPGet)
+	r.POST("/api/v1/mcp", middleware.McpAuthMiddleware(authService, apiKeySvc), mcpHandler.HandleMCP)
+
 	// 第三方审批平台回调（不需要认证）
 	api.POST("/approvals/callback/feishu", approvalCallbackHandler.HandleFeishuCallback)
 	api.POST("/approvals/callback/dingtalk", approvalCallbackHandler.HandleDingTalkCallback)
 	api.POST("/approvals/callback/wechat", approvalCallbackHandler.HandleWeChatCallback)
+
+	// OAuth Authorization Server Metadata (MCP 客户端发现检测，本系统用 API Key 无需 OAuth)
+	r.GET("/.well-known/oauth-authorization-server", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"issuer":                               "",
+			"authorization_endpoint":               "",
+			"token_endpoint":                       "",
+			"response_types_supported":             []string{},
+			"token_endpoint_auth_methods_supported": []string{},
+		})
+	})
 
 	// Prometheus Metrics
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))

@@ -427,7 +427,7 @@ CREATE TABLE IF NOT EXISTS settings (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `key` VARCHAR(100) UNIQUE NOT NULL COMMENT 'Setting key',
     value TEXT COMMENT 'Setting value',
-    category VARCHAR(50) COMMENT 'Category: system, ldap, sso, security, audit, notification, terminal, upload, host_monitor, windows',
+    category VARCHAR(50) COMMENT 'Category: system, ldap, sso, security, audit, notification, terminal, upload, windows',
     type VARCHAR(20) COMMENT 'Type: string, number, boolean, json',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -917,6 +917,180 @@ CREATE TABLE IF NOT EXISTS permission_rule_host_groups (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Permission rule to host group mapping (many-to-many)';
 
+-- ============================================================================
+-- Infrastructure / IaC Management Tables
+-- ============================================================================
+
+-- 配置条目表（配置仓库）
+CREATE TABLE IF NOT EXISTS infra_config_entries (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    `key` VARCHAR(500) NOT NULL COMMENT '配置键',
+    value TEXT COMMENT '配置值',
+    description VARCHAR(500) DEFAULT '' COMMENT '描述',
+    version INT DEFAULT 1 COMMENT '版本号',
+    status VARCHAR(20) DEFAULT 'active' COMMENT '状态',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE INDEX idx_key (`key`(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='CMDB 配置条目';
+
+-- 配置变更记录表（关联工单审批）
+CREATE TABLE IF NOT EXISTS infra_config_changes (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    entry_id INT UNSIGNED NOT NULL COMMENT '配置条目 ID',
+    action VARCHAR(20) COMMENT '操作：create/update/delete',
+    old_value TEXT COMMENT '旧值',
+    new_value TEXT COMMENT '新值',
+    ticket_id INT UNSIGNED COMMENT '关联工单 ID',
+    status VARCHAR(20) DEFAULT 'pending' COMMENT '状态：pending/approved/rejected/executed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_entry_id (entry_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='配置变更记录';
+
+-- Stack 模板表（云资源模版蓝图）
+CREATE TABLE IF NOT EXISTS infra_stack_templates (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    name VARCHAR(200) NOT NULL DEFAULT '' COMMENT '模板名称',
+    description VARCHAR(500) DEFAULT '' COMMENT '描述',
+    provider VARCHAR(50) DEFAULT '' COMMENT '云厂商 aws/aliyun/tencent/gcp/azure',
+    template VARCHAR(200) DEFAULT '' COMMENT '资源引擎内置模板标识',
+    git_repo_url VARCHAR(500) DEFAULT '' COMMENT '可选：模板源码 Git 仓库地址',
+    git_branch VARCHAR(200) DEFAULT 'refs/heads/main' COMMENT 'Git 分支',
+    git_project_path VARCHAR(500) DEFAULT '' COMMENT 'Git 仓库子目录',
+    git_username VARCHAR(200) DEFAULT '' COMMENT 'Git HTTPS 用户名',
+    git_password VARCHAR(500) DEFAULT '' COMMENT 'Git HTTPS 密码/Token',
+    git_ssh_private_key TEXT COMMENT 'Git SSH 私钥',
+    parameters LONGTEXT COMMENT '参数 Schema JSON',
+    status VARCHAR(20) DEFAULT 'active' COMMENT '状态',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='云资源栈模板';
+
+-- Stack 表（云资源栈实例）
+CREATE TABLE IF NOT EXISTS infra_stacks (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    name VARCHAR(200) NOT NULL COMMENT '名称',
+    description VARCHAR(500) DEFAULT '' COMMENT '描述',
+    provider VARCHAR(50) DEFAULT '' COMMENT '云厂商',
+    region VARCHAR(100) DEFAULT '' COMMENT '区域',
+    template VARCHAR(200) DEFAULT '' COMMENT '资源引擎内置模板标识',
+    account_id INT UNSIGNED DEFAULT NULL COMMENT '关联云账号 ID',
+    template_id INT UNSIGNED DEFAULT NULL COMMENT '关联模板 ID',
+    status VARCHAR(20) DEFAULT 'pending' COMMENT '状态',
+    config JSON COMMENT 'Stack 配置',
+    output JSON COMMENT '部署输出',
+    tags JSON COMMENT '标签',
+    created_by VARCHAR(100) COMMENT '创建者',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_account_id (account_id),
+    INDEX idx_template_id (template_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='云资源栈';
+
+-- Stack 操作记录表
+CREATE TABLE IF NOT EXISTS infra_stack_operations (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    stack_id INT UNSIGNED NOT NULL COMMENT 'Stack ID',
+    action VARCHAR(20) COMMENT '操作：deploy/destroy',
+    ticket_id INT UNSIGNED COMMENT '关联工单 ID',
+    status VARCHAR(20) DEFAULT 'pending' COMMENT '状态',
+    output TEXT COMMENT '执行输出',
+    error TEXT COMMENT '错误信息',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_stack_id (stack_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Stack 操作记录';
+
+-- 配置绑定表（配置条目与 Stack 参数的显式绑定）
+CREATE TABLE IF NOT EXISTS infra_config_bindings (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    config_key VARCHAR(500) NOT NULL COMMENT '配置键',
+    stack_id INT UNSIGNED NOT NULL COMMENT 'Stack ID',
+    param_path VARCHAR(500) NOT NULL COMMENT '参数路径，如 config.db_host',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_config_key (config_key(191)),
+    INDEX idx_stack_id (stack_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='配置项与 Stack 参数的显式绑定';
+
+-- IaC 变更单 / 记录 / 回滚（与 internal/model/infra_change.go 一致）
+CREATE TABLE IF NOT EXISTS infra_change_requests (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    change_id VARCHAR(64) NOT NULL COMMENT '业务变更单号 CHG-...',
+    stack_id INT UNSIGNED NOT NULL COMMENT '关联 infra_stacks.id',
+    action VARCHAR(32) NOT NULL COMMENT 'create/update/delete/replace',
+    description VARCHAR(2000) DEFAULT '' COMMENT '变更说明',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending' COMMENT 'pending/approved/rejected/applying/completed/failed/rolling_back/rolled_back',
+    risk_level VARCHAR(32) NOT NULL DEFAULT 'low' COMMENT 'low/medium/high/critical',
+    risk_analysis VARCHAR(2000) DEFAULT '' COMMENT '风险分析',
+    preview_result JSON COMMENT 'Pulumi preview 原始结果',
+    preview_summary VARCHAR(500) DEFAULT '' COMMENT '变更摘要文案',
+    apply_result JSON COMMENT 'Apply 输出等',
+    apply_output TEXT COMMENT '执行日志/错误文本',
+    approval_id VARCHAR(128) DEFAULT '' COMMENT '外部审批单 ID',
+    approval_platform VARCHAR(64) DEFAULT '' COMMENT 'internal/feishu/dingtalk',
+    approver VARCHAR(200) DEFAULT '' COMMENT '审批人',
+    approved_at DATETIME(3) DEFAULT NULL COMMENT '审批时间',
+    reject_reason VARCHAR(2000) DEFAULT '' COMMENT '拒绝原因',
+    applied_by VARCHAR(200) DEFAULT '' COMMENT '执行人',
+    applied_at DATETIME(3) DEFAULT NULL COMMENT '执行时间',
+    is_rollback TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否回滚类变更单',
+    rollback_to INT UNSIGNED DEFAULT NULL COMMENT '回滚目标 change_request.id',
+    created_by VARCHAR(200) DEFAULT '' COMMENT '创建人',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_change_id (change_id),
+    KEY idx_stack_id (stack_id),
+    KEY idx_status (status),
+    KEY idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='IaC 变更单（Plan/审批/Apply）';
+
+CREATE TABLE IF NOT EXISTS infra_change_records (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    change_id INT UNSIGNED NOT NULL COMMENT '关联 infra_change_requests.id',
+    stack_id INT UNSIGNED NOT NULL COMMENT 'Stack ID',
+    stack_name VARCHAR(200) DEFAULT '' COMMENT 'Stack 名称快照',
+    action VARCHAR(64) DEFAULT '' COMMENT '业务动作快照',
+    operation VARCHAR(64) DEFAULT '' COMMENT 'preview/apply/rollback',
+    adds INT NOT NULL DEFAULT 0,
+    changes INT NOT NULL DEFAULT 0,
+    deletes INT NOT NULL DEFAULT 0 COMMENT '删除资源数',
+    diff TEXT COMMENT '详细 diff',
+    result VARCHAR(32) DEFAULT '' COMMENT 'success/failed',
+    error TEXT COMMENT '错误信息',
+    outputs JSON COMMENT '结构化输出',
+    duration INT NOT NULL DEFAULT 0 COMMENT '耗时秒',
+    operator VARCHAR(200) DEFAULT '' COMMENT '操作者',
+    occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '发生时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    KEY idx_change_id (change_id),
+    KEY idx_stack_id (stack_id),
+    KEY idx_occurred_at (occurred_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='变更执行记录';
+
+CREATE TABLE IF NOT EXISTS infra_change_rollback_history (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    change_id INT UNSIGNED NOT NULL COMMENT '原变更单 infra_change_requests.id',
+    rollback_to_id INT UNSIGNED DEFAULT NULL COMMENT '回滚目标变更单 id',
+    rollback_from_id INT UNSIGNED DEFAULT NULL COMMENT '来源变更单 id',
+    reason VARCHAR(2000) DEFAULT '' COMMENT '回滚原因',
+    operator VARCHAR(200) DEFAULT '' COMMENT '操作人',
+    rollback_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '回滚时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    KEY idx_change_id (change_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='变更回滚历史';
+
 COMMIT;
 
 -- =====================================================
@@ -942,14 +1116,6 @@ VALUES
 -- =====================================================
 -- Initialize System Settings
 -- =====================================================
-
--- Host Monitor Settings
-INSERT IGNORE INTO settings (`key`, `value`, `category`, `type`, `created_at`, `updated_at`) VALUES
-('host_monitor_enabled', 'false', 'host_monitor', 'boolean', NOW(), NOW()),
-('host_monitor_interval', '5', 'host_monitor', 'number', NOW(), NOW()),
-('host_monitor_method', 'tcp', 'host_monitor', 'string', NOW(), NOW()),
-('host_monitor_timeout', '3', 'host_monitor', 'number', NOW(), NOW()),
-('host_monitor_concurrent', '20', 'host_monitor', 'number', NOW(), NOW());
 
 -- =====================================================
 -- Initialize System Users and Roles
@@ -1469,8 +1635,6 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 -- 首页分组（一级菜单）
 -- 注意：系统大盘已拆分成3个独立菜单（组织大盘、应用大盘、主机大盘），保留在首页下
 ('menu-home', '', '', 'home', '', false, 1, '首页', 'Home', false, '', false, false, NOW(), NOW()),
--- 首页子菜单：云账单大盘（已集成到主机大盘中，隐藏独立菜单）
-('menu-cloud-bill-dashboard', 'menu-home', '/cloud-bill-dashboard', 'cloudBillDashboard', 'pages/dashboard/CloudBillDashboard', true, 5, '云账单大盘', 'AccountBalance', false, '', false, false, NOW(), NOW()),
 -- 首页子菜单：告警大盘（从告警中心移动到首页）
 ('menu-monitor-alert-dashboard', 'menu-home', '/monitors/alert-dashboard', 'monitorAlertDashboard', 'pages/monitor/AlertDashboard', false, 6, '告警大盘', 'Dashboard', false, '', false, false, NOW(), NOW()),
 
@@ -1502,46 +1666,41 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-blacklist', 'menu-bastion', '/blacklist', 'blacklist', 'pages/bastion/Blacklist', false, 7, '命令黑名单', 'Security', false, '', false, false, NOW(), NOW()),
 ('menu-bastion-settings', 'menu-bastion', '/bastion-settings', 'bastionSettings', 'pages/bastion/BastionSettings', false, 8, '堡垒机配置', 'Settings', false, '', false, false, NOW(), NOW()),
 
--- 发布管理一级菜单已临时移除，恢复见 sql/init_removed_release_menu.sql
+-- 云账单一级菜单（FinOps 风格，对齐 OptScale 成本/账单入口分组）
+('menu-cloud-bill', '', '', 'cloudBill', '', false, 5, '云账单', 'AccountBalance', false, '', false, false, NOW(), NOW()),
+-- 总览
+('menu-cloud-bill-overview', 'menu-cloud-bill', '', 'cloudBillOverview', '', false, 1, '总览', 'Visibility', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-finops-dashboard', 'menu-cloud-bill-overview', '/cloud-bill/finops-dashboard', 'cloudBillFinopsDashboard', 'pages/bill/FinopsDashboard', false, 1, '成本总览', 'Dashboard', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-breakdown', 'menu-cloud-bill-overview', '/cloud-bill/breakdown', 'cloudBillBreakdown', 'pages/bill/BillBreakdown', false, 2, '费用分解', 'PieChart', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-recommendations', 'menu-cloud-bill-overview', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 3, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
+-- 成本管理
+('menu-cloud-bill-cost', 'menu-cloud-bill', '', 'cloudBillCost', '', false, 2, '成本管理', 'Savings', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-budgets', 'menu-cloud-bill-cost', '/cloud-bill/budgets', 'cloudBillBudgets', 'pages/bill/Budgets', false, 1, '预算管理', 'AccountBalanceWallet', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-pools', 'menu-cloud-bill-cost', '/cloud-bill/pools', 'cloudBillPools', 'pages/bill/Pools', false, 2, '成本池', 'Pool', false, '', false, false, NOW(), NOW()),
+-- 设置
+('menu-cloud-bill-settings', 'menu-cloud-bill', '', 'cloudBillSettings', '', false, 3, '设置', 'Settings', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-accounts', 'menu-cloud-bill-settings', '/cloud-bill/accounts', 'cloudBillAccounts', 'pages/bill/CloudAccounts', false, 1, '云账户', 'Cloud', false, '', false, false, NOW(), NOW()),
+('menu-bill-price', 'menu-cloud-bill-settings', '/bill/price', 'billPrice', 'pages/bill/BillPrice', false, 2, '单价管理', 'AttachMoney', false, '', false, false, NOW(), NOW()),
+('menu-bill-resource', 'menu-cloud-bill-settings', '/bill/resource', 'billResource', 'pages/bill/BillResource', false, 3, '我的资源', 'Inventory', false, '', false, false, NOW(), NOW()),
 
 -- 集群管理分组
 ('menu-k8s', '', '', 'k8s', '', false, 6, '集群管理', 'Cloud', false, '', false, false, NOW(), NOW()),
 
--- k8s 集群配置二级菜单
-('menu-cluster-management', 'menu-k8s', '', 'clusterManagement', '', false, 1, '集群配置', 'Settings', false, '', false, false, NOW(), NOW()),
--- 集群配置三级菜单
-('menu-cluster-list', 'menu-cluster-management', '/clusters', 'clusterList', 'pages/cluster/ClusterManagement', false, 1, '集群列表', 'ViewList', false, '', false, false, NOW(), NOW()),
--- 权限管理（可通过菜单访问，也可通过集群管理页面的权限分配按钮访问）
-('menu-cluster-permissions', 'menu-cluster-management', '/cluster-permissions', 'clusterPermissions', 'pages/cluster/ClusterPermissionManagement', false, 2, '权限管理', 'Security', false, '', false, false, NOW(), NOW()),
--- 操作审计三级菜单
-('menu-operation-audit', 'menu-cluster-management', '/operation-audit', 'operationAudit', 'pages/cluster/OperationAudit', false, 3, '操作审计', 'History', false, '', false, false, NOW(), NOW()),
--- 已删除 menu-k8s-events (事件管理)，功能已合并到集群管理的摘要页面中
--- 已删除 menu-cluster-summary (集群摘要)，功能已由集群管理的"状态概览"按钮替代，通过 /clusters/:id/status 访问
+-- k8s 管理类子菜单
+('menu-k8s-management', 'menu-k8s', '', 'k8sManagement', '', false, 1, '集群管理', 'FolderOpen', false, '', false, false, NOW(), NOW()),
+('menu-cluster-list', 'menu-k8s-management', '/clusters', 'clusterList', 'pages/cluster/ClusterManagement', false, 1, '集群列表', 'ViewList', false, '', false, false, NOW(), NOW()),
+('menu-cluster-permissions', 'menu-k8s-management', '/cluster-permissions', 'clusterPermissions', 'pages/cluster/ClusterPermissionManagement', false, 2, '权限管理', 'Security', false, '', false, false, NOW(), NOW()),
+('menu-operation-audit', 'menu-k8s-management', '/operation-audit', 'operationAudit', 'pages/cluster/OperationAudit', false, 3, '操作审计', 'History', false, '', false, false, NOW(), NOW()),
+('menu-k8s-api-keys', 'menu-k8s-management', '/k8s/api-keys', 'k8sApiKeys', 'pages/k8s/ApiKeys', false, 4, 'MCP密钥', 'Key', false, '', false, false, NOW(), NOW()),
 
--- k8s 工作负载二级菜单
-('menu-k8s-workload', 'menu-k8s', '', 'k8sWorkload', '', false, 2, '工作负载', 'Apps', false, '', false, false, NOW(), NOW()),
--- 工作负载三级菜单
-('menu-k8s-deployments', 'menu-k8s-workload', '/k8s/deployments', 'k8sDeployments', 'pages/k8s/Deployments', false, 1, 'Deployment', 'RocketLaunch', false, '', false, false, NOW(), NOW()),
-('menu-k8s-daemonsets', 'menu-k8s-workload', '/k8s/daemonsets', 'k8sDaemonSets', 'pages/k8s/DaemonSets', false, 2, 'DaemonSet', 'GridView', false, '', false, false, NOW(), NOW()),
-('menu-k8s-statefulsets', 'menu-k8s-workload', '/k8s/statefulsets', 'k8sStatefulSets', 'pages/k8s/StatefulSets', false, 3, 'StatefulSet', 'Database', false, '', false, false, NOW(), NOW()),
-('menu-k8s-pods', 'menu-k8s-workload', '/k8s/pods', 'k8sPods', 'pages/k8s/Pods', false, 4, 'Pod', 'Circle', false, '', false, false, NOW(), NOW()),
-('menu-k8s-cronjobs', 'menu-k8s-workload', '/k8s/cronjobs', 'k8sCronJobs', 'pages/k8s/CronJobs', false, 5, 'CronJob', 'Schedule', false, '', false, false, NOW(), NOW()),
-('menu-k8s-jobs', 'menu-k8s-workload', '/k8s/jobs', 'k8sJobs', 'pages/k8s/Jobs', false, 6, 'Job', 'Task', false, '', false, false, NOW(), NOW()),
-
--- k8s 服务发现二级菜单
-('menu-k8s-service-discovery', 'menu-k8s', '', 'k8sServiceDiscovery', '', false, 8, '服务发现', 'Share', false, '', false, false, NOW(), NOW()),
--- 服务发现三级菜单
-('menu-k8s-services', 'menu-k8s-service-discovery', '/k8s/services', 'k8sServices', 'pages/k8s/Services', false, 1, 'Service', 'Dns', false, '', false, false, NOW(), NOW()),
-('menu-k8s-ingress', 'menu-k8s-service-discovery', '/k8s/ingress', 'k8sIngress', 'pages/k8s/Ingress', false, 2, 'Ingress', 'Router', false, '', false, false, NOW(), NOW()),
-
--- k8s 存储管理二级菜单
-('menu-k8s-storage', 'menu-k8s', '', 'k8sStorage', '', false, 9, '存储管理', 'Storage', false, '', false, false, NOW(), NOW()),
--- 存储管理三级菜单
-('menu-k8s-pv', 'menu-k8s-storage', '/k8s/pv', 'k8sPV', 'pages/k8s/PV', false, 1, 'PV', 'Folder', false, '', false, false, NOW(), NOW()),
-('menu-k8s-pvc', 'menu-k8s-storage', '/k8s/pvc', 'k8sPVC', 'pages/k8s/PVC', false, 2, 'PVC', 'FolderOpen', false, '', false, false, NOW(), NOW()),
-('menu-k8s-storageclass', 'menu-k8s-storage', '/k8s/storageclass', 'k8sStorageClass', 'pages/k8s/StorageClass', false, 3, 'StorageClass', 'Category', false, '', false, false, NOW(), NOW()),
-('menu-k8s-configmaps', 'menu-k8s-storage', '/k8s/configmaps', 'k8sConfigMaps', 'pages/k8s/ConfigMaps', false, 4, 'ConfigMaps', 'Code', false, '', false, false, NOW(), NOW()),
-('menu-k8s-secrets', 'menu-k8s-storage', '/k8s/secrets', 'k8sSecrets', 'pages/k8s/Secrets', false, 5, 'Secrets', 'VpnKey', false, '', false, false, NOW(), NOW()),
+-- k8s 资源类子菜单
+('menu-k8s-operations', 'menu-k8s', '', 'k8sOperations', '', false, 2, '资源管理', 'GridView', false, '', false, false, NOW(), NOW()),
+('menu-k8s-cluster-overview', 'menu-k8s-operations', '/k8s/cluster-overview', 'k8sClusterOverview', 'pages/k8s/ClusterOverview', false, 1, '集群概览', 'Dashboard', false, '', false, false, NOW(), NOW()),
+('menu-k8s-workload', 'menu-k8s-operations', '/k8s/workloads', 'k8sWorkload', 'pages/k8s/Workloads', false, 2, '工作负载', 'Apps', false, '', false, false, NOW(), NOW()),
+('menu-k8s-service-routes', 'menu-k8s-operations', '/k8s/service-routes', 'k8sServiceRoutes', 'pages/k8s/ServiceRoutes', false, 4, '服务路由', 'Share', false, '', false, false, NOW(), NOW()),
+('menu-k8s-hpa', 'menu-k8s-operations', '/k8s/hpa', 'k8sHpa', 'pages/k8s/Hpa', false, 5, '弹性伸缩', 'TrendingUp', false, '', false, false, NOW(), NOW()),
+('menu-k8s-storage', 'menu-k8s-operations', '/k8s/storage', 'k8sStorage', 'pages/k8s/StorageManagement', false, 6, '存储管理', 'Storage', false, '', false, false, NOW(), NOW()),
+('menu-k8s-config', 'menu-k8s-operations', '/k8s/config', 'k8sConfig', 'pages/k8s/ConfigManagement', false, 7, '配置管理', 'Settings', false, '', false, false, NOW(), NOW()),
 
 -- 工单管理分组（一级菜单）
 ('menu-workorder', '', '', 'workorder', '', false, 6, '工单管理', 'Assignment', false, '', false, false, NOW(), NOW()),
@@ -1561,24 +1720,18 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 -- 监控告警分组（一级菜单）
 ('menu-monitor', '', '', 'monitor', '', false, 8, '监控告警', 'Monitor', false, '', false, false, NOW(), NOW()),
 
--- 监控告警二级菜单（按功能流程分类）
--- 1. 告警中心（查看和处理告警）
+-- 监控告警二级菜单
 ('menu-monitor-alert-center', 'menu-monitor', '', 'monitorAlertCenter', '', false, 1, '告警中心', 'Alert Center', false, '', false, false, NOW(), NOW()),
--- 2. 规则配置（配置告警规则和处理逻辑）
 ('menu-monitor-rule-config', 'menu-monitor', '', 'monitorRuleConfig', '', false, 2, '规则配置', 'Rule Config', false, '', false, false, NOW(), NOW()),
--- 3. 通知管理（配置通知方式）
 ('menu-monitor-notification', 'menu-monitor', '', 'monitorNotification', '', false, 3, '通知管理', 'Notification', false, '', false, false, NOW(), NOW()),
--- 4. 值班管理（配置值班相关）
 ('menu-monitor-oncall', 'menu-monitor', '', 'monitorOnCall', '', false, 4, '值班管理', 'On-Call', false, '', false, false, NOW(), NOW()),
 
--- 监控告警三级菜单
--- 告警中心下的三级菜单（告警大盘已移动到首页）
--- ('menu-monitor-alert-dashboard', 'menu-monitor-alert-center', '/monitors/alert-dashboard', 'monitorAlertDashboard', 'pages/monitor/AlertDashboard', false, 0, '告警大盘', 'Dashboard', false, '', false, false, NOW(), NOW()),
+-- 告警中心三级菜单
 ('menu-monitor-alert-event', 'menu-monitor-alert-center', '/monitors/alert-event', 'monitorAlertEvent', 'pages/monitor/AlertEvent', false, 1, '告警事件', 'Warning', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-strategy-log', 'menu-monitor-alert-center', '/monitors/strategy-log', 'monitorStrategyLog', 'pages/monitor/StrategyLog', false, 2, '策略日志', 'Description', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-certificate', 'menu-monitor-alert-center', '/monitors/certificate', 'monitorCertificate', 'pages/monitor/Certificate', false, 3, '证书管理', 'VerifiedUser', false, '', false, false, NOW(), NOW()),
 
--- 规则配置下的三级菜单
+-- 规则配置三级菜单
 ('menu-monitor-datasource', 'menu-monitor-rule-config', '/monitors/datasource', 'monitorDatasource', 'pages/monitor/Datasource', false, 1, '数据源', 'Storage', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-rule-group', 'menu-monitor-rule-config', '/monitors/rule-group', 'monitorRuleGroup', 'pages/monitor/RuleGroup', false, 2, '规则组', 'Folder', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-alert-rule', 'menu-monitor-rule-config', '/monitors/alert-rule', 'monitorAlertRule', 'pages/monitor/AlertRule', false, 3, '告警规则', 'Gavel', false, '', false, false, NOW(), NOW()),
@@ -1586,20 +1739,14 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-monitor-restrain-rule', 'menu-monitor-rule-config', '/monitors/restrain-rule', 'monitorRestrainRule', 'pages/monitor/RestrainRule', false, 5, '告警抑制', 'Block', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-aggregation-rule', 'menu-monitor-rule-config', '/monitors/aggregation-rule', 'monitorAggregationRule', 'pages/monitor/AggregationRule', false, 6, '告警聚合', 'CallMerge', false, '', false, false, NOW(), NOW()),
 
--- 通知管理下的三级菜单（已去掉告警组）
+-- 通知管理三级菜单
 ('menu-monitor-alert-template', 'menu-monitor-notification', '/monitors/alert-template', 'monitorAlertTemplate', 'pages/monitor/AlertTemplate', false, 1, '告警模板', 'Article', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-alert-channel', 'menu-monitor-notification', '/monitors/alert-channel', 'monitorAlertChannel', 'pages/monitor/AlertChannel', false, 2, '告警渠道', 'Send', false, '', false, false, NOW(), NOW()),
 
--- 值班管理下的三级菜单
+-- 值班管理三级菜单
 ('menu-monitor-oncall-schedule', 'menu-monitor-oncall', '/monitors/oncall-schedule', 'monitorOnCallSchedule', 'pages/monitor/OnCallSchedule', false, 1, '值班排班', 'CalendarToday', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-oncall-shift', 'menu-monitor-oncall', '/monitors/oncall-shift', 'monitorOnCallShift', 'pages/monitor/OnCallShift', false, 2, '值班班次', 'AccessTime', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-oncall-calendar', 'menu-monitor-oncall', '/monitors/oncall-calendar', 'monitorOnCallCalendar', 'pages/monitor/OnCallCalendar', false, 3, '值班日历', 'CalendarMonth', false, '', false, false, NOW(), NOW()),
-
--- 个人设置（隐藏，只在头像菜单中显示）
-('menu-personal', '', '/profile', 'personal', 'pages/personal/Profile', true, 10, '个人设置', 'Person', false, '', false, false, NOW(), NOW()),
-
--- 系统设置
-('menu-system', '', '/settings', 'system', 'pages/system/Settings', false, 11, '系统设置', 'Settings', false, '', false, false, NOW(), NOW()),
 
 -- AI运维助手（一级菜单）
 ('menu-ai-assistant', '', '', 'aiAssistant', '', false, 9, 'AI运维助手', 'SmartToy', false, '', false, false, NOW(), NOW()),
@@ -1608,327 +1755,14 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-ai-assistant-schedules', 'menu-ai-assistant', '/ai-assistant/schedules', 'aiAssistantSchedules', 'pages/ai-assistant/Schedules', false, 3, '定时任务', 'Schedule', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-environments', 'menu-ai-assistant', '/ai-assistant/environments', 'aiAssistantEnvironments', 'pages/ai-assistant/Environments', false, 4, '目标环境', 'Public', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-experts', 'menu-ai-assistant', '/ai-assistant/experts', 'aiAssistantExperts', 'pages/ai-assistant/Experts', false, 5, '专家角色', 'Person', false, '', false, false, NOW(), NOW()),
-('menu-ai-assistant-models', 'menu-ai-assistant', '/ai-assistant/models', 'aiAssistantModels', 'pages/ai-assistant/Models', false, 6, '模型配置', 'Psychology', false, '', false, false, NOW(), NOW())
-ON DUPLICATE KEY UPDATE 
-  parent_id = VALUES(parent_id),
-  path = VALUES(path),
-  name = VALUES(name),
-  component = VALUES(component),
-  hidden = VALUES(hidden),
-  sort = VALUES(sort),
-  title = VALUES(title),
-  icon = VALUES(icon),
-  keep_alive = VALUES(keep_alive),
-  active_name = VALUES(active_name),
-  close_tab = VALUES(close_tab),
-  default_menu = VALUES(default_menu),
-  updated_at = NOW();
+('menu-ai-assistant-models', 'menu-ai-assistant', '/ai-assistant/models', 'aiAssistantModels', 'pages/ai-assistant/Models', false, 6, '模型配置', 'Psychology', false, '', false, false, NOW(), NOW()),
 
--- 更新菜单的父级和排序（如果菜单已存在，确保结构正确）
--- 确保首页菜单存在且配置正确
--- 首页菜单作为分组菜单，包含3个大盘子菜单
-INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) 
-VALUES ('menu-home', '', '', 'home', '', false, 1, '首页', 'Home', false, '', false, false, NOW(), NOW())
-ON DUPLICATE KEY UPDATE 
-  parent_id = '',
-  path = '',
-  name = 'home',
-  component = '',
-  hidden = false,
-  sort = 1,
-  title = '首页',
-  icon = 'Home',
-  keep_alive = false,
-  active_name = '',
-  close_tab = false,
-  default_menu = false,
-  updated_at = NOW();
+-- 个人设置（隐藏，只在头像菜单中显示）
+('menu-personal', '', '/profile', 'personal', 'pages/personal/Profile', true, 10, '个人设置', 'Person', false, '', false, false, NOW(), NOW()),
 
--- 首页菜单包含3个大盘子菜单：组织大盘、应用大盘、主机大盘
-
--- 更新堡垒机的子菜单
-UPDATE menus SET parent_id = 'menu-bastion', sort = 1 WHERE id = 'menu-terminal';
-UPDATE menus SET parent_id = 'menu-bastion', sort = 2 WHERE id = 'menu-sessions';
-UPDATE menus SET parent_id = 'menu-bastion', sort = 3 WHERE id = 'menu-commands';
-UPDATE menus SET parent_id = 'menu-bastion', sort = 4 WHERE id = 'menu-history';
-UPDATE menus SET parent_id = 'menu-bastion', sort = 5 WHERE id = 'menu-system-users';
-UPDATE menus SET parent_id = 'menu-bastion', sort = 6 WHERE id = 'menu-permission-rules';
-UPDATE menus SET parent_id = 'menu-bastion', sort = 7 WHERE id = 'menu-blacklist';
-UPDATE menus SET parent_id = 'menu-bastion', sort = 8 WHERE id = 'menu-bastion-settings';
-
--- 隐藏云账单大盘菜单（已集成到主机大盘中）
-UPDATE menus SET hidden = true WHERE id = 'menu-cloud-bill-dashboard';
--- 更新组织管理分组（原用户权限）
-UPDATE menus SET title = '组织管理' WHERE id = 'menu-user-permission';
-
--- 更新组织管理的子菜单
-UPDATE menus SET parent_id = 'menu-user-permission', sort = 1, title = '部门管理' WHERE id = 'menu-departments';
-UPDATE menus SET parent_id = 'menu-user-permission', sort = 2, title = '应用管理' WHERE id = 'menu-services';
-UPDATE menus SET parent_id = 'menu-user-permission', sort = 3, title = '人员管理' WHERE id = 'menu-users';
-UPDATE menus SET parent_id = 'menu-user-permission', sort = 4 WHERE id = 'menu-roles';
-UPDATE menus SET parent_id = 'menu-user-permission', sort = 5 WHERE id = 'menu-permissions';
--- 将资产管理移出组织管理，作为一级菜单放在组织管理下面
-UPDATE menus SET parent_id = '', sort = 3 WHERE id = 'menu-assets';
-
--- 更新后续一级菜单的排序（资产管理插入后，后续菜单需要往后移）
-UPDATE menus SET sort = 4 WHERE id = 'menu-bastion';
-UPDATE menus SET sort = 5 WHERE id = 'menu-k8s';
-UPDATE menus SET sort = 6 WHERE id = 'menu-workorder';
-UPDATE menus SET sort = 7 WHERE id = 'menu-dms';
-UPDATE menus SET sort = 8 WHERE id = 'menu-monitor';
-UPDATE menus SET sort = 11 WHERE id = 'menu-system';
-
--- 更新API分组：将组织管理相关的API从'User'改为'Organization'
-UPDATE apis SET `group` = 'Organization' WHERE `group` = 'User' AND path LIKE '/user-management/%';
-
--- 更新资产管理的子菜单
-UPDATE menus SET parent_id = 'menu-assets', sort = 1 WHERE id = 'menu-assets-list';
-UPDATE menus SET parent_id = 'menu-assets', sort = 2 WHERE id = 'menu-host-groups';
-UPDATE menus SET parent_id = 'menu-assets', sort = 3 WHERE id = 'menu-asset-sync';
-
--- 更新工单管理下子菜单的排序（确保排序正确，不包含发布工单）
-UPDATE menus SET parent_id = 'menu-workorder', sort = 1 WHERE id = 'menu-daily-workorder';
-UPDATE menus SET parent_id = 'menu-workorder', sort = 2 WHERE id = 'menu-tickets';
-UPDATE menus SET parent_id = 'menu-workorder', sort = 3 WHERE id = 'menu-form-templates';
-
--- 更新工单管理的子菜单
--- 将系统大盘拆分成3个独立的二级菜单：组织大盘、应用大盘、主机大盘
--- 删除旧的系统大盘菜单，添加4个新的大盘菜单
-DELETE FROM menu_permissions WHERE menu_id = 'menu-dashboard';
-DELETE FROM menus WHERE id = 'menu-dashboard';
-
--- 插入4个新的大盘菜单，放在首页下
--- 组织大盘设置为默认首页
-INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
-('menu-org-dashboard', 'menu-home', '/org-dashboard', 'orgDashboard', 'pages/dashboard/OrganizationDashboard', false, 1, '组织大盘', 'Business', false, '', false, true, NOW(), NOW()),
-('menu-app-dashboard', 'menu-home', '/app-dashboard', 'appDashboard', 'pages/dashboard/ApplicationDashboard', false, 2, '应用大盘', 'Apps', false, '', false, false, NOW(), NOW()),
-('menu-system-dashboard', 'menu-home', '/system-dashboard', 'systemDashboard', 'pages/dashboard/SystemDashboard', false, 3, '主机大盘', 'Computer', false, '', false, false, NOW(), NOW()),
-('menu-k8s-dashboard', 'menu-home', '/k8s-dashboard', 'k8sDashboard', 'pages/k8s/K8sDashboard', false, 4, 'K8s大盘', 'Dashboard', false, '', false, false, NOW(), NOW())
-ON DUPLICATE KEY UPDATE updated_at = NOW();
-
--- 确保组织大盘是默认首页（如果菜单已存在，更新 default_menu 字段）
--- 同时确保其他大盘菜单不是默认首页
-UPDATE menus SET default_menu = true WHERE id = 'menu-org-dashboard';
-UPDATE menus SET default_menu = false WHERE id IN ('menu-app-dashboard', 'menu-system-dashboard');
-
--- 删除发布工单菜单及其权限（如果存在，因为暂时不添加）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-create-ticket';
-DELETE FROM menus WHERE id = 'menu-create-ticket';
-
--- 删除全部工单、我的工单和工单配置菜单及其权限（已合并为工单列表）
-DELETE FROM menu_permissions WHERE menu_id IN ('menu-all-tickets', 'menu-my-tickets', 'menu-approval-config');
-DELETE FROM menus WHERE id IN ('menu-all-tickets', 'menu-my-tickets', 'menu-approval-config');
-
--- 删除配置管理菜单及其权限（如果存在）
--- 发布配置、应用-发布已迁移到发布管理一级菜单下，不删除
-DELETE FROM menu_permissions WHERE menu_id IN (
-    'menu-config', 'menu-config-jenkins', 'menu-config-argocd'
-);
-DELETE FROM menus WHERE id IN (
-    'menu-config', 'menu-config-jenkins', 'menu-config-argocd'
-);
-
--- 删除账单大盘菜单及其权限（如果存在）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-bill-dashboard';
-DELETE FROM menus WHERE id = 'menu-bill-dashboard';
-
--- 更新Kubernetes管理的子菜单
--- 清理已删除的菜单项（如果数据库中已存在）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-k8s-overview';
-DELETE FROM menus WHERE id = 'menu-k8s-overview';
-DELETE FROM menu_permissions WHERE menu_id = 'menu-cluster-summary';
-DELETE FROM menus WHERE id = 'menu-cluster-summary';
-
--- 更新菜单结构：恢复集群配置二级菜单，将三个菜单改回三级菜单
--- 删除旧的二级菜单（如果存在，只删除工作负载）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-k8s-workloads';
-DELETE FROM menus WHERE id = 'menu-k8s-workloads';
-
--- 确保集群配置二级菜单存在（分组菜单，path和component必须为空字符串，不能是NULL）
--- 如果菜单不存在则插入，如果存在则更新
-INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
-('menu-cluster-management', 'menu-k8s', '', 'clusterManagement', '', false, 1, '集群配置', 'Settings', false, '', false, false, NOW(), NOW())
-ON DUPLICATE KEY UPDATE 
-  parent_id = 'menu-k8s',
-  path = '',
-  name = 'clusterManagement',
-  component = '',
-  hidden = false,
-  sort = 1,
-  title = '集群配置',
-  icon = 'Settings',
-  updated_at = NOW();
-
--- 确保工作负载二级菜单存在（分组菜单，path和component必须为空字符串，不能是NULL）
-INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
-('menu-k8s-workload', 'menu-k8s', '', 'k8sWorkload', '', false, 2, '工作负载', 'Apps', false, '', false, false, NOW(), NOW())
-ON DUPLICATE KEY UPDATE 
-  parent_id = 'menu-k8s',
-  path = '',
-  name = 'k8sWorkload',
-  component = '',
-  hidden = false,
-  sort = 2,
-  title = '工作负载',
-  icon = 'Apps',
-  updated_at = NOW();
-
--- 更新工作负载下的三级菜单（确保菜单存在且配置正确）
-INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
-('menu-k8s-deployments', 'menu-k8s-workload', '/k8s/deployments', 'k8sDeployments', 'pages/k8s/Deployments', false, 1, 'Deployment', 'RocketLaunch', false, '', false, false, NOW(), NOW()),
-('menu-k8s-daemonsets', 'menu-k8s-workload', '/k8s/daemonsets', 'k8sDaemonSets', 'pages/k8s/DaemonSets', false, 2, 'DaemonSet', 'GridView', false, '', false, false, NOW(), NOW()),
-('menu-k8s-statefulsets', 'menu-k8s-workload', '/k8s/statefulsets', 'k8sStatefulSets', 'pages/k8s/StatefulSets', false, 3, 'StatefulSet', 'Database', false, '', false, false, NOW(), NOW()),
-('menu-k8s-pods', 'menu-k8s-workload', '/k8s/pods', 'k8sPods', 'pages/k8s/Pods', false, 4, 'Pod', 'Circle', false, '', false, false, NOW(), NOW()),
-('menu-k8s-cronjobs', 'menu-k8s-workload', '/k8s/cronjobs', 'k8sCronJobs', 'pages/k8s/CronJobs', false, 5, 'CronJob', 'Schedule', false, '', false, false, NOW(), NOW()),
-('menu-k8s-jobs', 'menu-k8s-workload', '/k8s/jobs', 'k8sJobs', 'pages/k8s/Jobs', false, 6, 'Job', 'Task', false, '', false, false, NOW(), NOW())
-ON DUPLICATE KEY UPDATE 
-  parent_id = VALUES(parent_id),
-  path = VALUES(path),
-  name = VALUES(name),
-  component = VALUES(component),
-  hidden = VALUES(hidden),
-  sort = VALUES(sort),
-  title = VALUES(title),
-  icon = VALUES(icon),
-  updated_at = NOW();
-
--- 更新集群配置下的三级菜单（确保菜单存在且配置正确）
--- 使用 INSERT ... ON DUPLICATE KEY UPDATE 确保菜单存在且 parent_id 正确
-INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
-('menu-cluster-list', 'menu-cluster-management', '/clusters', 'clusterList', 'pages/cluster/ClusterManagement', false, 1, '集群列表', 'ViewList', false, '', false, false, NOW(), NOW()),
-('menu-cluster-permissions', 'menu-cluster-management', '/cluster-permissions', 'clusterPermissions', 'pages/cluster/ClusterPermissionManagement', false, 2, '权限管理', 'Security', false, '', false, false, NOW(), NOW()),
-('menu-operation-audit', 'menu-cluster-management', '/operation-audit', 'operationAudit', 'pages/cluster/OperationAudit', false, 3, '操作审计', 'History', false, '', false, false, NOW(), NOW())
-ON DUPLICATE KEY UPDATE 
-  parent_id = VALUES(parent_id),
-  path = VALUES(path),
-  name = VALUES(name),
-  component = VALUES(component),
-  hidden = VALUES(hidden),
-  sort = VALUES(sort),
-  title = VALUES(title),
-  icon = VALUES(icon),
-  updated_at = NOW();
-
--- 更新工作负载二级菜单
-UPDATE menus SET parent_id = 'menu-k8s', path = '', name = 'k8sWorkload', component = '', hidden = false, sort = 2, title = '工作负载', icon = 'Apps' WHERE id = 'menu-k8s-workload';
-
--- 更新工作负载下的三级菜单
-UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/deployments', name = 'k8sDeployments', component = 'pages/k8s/Deployments', hidden = false, sort = 1, title = 'Deployment', icon = 'RocketLaunch' WHERE id = 'menu-k8s-deployments';
-UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/daemonsets', name = 'k8sDaemonSets', component = 'pages/k8s/DaemonSets', hidden = false, sort = 2, title = 'DaemonSet', icon = 'GridView' WHERE id = 'menu-k8s-daemonsets';
-UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/statefulsets', name = 'k8sStatefulSets', component = 'pages/k8s/StatefulSets', hidden = false, sort = 3, title = 'StatefulSet', icon = 'Database' WHERE id = 'menu-k8s-statefulsets';
-UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/pods', name = 'k8sPods', component = 'pages/k8s/Pods', hidden = false, sort = 4, title = 'Pod', icon = 'Circle' WHERE id = 'menu-k8s-pods';
-UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/cronjobs', name = 'k8sCronJobs', component = 'pages/k8s/CronJobs', hidden = false, sort = 5, title = 'CronJob', icon = 'Schedule' WHERE id = 'menu-k8s-cronjobs';
-UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/jobs', name = 'k8sJobs', component = 'pages/k8s/Jobs', hidden = false, sort = 6, title = 'Job', icon = 'Task' WHERE id = 'menu-k8s-jobs';
-
--- 更新服务发现、存储管理的排序
-UPDATE menus SET sort = 8 WHERE id = 'menu-k8s-service-discovery';
-UPDATE menus SET sort = 9 WHERE id = 'menu-k8s-storage';
-
--- 更新剩余菜单的排序（注意：原工作负载和集群配置下的菜单已提升为二级菜单，服务发现、存储管理下的菜单仍在INSERT语句中设置parent_id）
-
--- 删除Istio菜单及其权限（如果存在）
-DELETE FROM menu_permissions WHERE menu_id IN (
-    'menu-k8s-istio', 'menu-k8s-destination-rules', 'menu-k8s-gateways', 'menu-k8s-virtual-services'
-);
-DELETE FROM menus WHERE id IN (
-    'menu-k8s-istio', 'menu-k8s-destination-rules', 'menu-k8s-gateways', 'menu-k8s-virtual-services'
-);
-
--- 删除Jenkins菜单及其子菜单
-DELETE FROM menu_permissions WHERE menu_id IN ('menu-deployment', 'menu-jenkins-server-management', 'menu-jenkins-deploy', 'menu-jenkins-task-management', 'menu-deployment-history');
-DELETE FROM menus WHERE id IN ('menu-deployment', 'menu-jenkins-server-management', 'menu-jenkins-deploy', 'menu-jenkins-task-management', 'menu-deployment-history');
--- menu-k8s-deploy已合并到menu-jenkins-deploy，删除该菜单
--- 删除菜单权限关联（如果menu_permissions表存在）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-k8s-deploy';
--- 删除菜单本身
-DELETE FROM menus WHERE id = 'menu-k8s-deploy';
-
--- 更新监控告警菜单结构（实施三级菜单）
--- 删除已废弃的菜单权限关联（保留 menu-monitor-datasource，因为现在要恢复它）
-DELETE FROM menu_permissions WHERE menu_id IN ('menu-monitor-silence-rule');
--- 删除已废弃的菜单（保留 menu-monitor-datasource，因为现在要恢复它）
-DELETE FROM menus WHERE id IN ('menu-monitor-silence-rule');
--- 删除工作区菜单（已改为数据源）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-monitor-workspace';
-DELETE FROM menus WHERE id = 'menu-monitor-workspace';
--- 删除工作区表（已废弃）
-DROP TABLE IF EXISTS workspaces;
--- 注意：不再删除所有 menu-monitor-% 菜单，因为新的二级和三级菜单已经通过 INSERT 语句创建
--- 旧的菜单会被新的 INSERT 语句覆盖（使用 ON DUPLICATE KEY UPDATE）
-
--- 删除账单管理菜单及其权限（如果存在）
-DELETE FROM menu_permissions WHERE menu_id IN (
-    'menu-bill', 'menu-bill-records', 'menu-bill-summary', 'menu-bill-statistics',
-    'menu-bill-vm', 'menu-bill-price', 'menu-bill-resource'
-);
-DELETE FROM menus WHERE id IN (
-    'menu-bill', 'menu-bill-records', 'menu-bill-summary', 'menu-bill-statistics',
-    'menu-bill-vm', 'menu-bill-price', 'menu-bill-resource'
-);
-
--- 删除已移除的 menu-monitor-record-rule 菜单及其权限（如果存在）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-monitor-record-rule';
-DELETE FROM menus WHERE id = 'menu-monitor-record-rule';
-
--- 删除告警组菜单（功能已去掉）
-DELETE FROM menu_permissions WHERE menu_id = 'menu-monitor-alert-group';
-DELETE FROM menus WHERE id = 'menu-monitor-alert-group';
-
--- 确保顶级菜单的 parent_id 为空字符串
--- 注意：这个 UPDATE 必须在更新子菜单之后执行，确保顶级菜单的 parent_id 为空
--- 主机大盘和运维工单已迁移到工单管理下，资产管理已移出组织管理作为一级菜单
-UPDATE menus SET parent_id = '' WHERE id IN (
-    'menu-home',
-    'menu-user-permission',
-    'menu-assets',
-    'menu-bastion',
-    'menu-k8s',
-    'menu-workorder',
-    'menu-dms',
-    'menu-deployment',
-    'menu-monitor',
-    'menu-personal',
-    'menu-system'
-);
-
--- 首页菜单包含3个大盘子菜单，不需要隐藏
-
--- 更新用户管理分组标题
-UPDATE menus SET title = '组织管理' WHERE id = 'menu-user-permission';
-
--- ============================================================================
--- 为admin角色分配所有菜单权限
--- ============================================================================
--- 先删除可能存在的旧权限（如果有），然后重新分配所有菜单权限
--- 这样可以确保 admin 始终拥有所有菜单权限，即使菜单有更新
--- 注意：此逻辑已集成到初始化脚本中，无需单独执行 fix_admin_permissions.sql
--- ============================================================================
-DELETE FROM menu_permissions WHERE role_id = 'role:admin';
-INSERT INTO menu_permissions (role_id, menu_id, created_at) 
-SELECT 'role:admin', menus.id, NOW() FROM menus;
--- 确保模型配置菜单对 admin 可见（显式插入，防止新增菜单遗漏）
-INSERT INTO menu_permissions (role_id, menu_id, created_at) VALUES
-('role:admin', 'menu-ai-assistant-models', NOW())
-ON DUPLICATE KEY UPDATE menu_id = menu_id;
-
--- 为user角色分配基础菜单权限
--- 默认普通用户只能看到首页相关菜单和个人设置，其他菜单需要通过菜单授权功能才能看到
--- 先删除user角色的所有菜单权限
-DELETE FROM menu_permissions WHERE role_id = 'role:user';
-
--- 为user角色分配首页相关菜单权限和个人设置（只分配首页及其子菜单和个人设置）
--- 其他菜单需要通过菜单授权功能才能看到
-INSERT INTO menu_permissions (role_id, menu_id, created_at) 
-SELECT 'role:user', menus.id, NOW() FROM menus
-WHERE menus.id IN (
-    'menu-home',
-    'menu-org-dashboard',
-    'menu-app-dashboard',
-    'menu-system-dashboard',
-    'menu-k8s-dashboard',
-    'menu-personal'
-)
-ON DUPLICATE KEY UPDATE created_at = NOW();
+-- 系统设置
+('menu-system', '', '/settings', 'system', 'pages/system/Settings', false, 11, '系统设置', 'Settings', false, '', false, false, NOW(), NOW())
+;
 
 -- ============================================================================
 -- Initialize API Data
@@ -2184,6 +2018,10 @@ CREATE TABLE IF NOT EXISTS bill_records (
     resource_code VARCHAR(50) COMMENT '资源类型代码',
     service_type VARCHAR(50) COMMENT '服务类型',
     service_code VARCHAR(50) COMMENT '服务类型代码',
+    region VARCHAR(50) DEFAULT NULL COMMENT '区域',
+    account_id VARCHAR(100) DEFAULT NULL COMMENT '云账户ID',
+    cloud_account_id INT UNSIGNED DEFAULT NULL COMMENT '系统云账户ID',
+    tags TEXT COMMENT '标签(JSON)',
     extra TEXT COMMENT '扩展字段',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -2192,6 +2030,7 @@ CREATE TABLE IF NOT EXISTS bill_records (
     INDEX idx_resource_code (resource_code),
     INDEX idx_service_code (service_code),
     INDEX idx_instance_id (instance_id),
+    INDEX idx_cloud_account_id (cloud_account_id),
     INDEX idx_vendor_cycle (vendor, cycle)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='账单消费记录表';
@@ -2201,9 +2040,12 @@ CREATE TABLE IF NOT EXISTS bill_price (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
     vendor VARCHAR(50) NOT NULL COMMENT '云厂商',
     resource_type VARCHAR(50) COMMENT '资源类型',
-    scale VARCHAR(50) COMMENT '规格 (如 1:2, 1:4)',
-    cluster VARCHAR(50) COMMENT '集群',
-    price DECIMAL(25,15) DEFAULT 0 COMMENT '单价',
+    spec VARCHAR(50) COMMENT '规格 (如 1:2, 1:4)',
+    unit_price DECIMAL(25,15) DEFAULT 0 COMMENT '单价',
+    currency VARCHAR(10) COMMENT '货币',
+    unit VARCHAR(50) COMMENT '单位',
+    region VARCHAR(50) COMMENT '区域',
+    effective_date DATE COMMENT '生效日期',
     description TEXT COMMENT '描述',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -2211,6 +2053,131 @@ CREATE TABLE IF NOT EXISTS bill_price (
     INDEX idx_resource_type (resource_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='单价管理表';
+
+-- 云账户凭证管理表
+CREATE TABLE IF NOT EXISTS bill_cloud_accounts (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    name VARCHAR(100) COMMENT '账户名称',
+    cloud_type VARCHAR(50) COMMENT '云厂商',
+    access_key_id VARCHAR(200) COMMENT 'Access Key ID',
+    secret_access_key VARCHAR(500) COMMENT 'Secret Access Key',
+    region VARCHAR(50) COMMENT '默认区域',
+    bucket_name VARCHAR(200) COMMENT '账单桶名称',
+    bucket_prefix VARCHAR(100) COMMENT '账单桶前缀',
+    report_name VARCHAR(100) COMMENT 'CUR 报告名称',
+    account_id VARCHAR(100) COMMENT '云账号 ID',
+    status VARCHAR(20) NOT NULL DEFAULT 'active' COMMENT '状态',
+    last_import_at TIMESTAMP NULL COMMENT '最近导入时间',
+    last_import_error TEXT COMMENT '最近导入错误',
+    sync_cron VARCHAR(100) DEFAULT '' COMMENT '独立定时同步 cron 表达式',
+    notify_enabled BOOLEAN DEFAULT FALSE COMMENT '是否启用通知',
+    notify_channel_id INT UNSIGNED COMMENT '通知渠道ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_cloud_type (cloud_type),
+    INDEX idx_account_id (account_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='云账单账户表';
+
+-- 云定价表
+CREATE TABLE IF NOT EXISTS bill_pricing (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    cloud_type VARCHAR(50) COMMENT '云厂商',
+    service_code VARCHAR(50) COMMENT '服务代码',
+    instance_type VARCHAR(50) COMMENT '实例类型',
+    region VARCHAR(50) COMMENT '区域',
+    price_per_unit DECIMAL(25,15) DEFAULT 0 COMMENT '单价',
+    currency VARCHAR(10) COMMENT '货币',
+    unit VARCHAR(50) COMMENT '单位',
+    sku VARCHAR(100) COMMENT 'SKU',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_cloud_type (cloud_type),
+    INDEX idx_service_code (service_code),
+    INDEX idx_instance_type (instance_type),
+    INDEX idx_region (region)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='云定价表';
+
+-- 云资源清单表
+CREATE TABLE IF NOT EXISTS bill_resources (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    vendor VARCHAR(50) COMMENT '云厂商',
+    cloud_account_id INT UNSIGNED COMMENT '系统云账户ID',
+    account_id VARCHAR(100) COMMENT '云账号 ID',
+    resource_id VARCHAR(100) COMMENT '资源ID',
+    resource_type VARCHAR(50) COMMENT '资源类型',
+    resource_name VARCHAR(200) COMMENT '资源名称',
+    instance_type VARCHAR(50) COMMENT '实例类型',
+    region VARCHAR(50) COMMENT '区域',
+    zone VARCHAR(50) COMMENT '可用区',
+    tags TEXT COMMENT '标签JSON',
+    status VARCHAR(50) COMMENT '状态',
+    first_seen TIMESTAMP NULL COMMENT '首次发现时间',
+    last_seen TIMESTAMP NULL COMMENT '最近发现时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_vendor (vendor),
+    INDEX idx_cloud_account_id (cloud_account_id),
+    INDEX idx_account_id (account_id),
+    INDEX idx_resource_id (resource_id),
+    INDEX idx_first_seen (first_seen),
+    UNIQUE KEY uk_cloud_account_resource (cloud_account_id, resource_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='云资源清单表';
+
+-- FinOps（预算 / 成本池 / 策略，与 internal/model/finops.go 对齐）
+CREATE TABLE IF NOT EXISTS finops_budgets (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    name VARCHAR(100) NOT NULL DEFAULT '' COMMENT '预算名称',
+    amount DECIMAL(25,15) DEFAULT 0 COMMENT '预算金额',
+    period VARCHAR(20) DEFAULT NULL COMMENT '周期 monthly/quarterly/yearly',
+    start_date VARCHAR(10) DEFAULT NULL COMMENT '开始日期',
+    end_date VARCHAR(10) DEFAULT NULL COMMENT '结束日期',
+    alert_threshold DECIMAL(5,2) DEFAULT 0 COMMENT '告警阈值百分比',
+    org_id VARCHAR(50) DEFAULT NULL COMMENT '组织',
+    owner VARCHAR(100) DEFAULT NULL COMMENT '负责人',
+    status VARCHAR(20) NOT NULL DEFAULT 'active' COMMENT '状态',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_status (status),
+    INDEX idx_org_id (org_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='FinOps 预算';
+
+CREATE TABLE IF NOT EXISTS finops_pools (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    name VARCHAR(100) NOT NULL DEFAULT '' COMMENT '成本池名称',
+    description TEXT COMMENT '描述',
+    limit_amount DECIMAL(25,15) DEFAULT 0 COMMENT '费用上限',
+    org_id VARCHAR(50) DEFAULT NULL COMMENT '组织',
+    owner VARCHAR(100) DEFAULT NULL COMMENT '负责人',
+    members JSON DEFAULT NULL COMMENT '成员 JSON 数组',
+    status VARCHAR(20) NOT NULL DEFAULT 'active' COMMENT '状态',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_status (status),
+    INDEX idx_org_id (org_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='FinOps 成本池';
+
+CREATE TABLE IF NOT EXISTS finops_policies (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    name VARCHAR(100) NOT NULL DEFAULT '' COMMENT '策略名称',
+    type VARCHAR(50) DEFAULT NULL COMMENT '类型 ttl/power_off/tag',
+    action VARCHAR(50) DEFAULT NULL COMMENT '动作 stop/terminate/tag',
+    conditions JSON DEFAULT NULL COMMENT '条件 JSON',
+    target_resources TEXT COMMENT '目标资源筛选',
+    enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+    schedule VARCHAR(100) DEFAULT NULL COMMENT 'cron',
+    description TEXT COMMENT '描述',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_enabled (enabled),
+    INDEX idx_type (type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='FinOps 策略';
 
 -- ============================================================================
 -- Monitor Management Tables (监控管理表)
@@ -3092,6 +3059,8 @@ CREATE TABLE IF NOT EXISTS applications (
     online_at DATETIME COMMENT '应用上线时间',
     offline_at DATETIME COMMENT '应用下线时间',
     git_url VARCHAR(500) COMMENT 'Git地址',
+    jenkins_server_id INT UNSIGNED COMMENT 'Jenkins服务器ID（关联jenkins_servers.id）',
+    jenkins_job_name VARCHAR(255) COMMENT 'Jenkins Job名称',
     ops_owners JSON COMMENT '运维负责人(多选)',
     test_owners JSON COMMENT '测试负责人(多选)',
     dev_owners JSON COMMENT '研发负责人(多选)',
@@ -3264,6 +3233,18 @@ INSERT INTO menu_permissions (role_id, menu_id, created_at)
 SELECT 'role:user', menus.id, NOW() FROM menus
 WHERE menus.id IN (
     'menu-home',
+    'menu-cloud-bill',
+    'menu-cloud-bill-overview',
+    'menu-cloud-bill-finops-dashboard',
+    'menu-cloud-bill-breakdown',
+    'menu-cloud-bill-recommendations',
+    'menu-cloud-bill-cost',
+    'menu-cloud-bill-budgets',
+    'menu-cloud-bill-pools',
+    'menu-cloud-bill-settings',
+    'menu-cloud-bill-accounts',
+    'menu-bill-price',
+    'menu-bill-resource',
     'menu-org-dashboard',
     'menu-app-dashboard',
     'menu-system-dashboard',
@@ -3271,5 +3252,102 @@ WHERE menus.id IN (
     'menu-personal'
 )
 ON DUPLICATE KEY UPDATE created_at = NOW();
+
+-- 更新后续一级菜单的排序
+UPDATE menus SET sort = 4 WHERE id = 'menu-bastion';
+UPDATE menus SET sort = 5 WHERE id = 'menu-cloud-bill';
+UPDATE menus SET sort = 6 WHERE id = 'menu-k8s';
+UPDATE menus SET sort = 7 WHERE id = 'menu-workorder';
+UPDATE menus SET sort = 8 WHERE id = 'menu-dms';
+UPDATE menus SET sort = 9 WHERE id = 'menu-monitor';
+UPDATE menus SET sort = 10 WHERE id = 'menu-ai-assistant';
+UPDATE menus SET sort = 11 WHERE id = 'menu-system';
+UPDATE menus SET sort = 12 WHERE id = 'menu-personal';
+-- 更新 k8s 二级分组排序
+UPDATE menus SET sort = 1 WHERE id = 'menu-k8s-management';
+UPDATE menus SET sort = 2 WHERE id = 'menu-k8s-operations';
+
+-- ============================================================================
+-- 云账单菜单重构迁移（从扁平结构改为带分隔线的三层结构）
+-- 仅在现有数据库中已有旧菜单数据时执行
+-- ============================================================================
+-- 新增分隔线菜单（总览/成本管理/设置）
+INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
+('menu-cloud-bill-overview', 'menu-cloud-bill', '', 'cloudBillOverview', '', false, 1, '总览', 'Visibility', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-cost', 'menu-cloud-bill', '', 'cloudBillCost', '', false, 2, '成本管理', 'Savings', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-settings', 'menu-cloud-bill', '', 'cloudBillSettings', '', false, 3, '设置', 'Settings', false, '', false, false, NOW(), NOW());
+-- 新增页面菜单（费用分解、优化建议、预算管理、成本池）
+INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
+('menu-cloud-bill-breakdown', 'menu-cloud-bill-overview', '/cloud-bill/breakdown', 'cloudBillBreakdown', 'pages/bill/BillBreakdown', false, 2, '费用分解', 'PieChart', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-recommendations', 'menu-cloud-bill-overview', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 3, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-budgets', 'menu-cloud-bill-cost', '/cloud-bill/budgets', 'cloudBillBudgets', 'pages/bill/Budgets', false, 1, '预算管理', 'AccountBalanceWallet', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-pools', 'menu-cloud-bill-cost', '/cloud-bill/pools', 'cloudBillPools', 'pages/bill/Pools', false, 2, '成本池', 'Pool', false, '', false, false, NOW(), NOW());
+-- K8s 菜单合并迁移（现有数据库）
+-- 1. 先迁移自定义角色的旧菜单权限到新菜单（在删除旧菜单之前，避免 CASCADE 丢失）
+INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at)
+SELECT DISTINCT role_id, 'menu-k8s-workload', NOW() FROM menu_permissions
+WHERE menu_id IN ('menu-k8s-deployments', 'menu-k8s-daemonsets', 'menu-k8s-statefulsets', 'menu-k8s-cronjobs', 'menu-k8s-jobs');
+INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at)
+SELECT DISTINCT role_id, 'menu-k8s-service-routes', NOW() FROM menu_permissions
+WHERE menu_id IN ('menu-k8s-services', 'menu-k8s-ingress');
+INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at)
+SELECT DISTINCT role_id, 'menu-k8s-storage', NOW() FROM menu_permissions
+WHERE menu_id IN ('menu-k8s-pv', 'menu-k8s-pvc', 'menu-k8s-storageclass', 'menu-k8s-configmaps', 'menu-k8s-secrets');
+INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at)
+SELECT DISTINCT role_id, 'menu-k8s-config', NOW() FROM menu_permissions
+WHERE menu_id IN ('menu-k8s-configmaps', 'menu-k8s-secrets');
+-- 2. 删除旧的工作负载三级菜单
+DELETE FROM menus WHERE parent_id = 'menu-k8s-workload' AND id IN ('menu-k8s-deployments', 'menu-k8s-daemonsets', 'menu-k8s-statefulsets', 'menu-k8s-pods', 'menu-k8s-cronjobs', 'menu-k8s-jobs');
+-- 3. 将 menu-k8s-workload 从 divider 改为叶子页面
+UPDATE menus SET path = '/k8s/workloads', component = 'pages/k8s/Workloads', sort = 2 WHERE id = 'menu-k8s-workload' AND path = '';
+-- 4. 新增服务路由、配置管理菜单
+INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
+('menu-k8s-service-routes', 'menu-k8s', '/k8s/service-routes', 'k8sServiceRoutes', 'pages/k8s/ServiceRoutes', false, 4, '服务路由', 'Share', false, '', false, false, NOW(), NOW()),
+('menu-k8s-config', 'menu-k8s', '/k8s/config', 'k8sConfig', 'pages/k8s/ConfigManagement', false, 7, '配置管理', 'Settings', false, '', false, false, NOW(), NOW());
+-- 6. 更新 k8s-storage 从 divider 改为叶子页面
+UPDATE menus SET path = '/k8s/storage', component = 'pages/k8s/StorageManagement', sort = 6 WHERE id = 'menu-k8s-storage' AND path = '';
+-- 7. 更新 k8s-hpa 从 service-discovery 子菜单改为 k8s 直接子菜单
+UPDATE menus SET parent_id = 'menu-k8s', path = '/k8s/hpa', sort = 5 WHERE id = 'menu-k8s-hpa' AND parent_id = 'menu-k8s-service-discovery';
+-- 8. 删除旧的子菜单
+DELETE FROM menus WHERE parent_id = 'menu-k8s-service-discovery' AND id IN ('menu-k8s-services', 'menu-k8s-ingress');
+DELETE FROM menus WHERE parent_id = 'menu-k8s-storage' AND id IN ('menu-k8s-pv', 'menu-k8s-pvc', 'menu-k8s-storageclass', 'menu-k8s-configmaps', 'menu-k8s-secrets');
+-- 9. 删除旧的 service-discovery divider（已无子菜单）
+DELETE FROM menus WHERE id = 'menu-k8s-service-discovery';
+-- 10. 补 admin 权限（新菜单 INSERT IGNORE 不会自动触发 admin 全量同步）
+INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at) VALUES
+('role:admin', 'menu-k8s-pods', NOW()),
+('role:admin', 'menu-k8s-service-routes', NOW()),
+('role:admin', 'menu-k8s-config', NOW());
+-- 11. 新增 k8s 二级分组菜单（集群管理 / 资源管理）
+INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
+('menu-k8s-management', 'menu-k8s', '', 'k8sManagement', '', false, 1, '集群管理', 'FolderOpen', false, '', false, false, NOW(), NOW()),
+('menu-k8s-operations', 'menu-k8s', '', 'k8sOperations', '', false, 2, '资源管理', 'GridView', false, '', false, false, NOW(), NOW());
+-- 12. 迁移管理类菜单到 menu-k8s-management 下
+UPDATE menus SET parent_id = 'menu-k8s-management', sort = 1 WHERE id = 'menu-cluster-list';
+UPDATE menus SET parent_id = 'menu-k8s-management', sort = 2 WHERE id = 'menu-cluster-permissions';
+UPDATE menus SET parent_id = 'menu-k8s-management', sort = 3 WHERE id = 'menu-operation-audit';
+UPDATE menus SET parent_id = 'menu-k8s-management', sort = 4 WHERE id = 'menu-k8s-api-keys';
+-- 13. 新增集群概览菜单
+INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
+('menu-k8s-cluster-overview', 'menu-k8s-operations', '/k8s/cluster-overview', 'k8sClusterOverview', 'pages/k8s/ClusterOverview', false, 1, '集群概览', 'Dashboard', false, '', false, false, NOW(), NOW());
+-- 14. 迁移资源类菜单到 menu-k8s-operations 下（集群概览占 sort=1，其余+1）
+UPDATE menus SET parent_id = 'menu-k8s-operations', sort = 2 WHERE id = 'menu-k8s-workload';
+UPDATE menus SET parent_id = 'menu-k8s-operations', sort = 3 WHERE id = 'menu-k8s-pods';
+UPDATE menus SET parent_id = 'menu-k8s-operations', sort = 4 WHERE id = 'menu-k8s-service-routes';
+UPDATE menus SET parent_id = 'menu-k8s-operations', sort = 5 WHERE id = 'menu-k8s-hpa';
+UPDATE menus SET parent_id = 'menu-k8s-operations', sort = 6 WHERE id = 'menu-k8s-storage';
+UPDATE menus SET parent_id = 'menu-k8s-operations', sort = 7 WHERE id = 'menu-k8s-config';
+-- 14. 删除旧的集群配置 divider（已无子菜单）
+DELETE FROM menus WHERE id = 'menu-cluster-management';
+-- 16. 为新增分组菜单和集群概览补充 admin 权限
+INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at) VALUES
+('role:admin', 'menu-k8s-management', NOW()),
+('role:admin', 'menu-k8s-operations', NOW()),
+('role:admin', 'menu-k8s-cluster-overview', NOW());
+-- 更新现有菜单的 parent_id（从 menu-cloud-bill 迁移到对应的分隔线下）
+UPDATE menus SET parent_id = 'menu-cloud-bill-overview', sort = 1 WHERE id = 'menu-cloud-bill-finops-dashboard' AND parent_id = 'menu-cloud-bill';
+UPDATE menus SET parent_id = 'menu-cloud-bill-settings', sort = 1 WHERE id = 'menu-cloud-bill-accounts' AND parent_id = 'menu-cloud-bill';
+UPDATE menus SET parent_id = 'menu-cloud-bill-settings', sort = 2 WHERE id = 'menu-bill-price' AND parent_id = 'menu-cloud-bill';
+UPDATE menus SET parent_id = 'menu-cloud-bill-settings', sort = 3 WHERE id = 'menu-bill-resource' AND parent_id = 'menu-cloud-bill';
 
 SELECT 'Database initialized successfully!' AS Status;

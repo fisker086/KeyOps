@@ -30,6 +30,9 @@ func StartServer(
 ) {
 	// Setup router
 	r := router.Setup(
+		handlers.Mcp,
+		handlers.ApiKey,
+		services.ApiKey,
 		handlers.Host,
 		handlers.Dashboard,
 		handlers.Session,
@@ -45,7 +48,6 @@ func StartServer(
 		handlers.File,
 		handlers.AssetSync,
 		services.Auth,
-		handlers.HostMonitor,
 		handlers.SystemUser,
 		handlers.Role,
 		handlers.PermissionRule,
@@ -62,6 +64,11 @@ func StartServer(
 		handlers.K8sSearch,
 		handlers.Deployment,
 		handlers.Bill,
+		handlers.ExpensesMap,
+		handlers.CloudAccount,
+		handlers.Resources,
+		handlers.BillDashboard,
+		handlers.FinOps,
 		handlers.Monitor,
 		handlers.Organization,
 		handlers.Application,

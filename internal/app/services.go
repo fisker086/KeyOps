@@ -1,27 +1,34 @@
 package app
 
 import (
+	"context"
 	"os"
 	"time"
 
-	oncallNotification "github.com/fisker086/keyops/internal/alert/oncall"
-	alertnotification "github.com/fisker086/keyops/internal/alert/notification"
 	"github.com/fisker086/keyops/internal/aiassistant"
+	alertnotification "github.com/fisker086/keyops/internal/alert/notification"
+	oncallNotification "github.com/fisker086/keyops/internal/alert/oncall"
+	"github.com/fisker086/keyops/internal/approval"
+	"github.com/fisker086/keyops/internal/infrastructure/mongodb"
 	"github.com/fisker086/keyops/internal/notification"
 	"github.com/fisker086/keyops/internal/service"
+	"github.com/fisker086/keyops/internal/service/auth"
 	bastionService "github.com/fisker086/keyops/internal/service/bastion"
+	billService "github.com/fisker086/keyops/internal/service/bill"
 	certificateService "github.com/fisker086/keyops/internal/service/certificate"
 	"github.com/fisker086/keyops/internal/service/dms"
 	"github.com/fisker086/keyops/internal/service/registry"
-	"github.com/fisker086/keyops/internal/service/release"
+	release "github.com/fisker086/keyops/internal/service/release"
 	"github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/crypto"
 	"github.com/fisker086/keyops/pkg/database"
 	"github.com/fisker086/keyops/pkg/logger"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Services 包含所有 Service 实例
 type Services struct {
+	ApiKey        *service.ApiKeyService
 	Host          *service.HostService
 	Session       *service.SessionService
 	Auth          *service.AuthService
@@ -40,22 +47,35 @@ type Services struct {
 	DMSPermission *dms.PermissionService
 	Release       *release.Service
 	Registry      *registry.Service
+	MongoClient         *mongodb.Client
 }
 
 // InitializeServices 初始化所有 Service
-func InitializeServices(repos *Repositories, cfg *config.Config) *Services {
+func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mongodb.Client) *Services {
 	hostService := service.NewHostService(repos.Host)
 	sessionService := service.NewSessionService(repos.Session, repos.Host)
-	authService := service.NewAuthService(repos.User, repos.Setting, cfg.Security.JWTSecret, cfg.Security.AdminWhitelist)
 
-	assetSyncService := service.NewAssetSyncService(repos.AssetSync, repos.Host)
+	// 初始化 MongoDB 连接（用于账单原始数据存储）
+	if mongoClient == nil && cfg.BillStorage.GetURI() != "" {
+		mongoClient2, err := mongodb.NewClientWithDatabase(cfg.BillStorage.GetURI(), cfg.BillStorage.Database)
+		if err != nil {
+			logger.Warnf("MongoDB connect failed: %v, AWS bill sync will not work", err)
+			mongoClient2 = nil
+		} else {
+			if err := mongoClient2.InitIndexes(context.Background()); err != nil {
+				logger.Warnf("MongoDB init indexes failed: %v", err)
+			}
+		}
+		mongoClient = mongoClient2
+	}
+	var mongoColl *mongo.Collection
+	if mongoClient != nil {
+		mongoColl = mongoClient.RawExpenses()
+	}
+	billSvc := billService.NewBillService(repos.Bill, repos.CloudAccount, repos.AlertChannel, mongoColl)
 
-	k8sClusterService := service.NewK8sClusterService(repos.K8sCluster)
-	k8sService := service.NewK8sService(repos.K8sCluster)
-	k8sPermissionService := service.NewK8sPermissionService()
-	kubedogService := service.NewKubeDogService(cfg)
-	deploymentService := service.NewDeploymentService(repos.Deployment, kubedogService, k8sService, repos.K8sCluster, cfg)
-	billService := service.NewBillService(repos.Bill)
+	// Session 存储引擎已在 Repositories 初始化时根据配置选定 (repos.Session)
+
 	monitorService := service.NewMonitorService(repos.Monitor)
 	cryptoService := crypto.NewCrypto(cfg.Security.JWTSecret)
 	jenkinsService := service.NewJenkinsService(repos.Jenkins, repos.Deployment, cryptoService)
@@ -103,7 +123,22 @@ func InitializeServices(repos *Repositories, cfg *config.Config) *Services {
 
 	registryService := registry.NewService(repos.Setting)
 
+	// 初始化 Auth 服务
+	authService := auth.NewAuthService(repos.User, repos.Setting, repos.RefreshToken, cfg.Security.JWTSecret, cfg.Security.AdminWhitelist)
+
+	// 初始化 K8s 相关服务
+	k8sService := service.NewK8sService(repos.K8sCluster)
+	kubedogService := service.NewKubeDogService(cfg)
+	k8sClusterService := service.NewK8sClusterService(repos.K8sCluster)
+	k8sPermissionService := service.NewK8sPermissionService()
+	deploymentService := service.NewDeploymentService(repos.Deployment, kubedogService, k8sService, repos.K8sCluster, cfg)
+	assetSyncService := service.NewAssetSyncService(repos.AssetSync, repos.Host)
+
+	approvalFactory := approval.NewFactory()
+	loadApprovalProviders(database.DB, approvalFactory)
+
 	return &Services{
+		ApiKey:        service.NewApiKeyService(repos.ApiKey),
 		Host:          hostService,
 		Session:       sessionService,
 		Auth:          authService,
@@ -112,7 +147,7 @@ func InitializeServices(repos *Repositories, cfg *config.Config) *Services {
 		K8sCluster:    k8sClusterService,
 		K8sPermission: k8sPermissionService,
 		Deployment:    deploymentService,
-		Bill:          billService,
+		Bill:          billSvc,
 		Monitor:       monitorService,
 		Jenkins:       jenkinsService,
 		Alert:         alertService,
@@ -122,25 +157,22 @@ func InitializeServices(repos *Repositories, cfg *config.Config) *Services {
 		DMSPermission: dmsPermissionService,
 		Release:       releaseService,
 		Registry:      registryService,
+		MongoClient:         mongoClient,
 	}
 }
 
 // BackgroundServices 后台服务
 type BackgroundServices struct {
-	HostMonitor            *service.HostMonitorService
 	ProxyMonitor           *service.ProxyMonitor
 	Expiration             *service.ExpirationService
 	OnCallNotification     interface{} // OnCallNotificationService (使用interface避免循环依赖)
 	CertificateAlert       *certificateService.CertificateAlertService
 	InspectionReportSender aiassistant.InspectionReportSender // AI 巡检报告发往告警渠道（可选）
+	BillSync               *billService.SyncScheduler
 }
 
 // InitializeBackgroundServices 初始化后台服务
-func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notificationMgr *notification.NotificationManager, alertService *service.AlertService) *BackgroundServices {
-	// Host monitor (check every 5 minutes)
-	hostMonitor := service.NewHostMonitorService(repos.Host, repos.Setting, 5)
-	hostMonitor.Start()
-
+func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notificationMgr *notification.NotificationManager, alertService *service.AlertService, billSvc *billService.BillService) *BackgroundServices {
 	// Proxy monitor (仅在启用Proxy时启动)
 	var proxyMonitor *service.ProxyMonitor
 	if cfg.Proxy.Enabled {
@@ -189,16 +221,16 @@ func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notif
 	go func() {
 		// 等待数据库连接就绪
 		time.Sleep(5 * time.Second)
-		
+
 		// 立即执行一次检查
 		if err := certificateAlertService.CheckAndSendAlerts(); err != nil {
 			logger.Errorf("Failed to check certificate alerts: %v", err)
 		}
-		
+
 		// 设置定时任务：每天凌晨2点执行
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
-		
+
 		for range ticker.C {
 			// 每天执行一次检查
 			if err := certificateAlertService.CheckAndSendAlerts(); err != nil {
@@ -218,12 +250,17 @@ func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notif
 	go recordingConverter.StartBackgroundConverter(recordingBasePath, 5*time.Minute)
 	logger.Infof("Recording converter service started, scanning: %s, interval: 5 minutes", recordingBasePath)
 
+	// Bill sync scheduler
+	billSyncScheduler := billService.NewSyncScheduler(billSvc)
+	billSvc.SetSyncScheduler(billSyncScheduler)
+	go billSyncScheduler.Start()
+
 	return &BackgroundServices{
-		HostMonitor:            hostMonitor,
 		ProxyMonitor:           proxyMonitor,
 		Expiration:             expirationService,
 		OnCallNotification:     onCallNotificationService,
 		CertificateAlert:       certificateAlertService,
 		InspectionReportSender: inspectionReportSender,
+		BillSync:               billSyncScheduler,
 	}
 }

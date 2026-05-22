@@ -4,6 +4,9 @@ package service
 
 // 重新导出所有 service 类型，保持向后兼容
 import (
+	"time"
+	// ApiKey services
+	apiKeyService "github.com/fisker086/keyops/internal/service/api_key"
 	// Auth services
 	authService "github.com/fisker086/keyops/internal/service/auth"
 	// Bastion services
@@ -27,17 +30,23 @@ import (
 // Auth services
 type AuthService = authService.AuthService
 
-var NewAuthService = authService.NewAuthService
+type Claims = authService.Claims
+
+type RefreshClaims = authService.RefreshClaims
+
+var (
+	NewAuthService           = authService.NewAuthService
+	AccessTokenExpiry  time.Duration = authService.AccessTokenExpiry
+	RefreshTokenExpiry time.Duration = authService.RefreshTokenExpiry
+)
 
 // Bastion services
 type HostService = bastionService.HostService
 type SessionService = bastionService.SessionService
-type HostMonitorService = bastionService.HostMonitorService
 type SessionToken = bastionService.SessionToken
 
 var NewHostService = bastionService.NewHostService
 var NewSessionService = bastionService.NewSessionService
-var NewHostMonitorService = bastionService.NewHostMonitorService
 var ValidateSessionToken = bastionService.ValidateSessionToken
 
 // K8s services
@@ -88,3 +97,8 @@ var NewProxyMonitor = systemService.NewProxyMonitor
 type JenkinsService = jenkinsService.JenkinsService
 
 var NewJenkinsService = jenkinsService.NewJenkinsService
+
+// ApiKey services
+type ApiKeyService = apiKeyService.ApiKeyService
+
+var NewApiKeyService = apiKeyService.NewApiKeyService

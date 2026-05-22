@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -626,7 +627,111 @@ func (s *K8sClusterService) getK8sClusterStatus(clusterID string) (*K8sClusterSt
 	status.ServiceCount = totalServices
 	status.IngressCount = totalIngresses
 
+	// 4. 获取资源使用情况 (CPU/内存)
+	status.CPUUsage, status.MemoryUsage = s.getClusterResourceUsage(clusterID)
+
 	return status, nil
+}
+
+// parseResourceQuantity 解析 K8s 资源数量 (cpu: 核数*1000=m, memory: 转为Mi)
+func parseResourceQuantity(value string, resourceType string) float64 {
+	if value == "" {
+		return 0
+	}
+
+	if resourceType == "cpu" {
+		// CPU: "500m" -> 0.5, "2" -> 2000m
+		if strings.HasSuffix(value, "m") {
+			v, _ := strconv.ParseFloat(strings.TrimSuffix(value, "m"), 64)
+			return v
+		}
+		v, _ := strconv.ParseFloat(value, 64)
+		return v * 1000
+	}
+
+	// Memory: "1Gi" -> Mi, "1024Ki" -> Mi, "1000000Ki" -> Mi
+	if strings.HasSuffix(value, "Gi") {
+		v, _ := strconv.ParseFloat(strings.TrimSuffix(value, "Gi"), 64)
+		return v * 1024
+	}
+	if strings.HasSuffix(value, "Mi") {
+		v, _ := strconv.ParseFloat(strings.TrimSuffix(value, "Mi"), 64)
+		return v
+	}
+	if strings.HasSuffix(value, "Ki") {
+		v, _ := strconv.ParseFloat(strings.TrimSuffix(value, "Ki"), 64)
+		return v / 1024
+	}
+	// 纯数字按字节处理
+	v, _ := strconv.ParseFloat(value, 64)
+	return v / (1024 * 1024)
+}
+
+// getClusterResourceUsage 获取集群 CPU 和内存使用情况
+func (s *K8sClusterService) getClusterResourceUsage(clusterID string) (*ResourceUsage, *ResourceUsage) {
+	// 获取节点容量
+	nodes, err := s.k8sService.GetNodeList(clusterID, "", 0, 0)
+	if err != nil || len(nodes) == 0 {
+		return nil, nil
+	}
+
+	var totalCPUMilli, totalMemoryMi float64
+	for _, node := range nodes {
+		totalCPUMilli += parseResourceQuantity(node.CPU, "cpu")
+		totalMemoryMi += parseResourceQuantity(node.Memory, "memory")
+	}
+
+	if totalCPUMilli <= 0 || totalMemoryMi <= 0 {
+		return nil, nil
+	}
+
+	// 获取节点实际使用量 (metrics-server)
+	nodeMetrics, err := s.k8sService.GetNodeMetricsList(clusterID, "")
+	if err != nil || len(nodeMetrics) == 0 {
+		return nil, nil
+	}
+
+	var usedCPUMilli, usedMemoryMi float64
+	for _, nm := range nodeMetrics {
+		usedCPUMilli += parseResourceQuantity(nm.Usage.CPU, "cpu")
+		usedMemoryMi += parseResourceQuantity(nm.Usage.Memory, "memory")
+	}
+
+	// CPU 使用量
+	cpuUsage := &ResourceUsage{
+		Total:        formatCPU(totalCPUMilli),
+		Used:         formatCPU(usedCPUMilli),
+		Available:    formatCPU(totalCPUMilli - usedCPUMilli),
+		UsagePercent: roundPercent(usedCPUMilli / totalCPUMilli * 100),
+	}
+
+	// 内存使用量
+	memoryUsage := &ResourceUsage{
+		Total:        formatMemory(totalMemoryMi),
+		Used:         formatMemory(usedMemoryMi),
+		Available:    formatMemory(totalMemoryMi - usedMemoryMi),
+		UsagePercent: roundPercent(usedMemoryMi / totalMemoryMi * 100),
+	}
+
+	return cpuUsage, memoryUsage
+}
+
+func formatCPU(milli float64) string {
+	if milli >= 1000 {
+		return fmt.Sprintf("%.1f", milli/1000)
+	}
+	return fmt.Sprintf("%.0fm", milli)
+}
+
+func formatMemory(mi float64) string {
+	if mi >= 1024 {
+		return fmt.Sprintf("%.1f", mi/1024)
+	}
+	return fmt.Sprintf("%.0fMi", mi)
+}
+
+func roundPercent(v float64) float64 {
+	return float64(int(v*10+0.5)) / 10
 }
 
 // GetAllClustersSummary 获取所有集群的摘要信息
@@ -652,22 +757,26 @@ func (s *K8sClusterService) GetAllClustersSummary() ([]*ClusterSummary, error) {
 			summary.LastCheckedAt = &lastCheckedStr
 		}
 
-		// TODO: 实际连接K8s集群获取状态信息
-		summary.K8sStatus = &K8sClusterStatus{
-			NodeCount:        0,
-			ReadyNodes:       0,
-			NotReadyNodes:    0,
-			TotalPods:        0,
-			RunningPods:      0,
-			PendingPods:      0,
-			FailedPods:       0,
-			DeploymentCount:  0,
-			StatefulSetCount: 0,
-			DaemonSetCount:   0,
-			ServiceCount:     0,
-			IngressCount:     0,
-			NamespaceCount:   0,
+		// 获取真实的 K8s 集群状态信息
+		k8sStatus, err := s.getK8sClusterStatus(cluster.ID)
+		if err != nil {
+			k8sStatus = &K8sClusterStatus{
+				NodeCount:        0,
+				ReadyNodes:       0,
+				NotReadyNodes:    0,
+				TotalPods:        0,
+				RunningPods:      0,
+				PendingPods:      0,
+				FailedPods:       0,
+				DeploymentCount:  0,
+				StatefulSetCount: 0,
+				DaemonSetCount:   0,
+				ServiceCount:     0,
+				IngressCount:     0,
+				NamespaceCount:   0,
+			}
 		}
+		summary.K8sStatus = k8sStatus
 
 		summaries = append(summaries, summary)
 	}

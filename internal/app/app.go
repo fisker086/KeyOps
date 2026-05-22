@@ -1,12 +1,18 @@
 package app
 
 import (
+	"context"
+	"fmt"
+	"time"
+
 	"github.com/fisker086/keyops/internal/audit"
+	"github.com/fisker086/keyops/internal/infrastructure/mongodb"
 	"github.com/fisker086/keyops/internal/notification"
 	"github.com/fisker086/keyops/internal/sshserver/server"
 	"github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/database"
 	"github.com/fisker086/keyops/pkg/logger"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // App 应用程序上下文
@@ -19,6 +25,8 @@ type App struct {
 	SSHServer           *server.Server
 	UnifiedAuditor      *audit.DatabaseAuditor
 	NotificationManager *notification.NotificationManager
+	MongoClient         *mongodb.Client
+	BastionMongo        *mongo.Client
 }
 
 // Initialize 初始化应用程序
@@ -34,16 +42,49 @@ func Initialize(cfgPath string) (*App, error) {
 		}
 	}()
 
-	// 2. Initialize repositories
-	repos := InitializeRepositories()
+	// 2. 初始化 MongoDB：账单库（独立 Client）与堡垒机库（独立 URI / Database）
+	var mongoClient *mongodb.Client
+	if cfg.BillStorage.GetURI() != "" {
+		mongoClient, err = mongodb.NewClientWithDatabase(cfg.BillStorage.GetURI(), cfg.BillStorage.Database)
+		if err != nil {
+			logger.Warnf("MongoDB (bill) connect failed: %v", err)
+		} else {
+			if err := mongoClient.InitIndexes(context.Background()); err != nil {
+				logger.Warnf("MongoDB init indexes failed: %v", err)
+			}
+		}
+	}
+
+	var bastionMongo *mongo.Client
+	if cfg.BastionStorage.GetEngine() == "mongodb" {
+		cfg.BastionStorage.SetDefaults()
+		uri := cfg.BastionStorage.GetMongoURI()
+		if uri != "" {
+			ctxm, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			var connErr error
+			bastionMongo, connErr = mongodb.Connect(ctxm, uri)
+			cancel()
+			if connErr != nil {
+				logger.Warnf("Bastion MongoDB connect failed: %v", connErr)
+				bastionMongo = nil
+			} else {
+				logger.Infof("Bastion MongoDB connected (db=%s)", cfg.BastionStorage.MongoDB.Database)
+			}
+		} else {
+			logger.Warnf("bastion_storage.engine=mongodb but Mongo URI is empty; falling back to SQL for bastion data")
+		}
+	}
+
+	// 3. Initialize repositories（根据配置选择存储引擎）
+	repos := InitializeRepositories(cfg, bastionMongo)
 	logger.Infof("Repositories initialized")
 
-	// 3. Initialize services
-	services := InitializeServices(repos, cfg)
+	// 4. Initialize services
+	services := InitializeServices(repos, cfg, mongoClient)
 	logger.Infof("Services initialized")
 
 	// 4. Initialize audit service
-	unifiedAuditor := audit.NewDatabaseAuditor(database.DB).(*audit.DatabaseAuditor)
+	unifiedAuditor := audit.NewDatabaseAuditor(database.DB, repos.Session).(*audit.DatabaseAuditor)
 	logger.Infof("Unified Audit Service initialized")
 	logger.Infof("   Supports: SSH Gateway + WebShell")
 
@@ -52,7 +93,7 @@ func Initialize(cfgPath string) (*App, error) {
 	logger.Infof("Notification Manager initialized")
 
 	// 6. Initialize background services
-	backgroundServices := InitializeBackgroundServices(repos, cfg, notificationMgr, services.Alert)
+	backgroundServices := InitializeBackgroundServices(repos, cfg, notificationMgr, services.Alert, services.Bill)
 	logger.Infof("Background services initialized")
 	logger.Infof("   Asset sync scheduler started")
 	logger.Infof("   Host status monitor started (interval: 5 minutes)")
@@ -77,5 +118,67 @@ func Initialize(cfgPath string) (*App, error) {
 		SSHServer:           sshServer,
 		UnifiedAuditor:      unifiedAuditor,
 		NotificationManager: notificationMgr,
+		MongoClient:         services.MongoClient,
+		BastionMongo:        bastionMongo,
 	}, nil
+}
+
+// CloseDatabase 关闭数据库连接（供优雅关闭调用）
+func CloseDatabase() error {
+	return database.Close()
+}
+
+// Shutdown 优雅关闭应用程序
+func Shutdown(app *App) {
+	fmt.Println("\n[Shutdown] Received shutdown signal, starting graceful shutdown...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// 1. 停止账单同步调度器
+	// if app.BackgroundServices.BillSync != nil {
+	// 	app.BackgroundServices.BillSync.Stop()
+	// 	fmt.Println("[Shutdown] Bill sync scheduler stopped")
+	// }
+
+	// 2. Close MongoDB connections
+	if app.BastionMongo != nil {
+		if err := app.BastionMongo.Disconnect(ctx); err != nil {
+			fmt.Printf("[Shutdown] Bastion MongoDB close error: %v\n", err)
+		} else {
+			fmt.Println("[Shutdown] Bastion MongoDB connection closed")
+		}
+	}
+	if app.MongoClient != nil {
+		if err := app.MongoClient.Close(ctx); err != nil {
+			fmt.Printf("[Shutdown] MongoDB (bill) close error: %v\n", err)
+		} else {
+			fmt.Println("[Shutdown] MongoDB (bill) connection closed")
+		}
+	}
+
+	// 3. Stop SSH server
+	if app.SSHServer != nil {
+		if err := app.SSHServer.Stop(); err != nil {
+			fmt.Printf("[Shutdown] SSH server stop error: %v\n", err)
+		} else {
+			fmt.Println("[Shutdown] SSH server stopped")
+		}
+	}
+
+	// 4. Close database (MySQL/PostgreSQL)
+	if err := CloseDatabase(); err != nil {
+		fmt.Printf("[Shutdown] Database close error: %v\n", err)
+	} else {
+		fmt.Println("[Shutdown] Database connection closed")
+	}
+
+	fmt.Println("[Shutdown] Graceful shutdown completed")
+}
+
+// WaitForShutdown 阻塞等待关闭信号，然后触发优雅关闭
+func WaitForShutdown(app *App) {
+	// TODO: 实现信号处理
+	<-make(chan struct{})
+	Shutdown(app)
 }

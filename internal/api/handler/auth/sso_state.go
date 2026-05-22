@@ -74,13 +74,12 @@ func decodeSSONextFromState(state string) string {
 	return defaultSSONextPath
 }
 
-// redirectLoginWithSSOToken 重定向到登录页并附带 token；next 为登录成功后的站内路径。
-// 必须经 /login 落地，否则根路径会被 PrivateRoute 重定向到 /login 而丢失 query 中的 sso_token。
-func redirectLoginWithSSOToken(postLoginPath, token string) string {
+// redirectLoginAfterSSO 重定向到登录页；refresh_token 已由服务端写入 Cookie，前端通过 /api/auth/refresh 获取 access_token。
+func redirectLoginAfterSSO(postLoginPath string) string {
 	dest := normalizeSSONextPath(postLoginPath)
 	u := &url.URL{Path: "/login"}
 	q := url.Values{}
-	q.Set("sso_token", token)
+	q.Set("sso", "1")
 	q.Set("next", dest)
 	u.RawQuery = q.Encode()
 	return u.String()

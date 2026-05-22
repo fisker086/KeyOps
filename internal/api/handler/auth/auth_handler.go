@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
@@ -13,6 +15,35 @@ import (
 	pkgconfig "github.com/fisker086/keyops/pkg/config"
 	"github.com/gin-gonic/gin"
 )
+
+const refreshCookieName = "refresh_token"
+
+// refreshCookieSecure 本地 HTTP 开发默认不写 Secure；HTTPS 或 AUTH_COOKIE_SECURE=true 时启用。
+func refreshCookieSecure(c *gin.Context) bool {
+	if os.Getenv("AUTH_COOKIE_SECURE") == "true" {
+		return true
+	}
+	if os.Getenv("AUTH_COOKIE_SECURE") == "false" {
+		return false
+	}
+	if c.Request.TLS != nil {
+		return true
+	}
+	if strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") {
+		return true
+	}
+	return false
+}
+
+func setRefreshTokenCookie(c *gin.Context, token string, expiresAt time.Time) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(refreshCookieName, token, int(time.Until(expiresAt).Seconds()), "/api/auth", "", refreshCookieSecure(c), true)
+}
+
+func clearRefreshTokenCookie(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(refreshCookieName, "", -1, "/api/auth", "", refreshCookieSecure(c), true)
+}
 
 type AuthHandler struct {
 	service       *authService.AuthService
@@ -53,35 +84,83 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 获取客户端IP和UserAgent
 	clientIP := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	resp, err := h.service.Login(&req, clientIP, userAgent)
+	resp, refreshTkn, err := h.service.Login(&req, clientIP, userAgent)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, model.Error(401, err.Error()))
 		return
 	}
 
+	// 有 refresh_token 时写入 HttpOnly Cookie
+	if refreshTkn != "" {
+		setRefreshTokenCookie(c, refreshTkn, time.Now().Add(authService.RefreshTokenExpiry))
+	}
+
 	c.JSON(http.StatusOK, model.Success(resp))
 }
 
-// Logout 用户登出
+// Logout 用户登出（需 access_token 鉴权；仅撤销当前设备的 refresh_token）
 func (h *AuthHandler) Logout(c *gin.Context) {
-	// 从上下文获取用户ID（由中间件设置）
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, model.Error(401, "未登录"))
 		return
 	}
 
-	if err := h.service.Logout(userID.(string)); err != nil {
-		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
+	var refreshJTI string
+	if cookieToken, err := c.Cookie(refreshCookieName); err == nil && cookieToken != "" {
+		if claims, err := h.service.ValidateRefreshToken(cookieToken); err == nil {
+			refreshJTI = claims.JTI
+		}
+	}
+
+	if err := h.service.Logout(userID.(string), refreshJTI); err != nil {
+		c.JSON(http.StatusInternalServerError, model.Error(500, "登出失败"))
 		return
 	}
 
+	clearRefreshTokenCookie(c)
+
 	c.JSON(http.StatusOK, model.Success(gin.H{
 		"message": "登出成功",
+	}))
+}
+
+// EstablishSession 在已有 access_token 时签发完整会话（refresh Cookie + 新 access_token），用于 2FA 绑定完成后等场景。
+func (h *AuthHandler) EstablishSession(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, model.Error(401, "未登录"))
+		return
+	}
+
+	user, err := h.service.GetUserByID(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.Error(404, "用户不存在"))
+		return
+	}
+	if user.Status != "active" {
+		c.JSON(http.StatusForbidden, model.Error(403, "用户已被禁用"))
+		return
+	}
+
+	accessTkn, refreshTkn, err := h.service.GenerateTokenPair(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Error(500, "建立会话失败"))
+		return
+	}
+
+	setRefreshTokenCookie(c, refreshTkn, time.Now().Add(authService.RefreshTokenExpiry))
+	if err := h.service.EnforceSessionLimitForUser(user.ID); err != nil {
+		fmt.Printf(" [EstablishSession] session limit enforcement: %v\n", err)
+	}
+
+	c.JSON(http.StatusOK, model.Success(gin.H{
+		"accessToken": accessTkn,
+		"token":       accessTkn,
+		"user":        user,
 	}))
 }
 
@@ -484,15 +563,12 @@ func (h *AuthHandler) SSOCallback(c *gin.Context) {
 		fmt.Printf(" [SSO] 缺少 state 参数，将使用默认落地路径 /\n")
 	}
 
-	// 获取客户端信息（用于记录登录IP和UserAgent）
 	loginIP := c.ClientIP()
 	userAgent := c.Request.UserAgent()
 
-	// 调用 Service 完成 SSO 登录流程
-	loginResp, err := h.service.LoginWithSSO(code, loginIP, userAgent)
+	_, refreshTkn, err := h.service.LoginWithSSO(code, loginIP, userAgent)
 	if err != nil {
 		fmt.Printf(" [SSO] 登录失败: %v\n", err)
-		// 重定向到登录页并显示错误
 		errorMsg := url.QueryEscape(err.Error())
 		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/?error=sso_login_failed&error_description=%s", errorMsg))
 		return
@@ -500,8 +576,11 @@ func (h *AuthHandler) SSOCallback(c *gin.Context) {
 
 	fmt.Printf(" [SSO] 登录成功，重定向到前端 path=%s\n", nextPath)
 
-	// 经 /login 落地：附带 sso_token 与 next，避免 / 被鉴权拦截导致丢失 token
-	c.Redirect(http.StatusTemporaryRedirect, redirectLoginWithSSOToken(nextPath, loginResp.Token))
+	// 将 refresh_token 写入 HttpOnly Cookie
+	setRefreshTokenCookie(c, refreshTkn, time.Now().Add(authService.RefreshTokenExpiry))
+
+	// 经 /login 落地：附带 access_token 与 next，避免 / 被鉴权拦截导致丢失 token
+	c.Redirect(http.StatusTemporaryRedirect, redirectLoginAfterSSO(nextPath))
 }
 
 // ===== User-Group Permission Management =====
@@ -706,6 +785,28 @@ func (h *AuthHandler) GetAuthMethod(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.Success(gin.H{
 		"authMethod": authMethod,
+	}))
+}
+
+// Refresh 刷新 access_token（从 Cookie 读 refresh_token，回写新 refresh Cookie + JSON access_token）
+func (h *AuthHandler) Refresh(c *gin.Context) {
+	refreshToken, err := c.Cookie(refreshCookieName)
+	if err != nil || refreshToken == "" {
+		c.JSON(http.StatusUnauthorized, model.Error(401, "缺少 refresh_token"))
+		return
+	}
+
+	newAccessTkn, newRefreshTkn, err := h.service.RefreshTokenPair(refreshToken)
+	if err != nil {
+		clearRefreshTokenCookie(c)
+		c.JSON(http.StatusUnauthorized, model.Error(401, "refresh_token 无效或已过期"))
+		return
+	}
+
+	setRefreshTokenCookie(c, newRefreshTkn, time.Now().Add(authService.RefreshTokenExpiry))
+
+	c.JSON(http.StatusOK, model.Success(gin.H{
+		"accessToken": newAccessTkn,
 	}))
 }
 

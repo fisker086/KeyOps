@@ -834,14 +834,6 @@ VALUES
 -- Initialize System Settings
 -- =====================================================
 
--- Host Monitor Settings
-INSERT INTO settings ("key", "value", "category", "type", "created_at", "updated_at") VALUES
-('host_monitor_enabled', 'false', 'host_monitor', 'boolean', NOW(), NOW()),
-('host_monitor_interval', '5', 'host_monitor', 'number', NOW(), NOW()),
-('host_monitor_method', 'tcp', 'host_monitor', 'string', NOW(), NOW()),
-('host_monitor_timeout', '3', 'host_monitor', 'number', NOW(), NOW()),
-('host_monitor_concurrent', '20', 'host_monitor', 'number', NOW(), NOW());
-
 -- =====================================================
 -- Initialize System Users and Roles
 -- =====================================================
@@ -1252,8 +1244,6 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 -- 首页分组（一级菜单）
 -- 注意：系统大盘已拆分成3个独立菜单（组织大盘、应用大盘、主机大盘），保留在首页下
 ('menu-home', '', '', 'home', '', false, 1, '首页', 'Home', false, '', false, false, NOW(), NOW()),
--- 首页子菜单：云账单大盘（已集成到主机大盘中，隐藏独立菜单）
-('menu-cloud-bill-dashboard', 'menu-home', '/cloud-bill-dashboard', 'cloudBillDashboard', 'pages/dashboard/CloudBillDashboard', true, 5, '云账单大盘', 'AccountBalance', false, '', false, false, NOW(), NOW()),
 -- 首页子菜单：告警大盘（从告警中心移动到首页）
 ('menu-monitor-alert-dashboard', 'menu-home', '/monitors/alert-dashboard', 'monitorAlertDashboard', 'pages/monitor/AlertDashboard', false, 6, '告警大盘', 'Dashboard', false, '', false, false, NOW(), NOW()),
 
@@ -1285,6 +1275,13 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-blacklist', 'menu-bastion', '/blacklist', 'blacklist', 'pages/bastion/Blacklist', false, 7, '命令黑名单', 'Security', false, '', false, false, NOW(), NOW()),
 ('menu-bastion-settings', 'menu-bastion', '/bastion-settings', 'bastionSettings', 'pages/bastion/BastionSettings', false, 8, '堡垒机配置', 'Settings', false, '', false, false, NOW(), NOW()),
 
+-- 云账单一级菜单（FinOps 风格）
+('menu-cloud-bill', '', '', 'cloudBill', '', false, 5, '云账单', 'AccountBalance', false, '', false, false, NOW(), NOW()),
+('menu-bill-price', 'menu-cloud-bill', '/bill/price', 'billPrice', 'pages/bill/BillPrice', false, 1, '单价管理', 'AttachMoney', false, '', false, false, NOW(), NOW()),
+('menu-bill-resource', 'menu-cloud-bill', '/bill/resource', 'billResource', 'pages/bill/BillResource', false, 2, '我的资源', 'Inventory', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-accounts', 'menu-cloud-bill', '/cloud-bill/accounts', 'cloudBillAccounts', 'pages/bill/CloudAccounts', false, 3, '云账户', 'Cloud', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-finops-dashboard', 'menu-cloud-bill', '/cloud-bill/finops-dashboard', 'cloudBillFinopsDashboard', 'pages/bill/FinopsDashboard', false, 4, '成本总览', 'Dashboard', false, '', false, false, NOW(), NOW()),
+
 -- 发布管理一级菜单已临时移除，恢复见 sql/init_removed_release_menu.sql
 
 -- 集群管理分组
@@ -1307,7 +1304,6 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-k8s-deployments', 'menu-k8s-workload', '/k8s/deployments', 'k8sDeployments', 'pages/k8s/Deployments', false, 1, 'Deployment', 'RocketLaunch', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-daemonsets', 'menu-k8s-workload', '/k8s/daemonsets', 'k8sDaemonSets', 'pages/k8s/DaemonSets', false, 2, 'DaemonSet', 'GridView', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-statefulsets', 'menu-k8s-workload', '/k8s/statefulsets', 'k8sStatefulSets', 'pages/k8s/StatefulSets', false, 3, 'StatefulSet', 'Database', false, '', false, false, NOW(), NOW()),
-('menu-k8s-pods', 'menu-k8s-workload', '/k8s/pods', 'k8sPods', 'pages/k8s/Pods', false, 4, 'Pod', 'Circle', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-cronjobs', 'menu-k8s-workload', '/k8s/cronjobs', 'k8sCronJobs', 'pages/k8s/CronJobs', false, 5, 'CronJob', 'Schedule', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-jobs', 'menu-k8s-workload', '/k8s/jobs', 'k8sJobs', 'pages/k8s/Jobs', false, 6, 'Job', 'Task', false, '', false, false, NOW(), NOW()),
 
@@ -1439,8 +1435,6 @@ UPDATE menus SET parent_id = 'menu-bastion', sort = 6 WHERE id = 'menu-permissio
 UPDATE menus SET parent_id = 'menu-bastion', sort = 7 WHERE id = 'menu-blacklist';
 UPDATE menus SET parent_id = 'menu-bastion', sort = 8 WHERE id = 'menu-bastion-settings';
 
--- 隐藏云账单大盘菜单（已集成到主机大盘中）
-UPDATE menus SET hidden = true WHERE id = 'menu-cloud-bill-dashboard';
 -- 更新组织管理分组（原用户权限）
 UPDATE menus SET title = '组织管理' WHERE id = 'menu-user-permission';
 
@@ -1453,13 +1447,16 @@ UPDATE menus SET parent_id = 'menu-user-permission', sort = 5 WHERE id = 'menu-p
 -- 将资产管理移出组织管理，作为一级菜单放在组织管理下面
 UPDATE menus SET parent_id = '', sort = 3 WHERE id = 'menu-assets';
 
--- 更新后续一级菜单的排序（资产管理插入后，后续菜单需要往后移）
+-- 更新后续一级菜单的排序（含云账单一级菜单）
 UPDATE menus SET sort = 4 WHERE id = 'menu-bastion';
-UPDATE menus SET sort = 5 WHERE id = 'menu-k8s';
-UPDATE menus SET sort = 6 WHERE id = 'menu-workorder';
-UPDATE menus SET sort = 7 WHERE id = 'menu-dms';
-UPDATE menus SET sort = 8 WHERE id = 'menu-monitor';
-UPDATE menus SET sort = 9 WHERE id = 'menu-system';
+UPDATE menus SET sort = 5 WHERE id = 'menu-cloud-bill';
+UPDATE menus SET sort = 6 WHERE id = 'menu-k8s';
+UPDATE menus SET sort = 7 WHERE id = 'menu-workorder';
+UPDATE menus SET sort = 8 WHERE id = 'menu-dms';
+UPDATE menus SET sort = 9 WHERE id = 'menu-monitor';
+UPDATE menus SET sort = 10 WHERE id = 'menu-ai-assistant';
+UPDATE menus SET sort = 11 WHERE id = 'menu-system';
+UPDATE menus SET sort = 12 WHERE id = 'menu-personal';
 
 -- 更新资产管理的子菜单
 UPDATE menus SET parent_id = 'menu-assets', sort = 1 WHERE id = 'menu-assets-list';
@@ -1557,7 +1554,6 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-k8s-deployments', 'menu-k8s-workload', '/k8s/deployments', 'k8sDeployments', 'pages/k8s/Deployments', false, 1, 'Deployment', 'RocketLaunch', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-daemonsets', 'menu-k8s-workload', '/k8s/daemonsets', 'k8sDaemonSets', 'pages/k8s/DaemonSets', false, 2, 'DaemonSet', 'GridView', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-statefulsets', 'menu-k8s-workload', '/k8s/statefulsets', 'k8sStatefulSets', 'pages/k8s/StatefulSets', false, 3, 'StatefulSet', 'Database', false, '', false, false, NOW(), NOW()),
-('menu-k8s-pods', 'menu-k8s-workload', '/k8s/pods', 'k8sPods', 'pages/k8s/Pods', false, 4, 'Pod', 'Circle', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-cronjobs', 'menu-k8s-workload', '/k8s/cronjobs', 'k8sCronJobs', 'pages/k8s/CronJobs', false, 5, 'CronJob', 'Schedule', false, '', false, false, NOW(), NOW()),
 ('menu-k8s-jobs', 'menu-k8s-workload', '/k8s/jobs', 'k8sJobs', 'pages/k8s/Jobs', false, 6, 'Job', 'Task', false, '', false, false, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
@@ -1595,7 +1591,6 @@ UPDATE menus SET parent_id = 'menu-k8s', path = '', name = 'k8sWorkload', compon
 UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/deployments', name = 'k8sDeployments', component = 'pages/k8s/Deployments', hidden = false, sort = 1, title = 'Deployment', icon = 'RocketLaunch' WHERE id = 'menu-k8s-deployments';
 UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/daemonsets', name = 'k8sDaemonSets', component = 'pages/k8s/DaemonSets', hidden = false, sort = 2, title = 'DaemonSet', icon = 'GridView' WHERE id = 'menu-k8s-daemonsets';
 UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/statefulsets', name = 'k8sStatefulSets', component = 'pages/k8s/StatefulSets', hidden = false, sort = 3, title = 'StatefulSet', icon = 'Database' WHERE id = 'menu-k8s-statefulsets';
-UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/pods', name = 'k8sPods', component = 'pages/k8s/Pods', hidden = false, sort = 4, title = 'Pod', icon = 'Circle' WHERE id = 'menu-k8s-pods';
 UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/cronjobs', name = 'k8sCronJobs', component = 'pages/k8s/CronJobs', hidden = false, sort = 5, title = 'CronJob', icon = 'Schedule' WHERE id = 'menu-k8s-cronjobs';
 UPDATE menus SET parent_id = 'menu-k8s-workload', path = '/k8s/jobs', name = 'k8sJobs', component = 'pages/k8s/Jobs', hidden = false, sort = 6, title = 'Job', icon = 'Task' WHERE id = 'menu-k8s-jobs';
 
@@ -1657,6 +1652,7 @@ UPDATE menus SET parent_id = '' WHERE id IN (
     'menu-user-permission',
     'menu-assets',
     'menu-bastion',
+    'menu-cloud-bill',
     'menu-k8s',
     'menu-workorder',
     'menu-dms',
@@ -1698,6 +1694,20 @@ INSERT INTO menu_permissions (role_id, menu_id, created_at)
 SELECT 'role:user', menus.id, NOW() FROM menus
 WHERE menus.id IN (
     'menu-home',
+    'menu-cloud-bill',
+    'menu-cloud-bill-explorer',
+    'menu-cloud-bill-records',
+    'menu-cloud-bill-summary',
+    'menu-cloud-bill-statistics',
+    'menu-cloud-bill-vm',
+
+    'menu-cloud-bill-finops-dashboard',
+    'menu-cloud-bill-expenses-map',
+    'menu-cloud-bill-cost-resources',
+    'menu-cloud-bill-accounts',
+    'menu-cloud-bill-recommendations',
+
+
     'menu-org-dashboard',
     'menu-app-dashboard',
     'menu-system-dashboard',
@@ -1958,6 +1968,10 @@ CREATE TABLE IF NOT EXISTS bill_records (
     resource_code VARCHAR(50) ,
     service_type VARCHAR(50) ,
     service_code VARCHAR(50) ,
+    region VARCHAR(50) DEFAULT NULL ,
+    account_id VARCHAR(100) DEFAULT NULL ,
+    cloud_account_id INTEGER DEFAULT NULL ,
+    tags TEXT ,
     extra TEXT ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -1970,12 +1984,80 @@ CREATE TABLE IF NOT EXISTS bill_price (
     id SERIAL PRIMARY KEY ,
     vendor VARCHAR(50) NOT NULL ,
     resource_type VARCHAR(50) ,
-    scale VARCHAR(50) ,
-    cluster VARCHAR(50) ,
-    price DECIMAL(25,15) DEFAULT 0 ,
+    spec VARCHAR(50) ,
+    unit_price DECIMAL(25,15) DEFAULT 0 ,
+    currency VARCHAR(10) ,
+    unit VARCHAR(50) ,
+    region VARCHAR(50) ,
+    effective_date DATE ,
     description TEXT ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+)
+;
+
+-- 云账户凭证管理表
+CREATE TABLE IF NOT EXISTS bill_cloud_accounts (
+    id SERIAL PRIMARY KEY ,
+    name VARCHAR(100) ,
+    cloud_type VARCHAR(50) ,
+    access_key_id VARCHAR(200) ,
+    secret_access_key VARCHAR(500) ,
+    region VARCHAR(50) ,
+    bucket_name VARCHAR(200) ,
+    bucket_prefix VARCHAR(100) ,
+    report_name VARCHAR(100) ,
+    account_id VARCHAR(100) ,
+    status VARCHAR(20) DEFAULT 'active' ,
+    last_import_at TIMESTAMP ,
+    last_import_error TEXT ,
+    sync_cron VARCHAR(100) DEFAULT '' ,
+    notify_enabled BOOLEAN DEFAULT FALSE ,
+    notify_channel_id INTEGER ,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+)
+;
+
+-- 云定价表
+CREATE TABLE IF NOT EXISTS bill_pricing (
+    id SERIAL PRIMARY KEY ,
+    cloud_type VARCHAR(50) ,
+    service_code VARCHAR(50) ,
+    instance_type VARCHAR(50) ,
+    region VARCHAR(50) ,
+    price_per_unit DECIMAL(25,15) DEFAULT 0 ,
+    currency VARCHAR(10) ,
+    unit VARCHAR(50) ,
+    sku VARCHAR(100) ,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+)
+;
+
+-- 云资源清单表
+CREATE TABLE IF NOT EXISTS bill_resources (
+    id SERIAL PRIMARY KEY ,
+    vendor VARCHAR(50) ,
+    cloud_account_id INTEGER ,
+    account_id VARCHAR(100) ,
+    resource_id VARCHAR(100) ,
+    resource_type VARCHAR(50) ,
+    resource_name VARCHAR(200) ,
+    instance_type VARCHAR(50) ,
+    region VARCHAR(50) ,
+    zone VARCHAR(50) ,
+    tags TEXT ,
+    status VARCHAR(50) ,
+    first_seen TIMESTAMP ,
+    last_seen TIMESTAMP ,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (cloud_account_id, resource_id)
 
 )
 ;
@@ -2441,6 +2523,8 @@ CREATE TABLE IF NOT EXISTS application_deploy_bindings (
     argocd_application VARCHAR(255) ,
     deploy_strategy VARCHAR(32) ,
     strategy_options TEXT ,
+    pipeline_id VARCHAR(36) ,
+    webhook_token VARCHAR(64) UNIQUE ,
     enabled BOOLEAN DEFAULT TRUE ,
     description TEXT ,
     created_by VARCHAR(36) ,
@@ -2780,6 +2864,8 @@ CREATE TABLE IF NOT EXISTS applications (
     online_at TIMESTAMP ,
     offline_at TIMESTAMP ,
     git_url VARCHAR(500) ,
+    jenkins_server_id INTEGER ,
+    jenkins_job_name VARCHAR(255) ,
     ops_owners JSONB ,
     test_owners JSONB ,
     dev_owners JSONB,
@@ -2901,6 +2987,171 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
 -- 初始化中的应用
 
 -- ============================================================================
+-- Infrastructure / IaC Management Tables (CMDB)
+-- ============================================================================
+
+-- 配置条目表（配置仓库）
+CREATE TABLE IF NOT EXISTS infra_config_entries (
+    id SERIAL PRIMARY KEY,
+    key VARCHAR(500) NOT NULL,
+    value TEXT,
+    description VARCHAR(500) DEFAULT '',
+    version INTEGER DEFAULT 1,
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_infra_config_key ON infra_config_entries(key);
+
+-- 配置变更记录表
+CREATE TABLE IF NOT EXISTS infra_config_changes (
+    id SERIAL PRIMARY KEY,
+    entry_id INTEGER NOT NULL,
+    action VARCHAR(20),
+    old_value TEXT,
+    new_value TEXT,
+    ticket_id INTEGER,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_infra_config_changes_entry ON infra_config_changes(entry_id);
+
+-- Stack 模板表
+CREATE TABLE IF NOT EXISTS infra_stack_templates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL DEFAULT '',
+    description VARCHAR(500) DEFAULT '',
+    provider VARCHAR(50) DEFAULT '',
+    template VARCHAR(200) DEFAULT '',
+    git_repo_url VARCHAR(500) DEFAULT '',
+    git_branch VARCHAR(200) DEFAULT 'refs/heads/main',
+    git_project_path VARCHAR(500) DEFAULT '',
+    git_username VARCHAR(200) DEFAULT '',
+    git_password VARCHAR(500) DEFAULT '',
+    git_ssh_private_key TEXT,
+    parameters TEXT,
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Stack 表
+CREATE TABLE IF NOT EXISTS infra_stacks (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    description VARCHAR(500) DEFAULT '',
+    provider VARCHAR(50) DEFAULT '',
+    region VARCHAR(100) DEFAULT '',
+    template VARCHAR(200) DEFAULT '',
+    account_id INTEGER,
+    template_id INTEGER,
+    status VARCHAR(20) DEFAULT 'pending',
+    config JSONB,
+    output JSONB,
+    tags JSONB,
+    created_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_infra_stacks_account ON infra_stacks(account_id);
+CREATE INDEX IF NOT EXISTS idx_infra_stacks_template ON infra_stacks(template_id);
+CREATE INDEX IF NOT EXISTS idx_infra_stacks_status ON infra_stacks(status);
+
+-- Stack 操作记录表
+CREATE TABLE IF NOT EXISTS infra_stack_operations (
+    id SERIAL PRIMARY KEY,
+    stack_id INTEGER NOT NULL,
+    action VARCHAR(20),
+    ticket_id INTEGER,
+    status VARCHAR(20) DEFAULT 'pending',
+    output TEXT,
+    error TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_infra_stack_ops_stack ON infra_stack_operations(stack_id);
+
+-- 配置绑定表
+CREATE TABLE IF NOT EXISTS infra_config_bindings (
+    id SERIAL PRIMARY KEY,
+    config_key VARCHAR(500) NOT NULL,
+    stack_id INTEGER NOT NULL,
+    param_path VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_infra_bindings_key ON infra_config_bindings(config_key);
+CREATE INDEX IF NOT EXISTS idx_infra_bindings_stack ON infra_config_bindings(stack_id);
+
+-- 云资源变更单 / 记录 / 回滚（与 internal/model/infra_change.go、GORM 默认列名一致）
+CREATE TABLE IF NOT EXISTS infra_change_requests (
+    id SERIAL PRIMARY KEY,
+    change_id VARCHAR(64) NOT NULL,
+    stack_id INTEGER NOT NULL,
+    action VARCHAR(32) NOT NULL,
+    description VARCHAR(2000) DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    risk_level VARCHAR(32) NOT NULL DEFAULT 'low',
+    risk_analysis VARCHAR(2000) DEFAULT '',
+    preview_result JSONB,
+    preview_summary VARCHAR(500) DEFAULT '',
+    apply_result JSONB,
+    apply_output TEXT,
+    approval_id VARCHAR(128) DEFAULT '',
+    approval_platform VARCHAR(64) DEFAULT '',
+    approver VARCHAR(200) DEFAULT '',
+    approved_at TIMESTAMP(3),
+    reject_reason VARCHAR(2000) DEFAULT '',
+    applied_by VARCHAR(200) DEFAULT '',
+    applied_at TIMESTAMP(3),
+    is_rollback BOOLEAN NOT NULL DEFAULT FALSE,
+    rollback_to INTEGER,
+    created_by VARCHAR(200) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_infra_change_requests_change_id UNIQUE (change_id)
+);
+CREATE INDEX IF NOT EXISTS idx_infra_change_requests_stack ON infra_change_requests(stack_id);
+CREATE INDEX IF NOT EXISTS idx_infra_change_requests_status ON infra_change_requests(status);
+CREATE INDEX IF NOT EXISTS idx_infra_change_requests_created ON infra_change_requests(created_at);
+
+CREATE TABLE IF NOT EXISTS infra_change_records (
+    id SERIAL PRIMARY KEY,
+    change_id INTEGER NOT NULL,
+    stack_id INTEGER NOT NULL,
+    stack_name VARCHAR(200) DEFAULT '',
+    action VARCHAR(64) DEFAULT '',
+    operation VARCHAR(64) DEFAULT '',
+    adds INTEGER NOT NULL DEFAULT 0,
+    changes INTEGER NOT NULL DEFAULT 0,
+    deletes INTEGER NOT NULL DEFAULT 0,
+    diff TEXT,
+    result VARCHAR(32) DEFAULT '',
+    error TEXT,
+    outputs JSONB,
+    duration INTEGER NOT NULL DEFAULT 0,
+    operator VARCHAR(200) DEFAULT '',
+    occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_infra_change_records_change ON infra_change_records(change_id);
+CREATE INDEX IF NOT EXISTS idx_infra_change_records_stack ON infra_change_records(stack_id);
+CREATE INDEX IF NOT EXISTS idx_infra_change_records_occurred ON infra_change_records(occurred_at);
+
+CREATE TABLE IF NOT EXISTS infra_change_rollback_history (
+    id SERIAL PRIMARY KEY,
+    change_id INTEGER NOT NULL,
+    rollback_to_id INTEGER,
+    rollback_from_id INTEGER,
+    reason VARCHAR(2000) DEFAULT '',
+    operator VARCHAR(200) DEFAULT '',
+    rollback_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_infra_change_rollback_change ON infra_change_rollback_history(change_id);
+
+-- ============================================================================
 -- End of Schema
 -- ============================================================================
 
@@ -2940,6 +3191,20 @@ INSERT INTO menu_permissions (role_id, menu_id, created_at)
 SELECT 'role:user', menus.id, NOW() FROM menus
 WHERE menus.id IN (
     'menu-home',
+    'menu-cloud-bill',
+    'menu-cloud-bill-explorer',
+    'menu-cloud-bill-records',
+    'menu-cloud-bill-summary',
+    'menu-cloud-bill-statistics',
+    'menu-cloud-bill-vm',
+
+    'menu-cloud-bill-finops-dashboard',
+    'menu-cloud-bill-expenses-map',
+    'menu-cloud-bill-cost-resources',
+    'menu-cloud-bill-accounts',
+    'menu-cloud-bill-recommendations',
+
+
     'menu-org-dashboard',
     'menu-app-dashboard',
     'menu-system-dashboard',

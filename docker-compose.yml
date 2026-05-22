@@ -52,6 +52,28 @@ services:
     networks:
       - keyops-network
 
+  # MongoDB 数据库（用于堡垒机会话录制/命令历史等大数据，以及云账单原始数据）
+  mongodb:
+    image: mongo:7.0
+    container_name: keyops-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-123456}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet -u $${MONGO_INITDB_ROOT_USERNAME:-admin} -p $${MONGO_INITDB_ROOT_PASSWORD:-123456} --authenticationDatabase admin
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - keyops-network
+
   # Guacamole daemon (guacd) - 用于 RDP 录制
   guacd:
     image: guacamole/guacd:1.5.5
@@ -89,6 +111,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
       guacd:
         condition: service_healthy
@@ -129,6 +153,11 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
+      
+      # MongoDB 配置（用于堡垒机会话录制/命令历史，以及云账单原始数据）
+      # 注意：config.yaml 中的 mongodb URI 需使用服务名 mongodb 而非 localhost
+      MONGO_BASTION_URI: ${MONGO_BASTION_URI:-mongodb://admin:123456@mongodb:27017/keyops_bastion?authSource=admin}
+      MONGO_BILL_URI: ${MONGO_BILL_URI:-mongodb://admin:123456@mongodb:27017/keyops_bill?authSource=admin}
       
       # Guacd 配置（用于 RDP 连接）
       GUACD_HOST: guacd
@@ -183,6 +212,8 @@ volumes:
   mysql_data:
     driver: local
   redis_data:
+    driver: local
+  mongo_data:
     driver: local
 
 networks:

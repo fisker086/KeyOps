@@ -25,13 +25,14 @@ import (
 // @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
-	// Initialize application
 	application, err := app.Initialize("")
 	if err != nil {
 		panic(err)
 	}
 
-	// Start server
+	// 启动优雅关闭监听（阻塞直到收到信号）
+	go app.WaitForShutdown(application)
+
 	app.StartServer(
 		application.Config,
 		application.Handlers,

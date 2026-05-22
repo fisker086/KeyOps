@@ -211,7 +211,7 @@ func (a *ServiceAuthenticator) AuthenticatePassword(username, password string, c
 		Password: password,
 	}
 
-	loginResp, err := a.authService.Login(loginReq, clientIP, "SSH-Client")
+	loginResp, _, err := a.authService.Login(loginReq, clientIP, "SSH-Client")
 	if err != nil {
 		logger.Infof("[SSH Auth] Password verification failed for user %s: %v", username, err)
 		// 记录失败尝试（密码错误）

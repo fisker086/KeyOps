@@ -42,12 +42,15 @@ func TestDecodeSSONextFromState_LegacyUUID(t *testing.T) {
 	}
 }
 
-func TestRedirectLoginWithSSOToken(t *testing.T) {
-	r := redirectLoginWithSSOToken("/dash", "tok_x")
+func TestRedirectLoginAfterSSO(t *testing.T) {
+	r := redirectLoginAfterSSO("/dash")
 	if !strings.HasPrefix(r, "/login?") {
 		t.Fatalf("unexpected: %s", r)
 	}
-	if !strings.Contains(r, "sso_token=tok_x") || !strings.Contains(r, "next=") {
+	if !strings.Contains(r, "sso=1") || !strings.Contains(r, "next=") {
 		t.Fatalf("missing params: %s", r)
+	}
+	if strings.Contains(r, "access_token") {
+		t.Fatalf("must not expose access_token in URL: %s", r)
 	}
 }

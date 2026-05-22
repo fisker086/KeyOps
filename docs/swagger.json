@@ -470,6 +470,660 @@
                 }
             }
         },
+        "/api/bill/budgets": {
+            "get": {
+                "description": "获取所有预算及当前状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取预算列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建新的预算",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "创建预算",
+                "parameters": [
+                    {
+                        "description": "预算信息",
+                        "name": "budget",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Budget"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/budgets/:id": {
+            "put": {
+                "description": "更新预算信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "更新预算",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "预算ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "预算信息",
+                        "name": "budget",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Budget"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定的预算",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "删除预算",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "预算ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/check-budget-alerts": {
+            "get": {
+                "description": "手动检查所有预算的告警状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "手动检查预算告警",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/cloud-accounts": {
+            "get": {
+                "description": "获取云账户列表，含资源数、最近导入与状态等详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "列出云账户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "云类型筛选",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建新的云账户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "添加云账户",
+                "parameters": [
+                    {
+                        "description": "云账户信息",
+                        "name": "account",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CloudAccount"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/cloud-accounts/:id": {
+            "get": {
+                "description": "获取单个云账户的详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取云账户详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "云账户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新云账户信息（密钥为空则保留原值）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "更新云账户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "云账户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "云账户信息",
+                        "name": "account",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CloudAccount"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定的云账户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "删除云账户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "云账户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/cloud-accounts/:id/sync": {
+            "post": {
+                "description": "从云厂商同步账单数据",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "同步云账户账单",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "云账户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/cloud-accounts/validate": {
+            "post": {
+                "description": "验证云账户凭证是否有效（不落库）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "验证云账户凭证",
+                "parameters": [
+                    {
+                        "description": "凭证信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handler_bill.ValidateCloudAccountReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/dashboard": {
+            "get": {
+                "description": "获取本月费用、预测、环比、Top资源等信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取费用 Dashboard 数据",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/policies": {
+            "get": {
+                "description": "获取所有策略（TTL、电源管理等）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取策略列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建新的策略",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "创建策略",
+                "parameters": [
+                    {
+                        "description": "策略信息",
+                        "name": "policy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Policy"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/policies/:id": {
+            "put": {
+                "description": "更新策略信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "更新策略",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "策略ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "策略信息",
+                        "name": "policy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Policy"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定的策略",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "删除策略",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "策略ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/pools": {
+            "get": {
+                "description": "获取所有资源池及费用信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取资源池列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建新的资源池",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "创建资源池",
+                "parameters": [
+                    {
+                        "description": "资源池信息",
+                        "name": "pool",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Pool"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/pools/:id": {
+            "put": {
+                "description": "更新资源池信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "更新资源池",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "资源池ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "资源池信息",
+                        "name": "pool",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Pool"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定的资源池",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "删除资源池",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "资源池ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/bill/price": {
             "get": {
                 "description": "获取单价管理列表",
@@ -564,6 +1218,59 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "删除单价配置",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "删除单价",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "单价ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/recommendations": {
+            "get": {
+                "description": "获取资源优化建议（未使用、Rightsizing等）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取优化建议",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
             }
         },
         "/api/bill/records": {
@@ -645,6 +1352,45 @@
                 }
             }
         },
+        "/api/bill/region-expenses": {
+            "get": {
+                "description": "按区域聚合费用数据，用于费用地图展示",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取按区域的费用",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始日期 (格式: 2024-01-01)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期 (格式: 2024-01-31)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/bill/resource": {
             "get": {
                 "description": "获取我的资源列表",
@@ -658,6 +1404,122 @@
                     "bill"
                 ],
                 "summary": "获取我的资源列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/resources/expenses-breakdown": {
+            "get": {
+                "description": "按时间范围和分组维度获取费用分解数据",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取资源费用分解",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始日期 (格式: 2024-01-01)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期 (格式: 2024-01-31)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "daily",
+                        "description": "粒度 (daily/monthly)",
+                        "name": "granularity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "service_name",
+                        "description": "分组维度 (service_name/service_code/cloud_type/region)",
+                        "name": "group_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "云厂商筛选",
+                        "name": "vendor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "服务代码筛选",
+                        "name": "service_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "资源关键词筛选",
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/resources/resource-count-breakdown": {
+            "get": {
+                "description": "按时间范围和分组维度获取资源数量分解数据",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取资源数量分解",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始日期",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "分组维度",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -746,6 +1608,51 @@
                 }
             }
         },
+        "/api/bill/traffic-expenses": {
+            "get": {
+                "description": "按流量聚合费用数据，用于费用地图展示",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "获取按流量/跨区的费用",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始日期 (格式: 2024-01-01)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期 (格式: 2024-01-31)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "资源ID筛选",
+                        "name": "resource_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/bill/trend": {
             "get": {
                 "description": "获取月度费用列表，用于前端展示折线图",
@@ -801,6 +1708,44 @@
                         "type": "string",
                         "description": "年份",
                         "name": "year",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bill/trigger-sync": {
+            "post": {
+                "description": "手动触发指定云账户的账单同步",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bill"
+                ],
+                "summary": "手动触发账单同步",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "云账户ID",
+                        "name": "cloud_account_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "账单日期 (格式: 2024-01-01)",
+                        "name": "billing_date",
                         "in": "query"
                     }
                 ],
@@ -6294,15 +7239,13 @@
                         "type": "string",
                         "description": "对象名称",
                         "name": "object_name",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "对象类型",
                         "name": "object_kind",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -8550,37 +9493,155 @@
                 "vendor"
             ],
             "properties": {
-                "cluster": {
-                    "description": "集群",
+                "createdAt": {
                     "type": "string"
                 },
-                "createdAt": {
+                "currency": {
+                    "description": "货币：USD, CNY",
                     "type": "string"
                 },
                 "description": {
                     "description": "描述",
                     "type": "string"
                 },
+                "effective_date": {
+                    "description": "生效日期",
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
-                "price": {
-                    "description": "单价",
-                    "type": "number"
+                "region": {
+                    "description": "区域",
+                    "type": "string"
                 },
                 "resource_type": {
                     "description": "资源类型",
                     "type": "string"
                 },
-                "scale": {
-                    "description": "规格，如 1:2, 1:4",
+                "spec": {
+                    "description": "规格，如 1:2, 1:4 (对应scale)",
                     "type": "string"
+                },
+                "unit": {
+                    "description": "单位：GB, Hour",
+                    "type": "string"
+                },
+                "unit_price": {
+                    "description": "单价 (对应price)",
+                    "type": "number"
                 },
                 "updatedAt": {
                     "type": "string"
                 },
                 "vendor": {
                     "description": "云厂商",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_fisker086_keyops_internal_model.Budget": {
+            "type": "object",
+            "properties": {
+                "alert_channel_ids": {
+                    "description": "JSON数组：[1,2,3]",
+                    "type": "string"
+                },
+                "alert_threshold": {
+                    "description": "告警阈值百分比",
+                    "type": "number"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "period": {
+                    "description": "monthly/quarterly/yearly",
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_fisker086_keyops_internal_model.CloudAccount": {
+            "type": "object",
+            "properties": {
+                "access_key_id": {
+                    "type": "string"
+                },
+                "account_id": {
+                    "type": "string"
+                },
+                "bucket_name": {
+                    "type": "string"
+                },
+                "bucket_prefix": {
+                    "type": "string"
+                },
+                "cloud_type": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_import_at": {
+                    "type": "string"
+                },
+                "last_import_error": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notify_channel_id": {
+                    "type": "integer"
+                },
+                "notify_enabled": {
+                    "type": "boolean"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "report_name": {
+                    "type": "string"
+                },
+                "secret_access_key": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "sync_cron": {
+                    "type": "string"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }
@@ -9510,6 +10571,86 @@
                 }
             }
         },
+        "github_com_fisker086_keyops_internal_model.Policy": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "stop/terminate/tag",
+                    "type": "string"
+                },
+                "conditions": {
+                    "description": "JSON条件",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "schedule": {
+                    "description": "cron表达式",
+                    "type": "string"
+                },
+                "target_resources": {
+                    "description": "目标资源筛选",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "ttl/power_off/tag",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_fisker086_keyops_internal_model.Pool": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "limit_amount": {
+                    "description": "费用限制",
+                    "type": "number"
+                },
+                "members": {
+                    "description": "JSON数组",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_fisker086_keyops_internal_model.QueryLog": {
             "type": "object",
             "properties": {
@@ -9575,7 +10716,9 @@
                 "code": {
                     "type": "integer"
                 },
-                "data": {},
+                "data": {
+                    "description": "不使用 omitempty：Go 对空 slice 会视为“空值”而省略字段，前端会收不到 data 导致列表解析失败"
+                },
                 "message": {
                     "type": "string"
                 }
@@ -10473,6 +11616,37 @@
                     "type": "string"
                 },
                 "validTo": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_handler_bill.ValidateCloudAccountReq": {
+            "type": "object",
+            "required": [
+                "access_key_id",
+                "cloud_type",
+                "secret_access_key"
+            ],
+            "properties": {
+                "access_key_id": {
+                    "type": "string"
+                },
+                "bucket_name": {
+                    "type": "string"
+                },
+                "bucket_prefix": {
+                    "type": "string"
+                },
+                "cloud_type": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "report_name": {
+                    "type": "string"
+                },
+                "secret_access_key": {
                     "type": "string"
                 }
             }

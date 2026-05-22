@@ -13,7 +13,6 @@ import (
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/notification"
 	"github.com/fisker086/keyops/internal/repository"
-	bastionService "github.com/fisker086/keyops/internal/service/bastion"
 	pkgconfig "github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/distributed"
 	pkgredis "github.com/fisker086/keyops/pkg/redis"
@@ -23,7 +22,6 @@ import (
 type SettingHandler struct {
 	repo            *repository.SettingRepository
 	notificationMgr *notification.NotificationManager
-	hostMonitor     *bastionService.HostMonitorService
 	configSync      *distributed.ConfigSyncManager
 }
 
@@ -41,11 +39,6 @@ func NewSettingHandler(repo *repository.SettingRepository, notificationMgr *noti
 	}
 
 	return h
-}
-
-// SetHostMonitor 设置主机监控服务（用于更新配置后重新加载）
-func (h *SettingHandler) SetHostMonitor(hostMonitor *bastionService.HostMonitorService) {
-	h.hostMonitor = hostMonitor
 }
 
 // GetAllSettings 获取所有设置
@@ -201,32 +194,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 	// 检查是否更新了通知相关的设置，如果是则重新加载通知配置
 	hasNotificationSettings := false
-	hasHostMonitorSettings := false
 	for _, setting := range settings {
 		if setting.Category == "notification" {
 			hasNotificationSettings = true
-		}
-		if setting.Category == "host_monitor" {
-			hasHostMonitorSettings = true
+			break
 		}
 	}
 	if hasNotificationSettings && h.notificationMgr != nil {
 		h.notificationMgr.ReloadFromDatabase()
-	}
-	if hasHostMonitorSettings && h.hostMonitor != nil {
-		h.hostMonitor.ReloadConfig()
-
-		// 如果启用了 Redis，发布配置变更通知（通知其他实例）
-		if h.configSync != nil {
-			for _, setting := range settings {
-				if setting.Category == "host_monitor" {
-					if err := h.configSync.PublishConfigChange(setting.Key, setting.Value); err != nil {
-						// 记录错误但不影响主流程
-						fmt.Printf("[SettingHandler] Failed to publish config change: %v\n", err)
-					}
-				}
-			}
-		}
 	}
 
 	c.JSON(http.StatusOK, model.Response{

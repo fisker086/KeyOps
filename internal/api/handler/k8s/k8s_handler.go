@@ -241,8 +241,8 @@ func (h *K8sHandler) GetHPAList(c *gin.Context) {
 // @Param node_id query int false "应用ID（兼容旧方式）"
 // @Param env_id query int false "环境ID（兼容旧方式）"
 // @Param namespace query string false "命名空间"
-// @Param object_name query string true "对象名称"
-// @Param object_kind query string true "对象类型"
+// @Param object_name query string false "对象名称"
+// @Param object_kind query string false "对象类型"
 // @Success 200 {object} model.Response
 // @Failure 400 {object} model.Response
 // @Failure 500 {object} model.Response
@@ -255,11 +255,6 @@ func (h *K8sHandler) GetEventList(c *gin.Context) {
 	namespace := c.Query("namespace")
 	objectName := c.Query("object_name")
 	objectKind := c.Query("object_kind")
-
-	if objectName == "" || objectKind == "" {
-		c.JSON(http.StatusBadRequest, model.Error(400, "object_name and object_kind are required"))
-		return
-	}
 
 	events, err := h.service.GetEventList(clusterID, clusterName, uint(nodeID), uint(envID), namespace, objectName, objectKind)
 	if err != nil {

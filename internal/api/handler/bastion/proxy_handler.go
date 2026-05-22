@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fisker086/keyops/internal/model"
+	"github.com/fisker086/keyops/internal/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -13,12 +14,17 @@ import (
 
 // ProxyHandler Proxy处理器
 type ProxyHandler struct {
-	db *gorm.DB
+	db          *gorm.DB
+	sessionRepo *repository.SessionRepository
 }
 
-// NewProxyHandler 创建Proxy处理器
-func NewProxyHandler(db *gorm.DB) *ProxyHandler {
-	return &ProxyHandler{db: db}
+// NewProxyHandler 创建Proxy处理器（sessionRepo 用于堡垒机 Mongo 双引擎）
+func NewProxyHandler(db *gorm.DB, sessionRepo *repository.SessionRepository) *ProxyHandler {
+	return &ProxyHandler{db: db, sessionRepo: sessionRepo}
+}
+
+func (h *ProxyHandler) bastionMongo() bool {
+	return h.sessionRepo != nil && h.sessionRepo.UsesMongo()
 }
 
 // RegisterProxy 注册Proxy
@@ -243,7 +249,30 @@ func (h *ProxyHandler) ReportSession(c *gin.Context) {
 		TerminalRows:   req.Session.TerminalRows,
 	}
 
-	// 保存到数据库（使用 FirstOrCreate 避免重复）
+	if h.bastionMongo() {
+		if err := h.sessionRepo.UpsertSessionRecording(&sessionRecording); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "Failed to save session", "error": err.Error()})
+			return
+		}
+		loginRecord := model.LoginRecord{
+			ID:        sessionRecording.SessionID + "-login",
+			UserID:    req.Session.UserID,
+			HostID:    sessionRecording.HostID,
+			HostName:  sessionRecording.HostName,
+			HostIP:    sessionRecording.HostIP,
+			Username:  sessionRecording.Username,
+			LoginTime: sessionRecording.StartTime,
+			Status:    "active",
+			SessionID: sessionRecording.SessionID,
+		}
+		if err := h.sessionRepo.UpsertLoginRecord(&loginRecord); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "Failed to save login", "error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 0, "message": "Session reported successfully", "data": gin.H{"session_id": loginRecord.SessionID}})
+		return
+	}
+
 	result := h.db.Where("session_id = ?", sessionRecording.SessionID).FirstOrCreate(&sessionRecording)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -254,7 +283,6 @@ func (h *ProxyHandler) ReportSession(c *gin.Context) {
 		return
 	}
 
-	// 同时创建登录记录（虚拟机登录，host_id 必定存在）
 	loginRecord := model.LoginRecord{
 		ID:        sessionRecording.SessionID + "-login",
 		UserID:    req.Session.UserID,
@@ -263,7 +291,7 @@ func (h *ProxyHandler) ReportSession(c *gin.Context) {
 		HostIP:    sessionRecording.HostIP,
 		Username:  sessionRecording.Username,
 		LoginTime: sessionRecording.StartTime,
-		Status:    "active", // 修正：使用正确的状态值
+		Status:    "active",
 		SessionID: sessionRecording.SessionID,
 	}
 	h.db.Where("session_id = ?", loginRecord.SessionID).FirstOrCreate(&loginRecord)
@@ -391,41 +419,62 @@ func (h *ProxyHandler) SyncSessions(c *gin.Context) {
 	}
 
 	if len(sessions) > 0 {
-		// 使用批量插入（忽略重复）
-		for _, sess := range sessions {
-			h.db.Where("session_id = ?", sess.SessionID).FirstOrCreate(&sess)
-		}
-
-		// 同时创建登录记录
-		loginRecords := make([]model.LoginRecord, 0, len(sessions))
-		for _, sess := range sessions {
-			loginRecord := model.LoginRecord{
-				ID:         sess.SessionID + "-login",
-				UserID:     sess.UserID,
-				HostID:     sess.HostID,
-				HostName:   sess.HostName,
-				HostIP:     sess.HostIP,
-				Username:   sess.Username,
-				LoginTime:  sess.StartTime,
-				LogoutTime: sess.EndTime,
-				Status:     sess.Status,
-				SessionID:  sess.SessionID,
+		if h.bastionMongo() {
+			for _, sess := range sessions {
+				s := sess
+				if err := h.sessionRepo.UpsertSessionRecording(&s); err != nil {
+					c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: err.Error()})
+					return
+				}
+				loginRecord := model.LoginRecord{
+					ID:         sess.SessionID + "-login",
+					UserID:     sess.UserID,
+					HostID:     sess.HostID,
+					HostName:   sess.HostName,
+					HostIP:     sess.HostIP,
+					Username:   sess.Username,
+					LoginTime:  sess.StartTime,
+					LogoutTime: sess.EndTime,
+					Status:     sess.Status,
+					SessionID:  sess.SessionID,
+				}
+				if sess.EndTime != nil {
+					duration := int(sess.EndTime.Sub(sess.StartTime).Seconds())
+					loginRecord.Duration = &duration
+				}
+				if err := h.sessionRepo.UpsertLoginRecord(&loginRecord); err != nil {
+					c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: err.Error()})
+					return
+				}
 			}
-
-			// 计算时长
-			if sess.EndTime != nil {
-				duration := int(sess.EndTime.Sub(sess.StartTime).Seconds())
-				loginRecord.Duration = &duration
+		} else {
+			for _, sess := range sessions {
+				h.db.Where("session_id = ?", sess.SessionID).FirstOrCreate(&sess)
 			}
-
-			loginRecords = append(loginRecords, loginRecord)
-		}
-
-		// 批量插入登录记录（忽略重复的）
-		if len(loginRecords) > 0 {
-			for _, record := range loginRecords {
-				// 使用 FirstOrCreate 避免重复
-				h.db.Where("session_id = ?", record.SessionID).FirstOrCreate(&record)
+			loginRecords := make([]model.LoginRecord, 0, len(sessions))
+			for _, sess := range sessions {
+				loginRecord := model.LoginRecord{
+					ID:         sess.SessionID + "-login",
+					UserID:     sess.UserID,
+					HostID:     sess.HostID,
+					HostName:   sess.HostName,
+					HostIP:     sess.HostIP,
+					Username:   sess.Username,
+					LoginTime:  sess.StartTime,
+					LogoutTime: sess.EndTime,
+					Status:     sess.Status,
+					SessionID:  sess.SessionID,
+				}
+				if sess.EndTime != nil {
+					duration := int(sess.EndTime.Sub(sess.StartTime).Seconds())
+					loginRecord.Duration = &duration
+				}
+				loginRecords = append(loginRecords, loginRecord)
+			}
+			if len(loginRecords) > 0 {
+				for _, record := range loginRecords {
+					h.db.Where("session_id = ?", record.SessionID).FirstOrCreate(&record)
+				}
 			}
 		}
 	}
@@ -475,7 +524,20 @@ func (h *ProxyHandler) ReportCommand(c *gin.Context) {
 		ExecutedAt: req.Command.ExecutedAt,
 	}
 
-	// 保存到数据库
+	if h.bastionMongo() {
+		cmdRecord.CreatedAt = time.Now()
+		if err := h.sessionRepo.CreateCommandRecord(&cmdRecord); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "Failed to save command", "error": err.Error()})
+			return
+		}
+		if err := h.sessionRepo.IncrementSessionCommandCount(req.Command.SessionID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "Failed to update command count", "error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 0, "message": "Command reported successfully", "data": gin.H{"command_id": cmdRecord.ID}})
+		return
+	}
+
 	if err := h.db.Create(&cmdRecord).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -485,7 +547,6 @@ func (h *ProxyHandler) ReportCommand(c *gin.Context) {
 		return
 	}
 
-	// 更新会话的命令计数
 	h.db.Model(&model.SessionRecording{}).
 		Where("session_id = ?", req.Command.SessionID).
 		Update("command_count", gorm.Expr("command_count + 1"))
@@ -587,21 +648,39 @@ func (h *ProxyHandler) SyncCommands(c *gin.Context) {
 	}
 
 	if len(commands) > 0 {
-		// 使用批量插入
-		if err := h.db.CreateInBatches(commands, 100).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Failed to sync commands"})
-			return
-		}
-
-		// 更新每个会话的命令计数
-		sessionCounts := make(map[string]int)
-		for _, cmd := range commands {
-			sessionCounts[cmd.SessionID]++
-		}
-		for sessionID, count := range sessionCounts {
-			h.db.Model(&model.SessionRecording{}).
-				Where("session_id = ?", sessionID).
-				Update("command_count", gorm.Expr("command_count + ?", count))
+		if h.bastionMongo() {
+			now := time.Now()
+			for i := range commands {
+				commands[i].CreatedAt = now
+			}
+			if err := h.sessionRepo.CreateCommandRecordBatch(commands); err != nil {
+				c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Failed to sync commands"})
+				return
+			}
+			sessionCounts := make(map[string]int)
+			for _, cmd := range commands {
+				sessionCounts[cmd.SessionID]++
+			}
+			for sessionID, count := range sessionCounts {
+				if err := h.sessionRepo.IncrementSessionCommandCountBy(sessionID, count); err != nil {
+					c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: err.Error()})
+					return
+				}
+			}
+		} else {
+			if err := h.db.CreateInBatches(commands, 100).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, model.ErrorResponse{Error: "Failed to sync commands"})
+				return
+			}
+			sessionCounts := make(map[string]int)
+			for _, cmd := range commands {
+				sessionCounts[cmd.SessionID]++
+			}
+			for sessionID, count := range sessionCounts {
+				h.db.Model(&model.SessionRecording{}).
+					Where("session_id = ?", sessionID).
+					Update("command_count", gorm.Expr("command_count + ?", count))
+			}
 		}
 	}
 

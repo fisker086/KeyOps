@@ -9,6 +9,8 @@ import (
 	"github.com/fisker086/keyops/internal/aiassistant/tools/k8s"
 	"github.com/fisker086/keyops/internal/api/handler"
 	"github.com/fisker086/keyops/internal/approval"
+	"github.com/fisker086/keyops/internal/mcp"
+	mcpTools "github.com/fisker086/keyops/internal/mcp/tools"
 	"github.com/fisker086/keyops/internal/audit"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/notification"
@@ -21,6 +23,8 @@ import (
 
 // Handlers 包含所有 Handler 实例
 type Handlers struct {
+	Mcp              *mcp.Handler
+	ApiKey           *handler.ApiKeyHandler
 	Host             *handler.HostHandler
 	Dashboard        *handler.DashboardHandler
 	Session          *handler.SessionHandler
@@ -35,7 +39,6 @@ type Handlers struct {
 	ApprovalCallback *handler.ApprovalCallbackHandler
 	File             *handler.FileHandler
 	AssetSync        *handler.AssetSyncHandler
-	HostMonitor      *handler.HostMonitorHandler
 	SystemUser       *handler.SystemUserHandler
 	Role             *handler.RoleHandler
 	PermissionRule   *handler.PermissionRuleHandler
@@ -51,7 +54,12 @@ type Handlers struct {
 	K8sPermission    *handler.K8sPermissionHandler
 	K8sSearch        *handler.K8sSearchHandler
 	Deployment       *handler.DeploymentHandler
-	Bill             *handler.BillHandler
+	Bill             *handler.BillHandler  // 合并后的账单处理器
+	ExpensesMap      *handler.ExpensesMapHandler
+	CloudAccount     *handler.CloudAccountHandler
+	Resources        *handler.ResourcesHandler
+	BillDashboard    *handler.BillDashboardHandler
+	FinOps           *handler.FinOpsHandler
 	Monitor          *handler.MonitorHandler
 	Organization     *handler.OrganizationHandler
 	Application          *handler.ApplicationHandler
@@ -93,11 +101,32 @@ func InitializeHandlers(
 	approvalFactory := approval.NewFactory()
 	loadApprovalProviders(database.DB, approvalFactory)
 
+	// Initialize MCP server
+	mcpServer := mcp.NewServer()
+	mcpTools.RegisterTools(mcpServer.Registry(), &mcpTools.K8sToolContext{
+		ClusterRepo: repos.K8sCluster,
+	})
+	mcpTools.RegisterK8sExtendedTools(mcpServer.Registry(), &mcpTools.K8sExtendedToolContext{
+		ClusterRepo: repos.K8sCluster,
+	})
+	mcpTools.RegisterCmdbTools(mcpServer.Registry(), &mcpTools.CmdbToolContext{
+		HostRepo:       repos.Host,
+		AppRepo:        repos.Application,
+		DBInstanceRepo: repos.DBInstance,
+		CertRepo:       repos.DomainCertificate,
+		K8sClusterRepo: repos.K8sCluster,
+	})
+	mcpTools.RegisterBillTools(mcpServer.Registry(), &mcpTools.BillToolContext{
+		BillRepo:    repos.Bill,
+		CloudAccRepo: repos.CloudAccount,
+	})
+	mcpHandler := mcp.NewHandler(mcpServer)
+
 	// Initialize handlers
 	hostHandler := handler.NewHostHandler(services.Host)
 	dashboardHandler := handler.NewDashboardHandler(services.Host, services.Session)
 	sessionHandler := handler.NewSessionHandler(services.Session)
-	proxyHandler := handler.NewProxyHandler(database.DB)
+	proxyHandler := handler.NewProxyHandler(database.DB, repos.Session)
 	authHandler := handler.NewAuthHandler(services.Auth, repos.Setting, repos.Role)
 	blacklistHandler := handler.NewBlacklistHandler(database.DB)
 	settingHandler := handler.NewSettingHandler(repos.Setting, notificationMgr)
@@ -111,13 +140,13 @@ func InitializeHandlers(
 		notificationMgr,
 		repos.SystemUser,
 		repos.Setting,
+		repos.Session,
 	)
 	hostGroupHandler := handler.NewHostGroupHandler(repos.HostGroup, repos.Host, repos.User)
 	approvalHandler := handler.NewApprovalHandler(database.DB, approvalFactory, services.Release)
 	approvalCallbackHandler := handler.NewApprovalCallbackHandler(database.DB)
 	fileHandler := handler.NewFileHandler(database.DB, repos.Host, repos.SystemUser)
 	assetSyncHandler := handler.NewAssetSyncHandler(repos.AssetSync, services.AssetSync)
-	hostMonitorHandler := handler.NewHostMonitorHandler(backgroundServices.HostMonitor)
 	systemUserHandler := handler.NewSystemUserHandler(repos.SystemUser)
 	roleHandler := handler.NewRoleHandler(repos.Role)
 	permissionRuleHandler := handler.NewPermissionRuleHandler(repos.PermissionRule)
@@ -133,7 +162,12 @@ func InitializeHandlers(
 	k8sPermissionHandler := handler.NewK8sPermissionHandler(services.K8sPermission, services.K8sCluster, repos.Role)
 	k8sSearchHandler := handler.NewK8sSearchHandler(services.K8sCluster, services.K8s, services.K8sPermission, repos.Role)
 	deploymentHandler := handler.NewDeploymentHandler(services.Deployment, services.K8sPermission, repos.Role)
-	billHandler := handler.NewBillHandler(services.Bill)
+	billHandler := handler.NewBillHandler(services.Bill)  // 合并后的账单处理器
+	expensesMapHandler := handler.NewExpensesMapHandler(services.Bill)
+	cloudAccountHandler := handler.NewCloudAccountHandler(services.Bill)
+	resourcesHandler := handler.NewResourcesHandler(services.Bill)
+	billDashboardHandler := handler.NewBillDashboardHandler(services.Bill)
+	finOpsHandler := handler.NewFinOpsHandler(services.Bill)
 	monitorHandler := handler.NewMonitorHandler(services.Monitor)
 	organizationHandler := handler.NewOrganizationHandler(repos.Organization)
 	applicationHandler := handler.NewApplicationHandler(repos.Application)
@@ -205,12 +239,10 @@ func InitializeHandlers(
 		}
 	}
 
-	// Set cross-references
-	settingHandler.SetHostMonitor(backgroundServices.HostMonitor)
-	hostHandler.SetMonitorService(backgroundServices.HostMonitor)
-
 	return &Handlers{
-		Host:             hostHandler,
+		Mcp:             mcpHandler,
+		ApiKey:          handler.NewApiKeyHandler(services.ApiKey),
+		Host:            hostHandler,
 		Dashboard:        dashboardHandler,
 		Session:          sessionHandler,
 		Proxy:            proxyHandler,
@@ -224,7 +256,6 @@ func InitializeHandlers(
 		ApprovalCallback: approvalCallbackHandler,
 		File:             fileHandler,
 		AssetSync:        assetSyncHandler,
-		HostMonitor:      hostMonitorHandler,
 		SystemUser:       systemUserHandler,
 		Role:             roleHandler,
 		PermissionRule:   permissionRuleHandler,
@@ -240,7 +271,12 @@ func InitializeHandlers(
 		K8sPermission:    k8sPermissionHandler,
 		K8sSearch:        k8sSearchHandler,
 		Deployment:       deploymentHandler,
-		Bill:             billHandler,
+		Bill:             billHandler,  // 合并后的账单处理器
+		ExpensesMap:      expensesMapHandler,
+		CloudAccount:     cloudAccountHandler,
+		Resources:        resourcesHandler,
+		BillDashboard:   billDashboardHandler,
+		FinOps:          finOpsHandler,
 		Monitor:          monitorHandler,
 		Organization:     organizationHandler,
 		Application:          applicationHandler,
