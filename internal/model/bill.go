@@ -54,7 +54,7 @@ type BillRecord struct {
 	SpecDesc       string          `gorm:"column:spec_desc; type:text" json:"spec_desc"`                        // 资源配置
 	ConsumeAmount  decimal.Decimal `gorm:"column:consume_amount; type:decimal(25,15)" json:"consume_amount"`    // 费用
 	ResourceType   string          `gorm:"column:resource_type; type:text" json:"resource_type"`         // 资源类型
-	ResourceCode   string          `gorm:"column:resource_code; type:varchar(50)" json:"resource_code"`         // 资源类型代码
+	ResourceCode   string          `gorm:"column:resource_code; type:text" json:"resource_code"`         // 资源类型代码
 	ServiceType    string          `gorm:"column:service_type; type:text" json:"service_type,omitempty"` // 服务类型，腾讯云没有此字段
 	ServiceCode    string          `gorm:"column:service_code; type:varchar(50)" json:"service_code,omitempty"` // 服务类型代码，腾讯云没有此字段
 	Region         string          `gorm:"column:region; type:varchar(50)" json:"region,omitempty"`             // 区域
