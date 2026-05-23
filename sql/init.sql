@@ -38,25 +38,20 @@ CREATE TABLE IF NOT EXISTS users (
     last_login_time TIMESTAMP NULL COMMENT 'Last login time',
     last_login_ip VARCHAR(45) COMMENT 'Last login IP address',
     organization_id VARCHAR(36) COMMENT '所属部门ID（关联organizations表）',
-
-    -- 2FA related fields
+                                                                                                                                                    -- 2FA related fields
     two_factor_enabled BOOLEAN DEFAULT FALSE COMMENT 'Whether 2FA is enabled for this user',
     two_factor_secret VARCHAR(255) COMMENT '2FA secret key (encrypted)',
     two_factor_backup_codes TEXT COMMENT '2FA backup codes (JSON array, encrypted)',
     two_factor_verified_at TIMESTAMP NULL COMMENT 'When 2FA was verified and enabled',
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_username (username),
-    INDEX idx_email (email),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                                                                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_username (username),                                                                                                                  INDEX idx_email (email),
     INDEX idx_status (status),
     INDEX idx_role (role),
     INDEX idx_auth_method (auth_method),
     INDEX idx_expires_at (expires_at),
     INDEX idx_two_factor_enabled (two_factor_enabled),
     INDEX idx_organization_id (organization_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Platform users with SSH key authentication support';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci                                                                              COMMENT='Platform users with SSH key authentication support';
 
 -- ============================================================================
 -- Host Management Tables
@@ -67,16 +62,24 @@ COMMENT='Platform users with SSH key authentication support';
 -- Hosts are now linked to system_users via permission_rules for flexible permission management
 CREATE TABLE IF NOT EXISTS hosts (
     id VARCHAR(36) PRIMARY KEY COMMENT 'Host unique identifier',
-    name VARCHAR(255) NOT NULL COMMENT 'Host name',                                                                                                 ip VARCHAR(45) NOT NULL COMMENT 'IP address',
-    port INT DEFAULT 22 COMMENT 'SSH port',                                                                                                         status VARCHAR(20) DEFAULT 'unknown' COMMENT 'Status: online, offline, unknown',
+    name VARCHAR(255) NOT NULL COMMENT 'Host name',
+    ip VARCHAR(45) NOT NULL COMMENT 'IP address',
+    port INT DEFAULT 22 COMMENT 'SSH port',
+    status VARCHAR(20) DEFAULT 'unknown' COMMENT 'Status: online, offline, unknown',
     os VARCHAR(100) COMMENT 'Operating system',
-    cpu VARCHAR(100) COMMENT 'CPU info',                                                                                                            memory VARCHAR(50) COMMENT 'Memory info',
+    cpu VARCHAR(100) COMMENT 'CPU info',
+    memory VARCHAR(50) COMMENT 'Memory info',
     device_type VARCHAR(20) DEFAULT 'linux' COMMENT 'Device type: linux, windows, vmware, docker, switch, router, firewall, storage, other',
-    connection_mode VARCHAR(20) DEFAULT 'auto' COMMENT 'Connection mode: auto, direct, proxy',                                                      proxy_id VARCHAR(128) COMMENT 'Specific proxy ID when connection_mode=proxy',
-    network_zone VARCHAR(50) COMMENT 'Network zone for routing',                                                                                    tags TEXT COMMENT 'Tags (JSON array)',
-    description TEXT COMMENT 'Description',                                                                                                         last_login_time TIMESTAMP NULL COMMENT 'Last login time',
-    login_count INT DEFAULT 0 COMMENT 'Total login count',                                                                                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,                                                                     INDEX idx_ip (ip),
+    connection_mode VARCHAR(20) DEFAULT 'auto' COMMENT 'Connection mode: auto, direct, proxy',
+    proxy_id VARCHAR(128) COMMENT 'Specific proxy ID when connection_mode=proxy',
+    network_zone VARCHAR(50) COMMENT 'Network zone for routing',
+    tags TEXT COMMENT 'Tags (JSON array)',
+    description TEXT COMMENT 'Description',
+    last_login_time TIMESTAMP NULL COMMENT 'Last login time',
+    login_count INT DEFAULT 0 COMMENT 'Total login count',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ip (ip),
     INDEX idx_status (status),
     INDEX idx_device_type (device_type),
     INDEX idx_connection_mode (connection_mode),
@@ -92,20 +95,25 @@ COMMENT='Host assets (authentication and protocol managed via system_users)';
 
 -- Host groups table (user-defined groups)
 CREATE TABLE IF NOT EXISTS host_groups (
-    id VARCHAR(36) PRIMARY KEY COMMENT 'Group unique identifier',                                                                                   name VARCHAR(100) NOT NULL COMMENT 'Group name',
+    id VARCHAR(36) PRIMARY KEY COMMENT 'Group unique identifier',
+    name VARCHAR(100) NOT NULL COMMENT 'Group name',
     description TEXT COMMENT 'Group description',
     color VARCHAR(20) COMMENT 'Display color (hex code)',
     icon VARCHAR(50) COMMENT 'Display icon',
-    sort_order INT DEFAULT 0 COMMENT 'Display sort order',                                                                                          created_by VARCHAR(36) COMMENT 'Creator user ID',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                                                                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_name (name),                                                                                                                          INDEX idx_created_by (created_by),
+    sort_order INT DEFAULT 0 COMMENT 'Display sort order',
+    created_by VARCHAR(36) COMMENT 'Creator user ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_name (name),
+    INDEX idx_created_by (created_by),
     INDEX idx_sort_order (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Host groups (user-defined)';
 
 -- Host-Group relationship table (many-to-many)
 CREATE TABLE IF NOT EXISTS host_group_members (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,                                                                                                  group_id VARCHAR(36) NOT NULL COMMENT 'Group ID',
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    group_id VARCHAR(36) NOT NULL COMMENT 'Group ID',
     host_id VARCHAR(36) NOT NULL COMMENT 'Host ID',
     added_by VARCHAR(36) COMMENT 'Who added this host to group',
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -114,7 +122,8 @@ CREATE TABLE IF NOT EXISTS host_group_members (
     UNIQUE KEY uk_group_host (group_id, host_id),
     INDEX idx_group_id (group_id),
     INDEX idx_host_id (host_id),
-    INDEX idx_group_host_idx (group_id, host_id)                                                                                                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    INDEX idx_group_host_idx (group_id, host_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Host-Group relationship (many-to-many)';
 
 -- ==================================================================================
@@ -1652,22 +1661,12 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-blacklist', 'menu-bastion', '/blacklist', 'blacklist', 'pages/bastion/Blacklist', false, 7, '命令黑名单', 'Security', false, '', false, false, NOW(), NOW()),
 ('menu-bastion-settings', 'menu-bastion', '/bastion-settings', 'bastionSettings', 'pages/bastion/BastionSettings', false, 8, '堡垒机配置', 'Settings', false, '', false, false, NOW(), NOW()),
 
--- 云账单一级菜单（FinOps 风格，对齐 OptScale 成本/账单入口分组）
+-- 云账单一级菜单（扁平结构）
 ('menu-cloud-bill', '', '', 'cloudBill', '', false, 5, '云账单', 'AccountBalance', false, '', false, false, NOW(), NOW()),
--- 总览
-('menu-cloud-bill-overview', 'menu-cloud-bill', '', 'cloudBillOverview', '', false, 1, '总览', 'Visibility', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-finops-dashboard', 'menu-cloud-bill-overview', '/cloud-bill/finops-dashboard', 'cloudBillFinopsDashboard', 'pages/bill/FinopsDashboard', false, 1, '成本总览', 'Dashboard', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-breakdown', 'menu-cloud-bill-overview', '/cloud-bill/breakdown', 'cloudBillBreakdown', 'pages/bill/BillBreakdown', false, 2, '费用分解', 'PieChart', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-recommendations', 'menu-cloud-bill-overview', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 3, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
--- 成本管理
-('menu-cloud-bill-cost', 'menu-cloud-bill', '', 'cloudBillCost', '', false, 2, '成本管理', 'Savings', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-budgets', 'menu-cloud-bill-cost', '/cloud-bill/budgets', 'cloudBillBudgets', 'pages/bill/Budgets', false, 1, '预算管理', 'AccountBalanceWallet', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-pools', 'menu-cloud-bill-cost', '/cloud-bill/pools', 'cloudBillPools', 'pages/bill/Pools', false, 2, '成本池', 'Pool', false, '', false, false, NOW(), NOW()),
--- 设置
-('menu-cloud-bill-settings', 'menu-cloud-bill', '', 'cloudBillSettings', '', false, 3, '设置', 'Settings', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-accounts', 'menu-cloud-bill-settings', '/cloud-bill/accounts', 'cloudBillAccounts', 'pages/bill/CloudAccounts', false, 1, '云账户', 'Cloud', false, '', false, false, NOW(), NOW()),
-('menu-bill-price', 'menu-cloud-bill-settings', '/bill/price', 'billPrice', 'pages/bill/BillPrice', false, 2, '单价管理', 'AttachMoney', false, '', false, false, NOW(), NOW()),
-('menu-bill-resource', 'menu-cloud-bill-settings', '/bill/resource', 'billResource', 'pages/bill/BillResource', false, 3, '我的资源', 'Inventory', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-explorer', 'menu-cloud-bill', '/cloud-bill/explorer', 'cloudBillExplorer', 'pages/bill/BillCloudExplorer', false, 1, '账单分析', 'BarChart', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-finops-dashboard', 'menu-cloud-bill', '/cloud-bill/finops-dashboard', 'cloudBillFinopsDashboard', 'pages/bill/FinopsDashboard', false, 1, '成本总览', 'Dashboard', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-accounts', 'menu-cloud-bill', '/cloud-bill/accounts', 'cloudBillAccounts', 'pages/bill/CloudAccounts', false, 2, '云账户', 'Cloud', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-recommendations', 'menu-cloud-bill', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 4, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
 
 -- 集群管理分组
 ('menu-k8s', '', '', 'k8s', '', false, 6, '集群管理', 'Cloud', false, '', false, false, NOW(), NOW()),
@@ -3217,17 +3216,10 @@ SELECT 'role:user', menus.id, NOW() FROM menus
 WHERE menus.id IN (
     'menu-home',
     'menu-cloud-bill',
-    'menu-cloud-bill-overview',
+    'menu-cloud-bill-explorer',
     'menu-cloud-bill-finops-dashboard',
-    'menu-cloud-bill-breakdown',
     'menu-cloud-bill-recommendations',
-    'menu-cloud-bill-cost',
-    'menu-cloud-bill-budgets',
-    'menu-cloud-bill-pools',
-    'menu-cloud-bill-settings',
     'menu-cloud-bill-accounts',
-    'menu-bill-price',
-    'menu-bill-resource',
     'menu-org-dashboard',
     'menu-app-dashboard',
     'menu-system-dashboard',
@@ -3250,21 +3242,6 @@ UPDATE menus SET sort = 12 WHERE id = 'menu-personal';
 UPDATE menus SET sort = 1 WHERE id = 'menu-k8s-management';
 UPDATE menus SET sort = 2 WHERE id = 'menu-k8s-operations';
 
--- ============================================================================
--- 云账单菜单重构迁移（从扁平结构改为带分隔线的三层结构）
--- 仅在现有数据库中已有旧菜单数据时执行
--- ============================================================================
--- 新增分隔线菜单（总览/成本管理/设置）
-INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
-('menu-cloud-bill-overview', 'menu-cloud-bill', '', 'cloudBillOverview', '', false, 1, '总览', 'Visibility', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-cost', 'menu-cloud-bill', '', 'cloudBillCost', '', false, 2, '成本管理', 'Savings', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-settings', 'menu-cloud-bill', '', 'cloudBillSettings', '', false, 3, '设置', 'Settings', false, '', false, false, NOW(), NOW());
--- 新增页面菜单（费用分解、优化建议、预算管理、成本池）
-INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
-('menu-cloud-bill-breakdown', 'menu-cloud-bill-overview', '/cloud-bill/breakdown', 'cloudBillBreakdown', 'pages/bill/BillBreakdown', false, 2, '费用分解', 'PieChart', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-recommendations', 'menu-cloud-bill-overview', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 3, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-budgets', 'menu-cloud-bill-cost', '/cloud-bill/budgets', 'cloudBillBudgets', 'pages/bill/Budgets', false, 1, '预算管理', 'AccountBalanceWallet', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-pools', 'menu-cloud-bill-cost', '/cloud-bill/pools', 'cloudBillPools', 'pages/bill/Pools', false, 2, '成本池', 'Pool', false, '', false, false, NOW(), NOW());
 -- K8s 菜单合并迁移（现有数据库）
 -- 1. 先迁移自定义角色的旧菜单权限到新菜单（在删除旧菜单之前，避免 CASCADE 丢失）
 INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at)
@@ -3327,10 +3304,6 @@ INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at) VALUES
 ('role:admin', 'menu-k8s-management', NOW()),
 ('role:admin', 'menu-k8s-operations', NOW()),
 ('role:admin', 'menu-k8s-cluster-overview', NOW());
--- 更新现有菜单的 parent_id（从 menu-cloud-bill 迁移到对应的分隔线下）
-UPDATE menus SET parent_id = 'menu-cloud-bill-overview', sort = 1 WHERE id = 'menu-cloud-bill-finops-dashboard' AND parent_id = 'menu-cloud-bill';
-UPDATE menus SET parent_id = 'menu-cloud-bill-settings', sort = 1 WHERE id = 'menu-cloud-bill-accounts' AND parent_id = 'menu-cloud-bill';
-UPDATE menus SET parent_id = 'menu-cloud-bill-settings', sort = 2 WHERE id = 'menu-bill-price' AND parent_id = 'menu-cloud-bill';
-UPDATE menus SET parent_id = 'menu-cloud-bill-settings', sort = 3 WHERE id = 'menu-bill-resource' AND parent_id = 'menu-cloud-bill';
+
 
 SELECT 'Database initialized successfully!' AS Status;

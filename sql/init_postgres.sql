@@ -115,25 +115,20 @@ CREATE TABLE IF NOT EXISTS host_group_members (
     host_id VARCHAR(36) NOT NULL ,
     added_by VARCHAR(36) ,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (group_id) REFERENCES host_groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (host_id) REFERENCES hosts(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES host_groups(id) ON DELETE CASCADE,                                                                            FOREIGN KEY (host_id) REFERENCES hosts(id) ON DELETE CASCADE,
     UNIQUE (group_id, host_id)
 
 )
 ;
-
--- ==================================================================================
--- DEPRECATED: 以下两个表已废弃，新权限架构使用：
--- User → Role → PermissionRule → (SystemUser + HostGroup)
--- 保留这些表是为了向后兼容，但建议在新系统中不再使用
+-- ==================================================================================                                                           -- DEPRECATED: 以下两个表已废弃，新权限架构使用：
+-- User → Role → PermissionRule → (SystemUser + HostGroup)                                                                                      -- 保留这些表是为了向后兼容，但建议在新系统中不再使用
 -- ==================================================================================
 
 -- User-Group permissions table (DEPRECATED - 使用新的 roles + permission_rules)
 CREATE TABLE IF NOT EXISTS user_group_permissions (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL ,
-    group_id VARCHAR(36) NOT NULL ,
-    created_by VARCHAR(36) ,
+    group_id VARCHAR(36) NOT NULL ,                                                                                                                 created_by VARCHAR(36) ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, group_id),
@@ -148,8 +143,7 @@ CREATE TABLE IF NOT EXISTS user_host_permissions (
     user_id VARCHAR(36) NOT NULL ,
     host_id VARCHAR(36) NOT NULL ,
     created_by VARCHAR(36) ,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                                                                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, host_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (host_id) REFERENCES hosts(id) ON DELETE CASCADE
@@ -163,8 +157,7 @@ CREATE TABLE IF NOT EXISTS user_host_permissions (
 -- VM Login records table (只记录虚拟机登录记录，不包括平台登录)
 CREATE TABLE IF NOT EXISTS login_records (
     id VARCHAR(100) PRIMARY KEY ,
-    user_id VARCHAR(36) NOT NULL ,
-    host_id VARCHAR(36) NOT NULL ,
+    user_id VARCHAR(36) NOT NULL ,                                                                                                                  host_id VARCHAR(36) NOT NULL ,
     host_name VARCHAR(255) ,
     host_ip VARCHAR(45) ,
     username VARCHAR(100) ,
@@ -1275,12 +1268,12 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-blacklist', 'menu-bastion', '/blacklist', 'blacklist', 'pages/bastion/Blacklist', false, 7, '命令黑名单', 'Security', false, '', false, false, NOW(), NOW()),
 ('menu-bastion-settings', 'menu-bastion', '/bastion-settings', 'bastionSettings', 'pages/bastion/BastionSettings', false, 8, '堡垒机配置', 'Settings', false, '', false, false, NOW(), NOW()),
 
--- 云账单一级菜单（FinOps 风格）
+-- 云账单一级菜单（扁平结构）
 ('menu-cloud-bill', '', '', 'cloudBill', '', false, 5, '云账单', 'AccountBalance', false, '', false, false, NOW(), NOW()),
-('menu-bill-price', 'menu-cloud-bill', '/bill/price', 'billPrice', 'pages/bill/BillPrice', false, 1, '单价管理', 'AttachMoney', false, '', false, false, NOW(), NOW()),
-('menu-bill-resource', 'menu-cloud-bill', '/bill/resource', 'billResource', 'pages/bill/BillResource', false, 2, '我的资源', 'Inventory', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-accounts', 'menu-cloud-bill', '/cloud-bill/accounts', 'cloudBillAccounts', 'pages/bill/CloudAccounts', false, 3, '云账户', 'Cloud', false, '', false, false, NOW(), NOW()),
-('menu-cloud-bill-finops-dashboard', 'menu-cloud-bill', '/cloud-bill/finops-dashboard', 'cloudBillFinopsDashboard', 'pages/bill/FinopsDashboard', false, 4, '成本总览', 'Dashboard', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-explorer', 'menu-cloud-bill', '/cloud-bill/explorer', 'cloudBillExplorer', 'pages/bill/BillCloudExplorer', false, 1, '账单分析', 'BarChart', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-finops-dashboard', 'menu-cloud-bill', '/cloud-bill/finops-dashboard', 'cloudBillFinopsDashboard', 'pages/bill/FinopsDashboard', false, 1, '成本总览', 'Dashboard', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-accounts', 'menu-cloud-bill', '/cloud-bill/accounts', 'cloudBillAccounts', 'pages/bill/CloudAccounts', false, 2, '云账户', 'Cloud', false, '', false, false, NOW(), NOW()),
+('menu-cloud-bill-recommendations', 'menu-cloud-bill', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 4, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
 
 -- 发布管理一级菜单已临时移除，恢复见 sql/init_removed_release_menu.sql
 
@@ -1696,17 +1689,9 @@ WHERE menus.id IN (
     'menu-home',
     'menu-cloud-bill',
     'menu-cloud-bill-explorer',
-    'menu-cloud-bill-records',
-    'menu-cloud-bill-summary',
-    'menu-cloud-bill-statistics',
-    'menu-cloud-bill-vm',
-
     'menu-cloud-bill-finops-dashboard',
-    'menu-cloud-bill-expenses-map',
-    'menu-cloud-bill-cost-resources',
     'menu-cloud-bill-accounts',
     'menu-cloud-bill-recommendations',
-
 
     'menu-org-dashboard',
     'menu-app-dashboard',
@@ -2671,7 +2656,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 ;
 
 -- 添加users表的外键约束（需要在organizations表创建之后）
-ALTER TABLE users ADD CONSTRAINT fk_users_organization_id 
+ALTER TABLE users ADD CONSTRAINT fk_users_organization_id
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL;
 
 -- Insert organization test data
@@ -2839,9 +2824,9 @@ SELECT gen_random_uuid(), 'pr-dept', '公关部门', 'Department', '马二三', 
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'marketing-brand');
 
 -- 更新admin用户的部门关联（关联到backend-dept部门）
-UPDATE users 
+UPDATE users
 SET organization_id = (SELECT id FROM organizations WHERE unit_code = 'backend-dept' LIMIT 1)
-WHERE username = 'admin' 
+WHERE username = 'admin'
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'backend-dept');
 
 -- ============================================================================
@@ -3193,17 +3178,9 @@ WHERE menus.id IN (
     'menu-home',
     'menu-cloud-bill',
     'menu-cloud-bill-explorer',
-    'menu-cloud-bill-records',
-    'menu-cloud-bill-summary',
-    'menu-cloud-bill-statistics',
-    'menu-cloud-bill-vm',
-
     'menu-cloud-bill-finops-dashboard',
-    'menu-cloud-bill-expenses-map',
-    'menu-cloud-bill-cost-resources',
     'menu-cloud-bill-accounts',
     'menu-cloud-bill-recommendations',
-
 
     'menu-org-dashboard',
     'menu-app-dashboard',
