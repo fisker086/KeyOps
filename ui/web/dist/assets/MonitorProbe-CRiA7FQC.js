@@ -1,0 +1,1 @@
+import{u as n,j as r,B as s,ah as a,ai as e,T as t}from"./index-CynIT_al.js";function d(){const{t:o}=n();return r.jsx(s,{sx:{p:3},children:r.jsx(a,{children:r.jsxs(e,{children:[r.jsx(t,{variant:"h5",gutterBottom:!0,children:o("menu.monitorProbe")}),r.jsx(t,{variant:"body2",color:"text.secondary",children:o("monitor.probe.description")})]})})})}export{d as default};
