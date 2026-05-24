@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fisker086/keyops/internal/model"
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -374,7 +375,7 @@ func (h *ApprovalCallbackHandler) updateApprovalRecordStatus(approval *model.App
 		}
 		approval.RejectReason = comment
 	default:
-		fmt.Printf("警告: 未预期的审批状态 %s，不需要设置 ApprovedAt 或 RejectedAt\n", status)
+		logger.Warnf("未预期的审批状态 %s，不需要设置 ApprovedAt 或 RejectedAt", status)
 	}
 }
 
@@ -394,7 +395,7 @@ func (h *ApprovalCallbackHandler) updateTicketStatus(ticket *model.Ticket, statu
 		ticket.ApprovalResult = "canceled"
 		ticket.ApprovalComment = comment
 	default:
-		fmt.Printf("警告: 未预期的审批状态 %s，不更新工单状态\n", status)
+		logger.Warnf("未预期的审批状态 %s，不更新工单状态", status)
 	}
 	if currentApproverName != "" {
 		ticket.CurrentApprover = currentApproverName
@@ -416,7 +417,7 @@ func (h *ApprovalCallbackHandler) updateTicketFromApproval(externalID string, st
 	if len(approverStatuses) > 0 {
 		if err := h.updateTicketApprovalSteps(&ticket, approverStatuses); err != nil {
 			// 记录错误但不中断流程
-			fmt.Printf("更新工单审批步骤失败: %v\n", err)
+			logger.Warnf("更新工单审批步骤失败: %v", err)
 		}
 	}
 
@@ -495,7 +496,7 @@ func (h *ApprovalCallbackHandler) handleFeishuApprovalEvent(req *FeishuCallbackR
 	instanceDetail, err := h.getFeishuInstanceDetail(req.Event.InstanceCode)
 	if err != nil {
 		// 如果获取详情失败，仍然处理基本状态更新
-		fmt.Printf("获取实例详情失败，仅更新基本状态: %v\n", err)
+		logger.Warnf("获取实例详情失败，仅更新基本状态: %v", err)
 	} else {
 		// 从 task_list 中提取审批人信息
 		if taskList, ok := instanceDetail["task_list"].([]interface{}); ok {
@@ -560,7 +561,7 @@ func (h *ApprovalCallbackHandler) handleFeishuApprovalEvent(req *FeishuCallbackR
 							case "CANCELLED", "CANCELED":
 								stepStatus = "canceled"
 							default:
-								fmt.Printf("警告: 未预期的飞书任务状态 %s，默认为 pending\n", taskStatus)
+								logger.Warnf("未预期的飞书任务状态 %s，默认为 pending", taskStatus)
 								stepStatus = "pending"
 							}
 							approverStatuses[approverName] = stepStatus
@@ -584,7 +585,7 @@ func (h *ApprovalCallbackHandler) handleFeishuApprovalEvent(req *FeishuCallbackR
 			case model.ApprovalStatusCanceled:
 				approverStatuses[currentApproverName] = "canceled"
 			default:
-				fmt.Printf("警告: 未预期的审批状态 %s，不设置审批人状态\n", status)
+				logger.Warnf("未预期的审批状态 %s，不设置审批人状态", status)
 			}
 		}
 		// 如果当前操作人有审批意见，更新（优先使用task_list中的comment）
@@ -674,7 +675,7 @@ func (h *ApprovalCallbackHandler) handleDingTalkApprovalEvent(req *DingTalkCallb
 					case "refuse":
 						stepStatus = "rejected"
 					default:
-						fmt.Printf("警告: 未预期的钉钉任务结果 %s，默认为 pending\n", task.TaskResult)
+						logger.Warnf("未预期的钉钉任务结果 %s，默认为 pending", task.TaskResult)
 						stepStatus = "pending"
 					}
 				} else {
@@ -765,7 +766,7 @@ func (h *ApprovalCallbackHandler) handleWeChatApprovalEvent(req *WeChatCallbackR
 				case "2": // 已驳回
 					stepStatus = "rejected"
 				default:
-					fmt.Printf("警告: 未预期的企业微信审批人状态 %s，默认为 pending\n", approver.Status)
+					logger.Warnf("未预期的企业微信审批人状态 %s，默认为 pending", approver.Status)
 					stepStatus = "pending"
 				}
 				approverStatuses[approverName] = stepStatus
@@ -787,7 +788,7 @@ func (h *ApprovalCallbackHandler) handleWeChatApprovalEvent(req *WeChatCallbackR
 			case model.ApprovalStatusCanceled:
 				approverStatuses[currentApproverName] = "canceled"
 			default:
-				fmt.Printf("警告: 未预期的审批状态 %s，不设置审批人状态\n", status)
+				logger.Warnf("未预期的审批状态 %s，不设置审批人状态", status)
 			}
 			if req.Content.Result != "" {
 				approverStatuses[currentApproverName+"_comment"] = req.Content.Result
@@ -813,7 +814,7 @@ func (h *ApprovalCallbackHandler) mapFeishuStatus(feishuStatus string) model.App
 	case "CANCELLED":
 		return model.ApprovalStatusCanceled
 	default:
-		fmt.Printf("警告: 未预期的飞书状态 %s，默认为 pending\n", feishuStatus)
+		logger.Warnf("未预期的飞书状态 %s，默认为 pending", feishuStatus)
 		return model.ApprovalStatusPending
 	}
 }
@@ -830,7 +831,7 @@ func (h *ApprovalCallbackHandler) mapDingTalkStatus(dingTalkStatus string) model
 	case "CANCELED":
 		return model.ApprovalStatusCanceled
 	default:
-		fmt.Printf("警告: 未预期的钉钉状态 %s，默认为 pending\n", dingTalkStatus)
+		logger.Warnf("未预期的钉钉状态 %s，默认为 pending", dingTalkStatus)
 		return model.ApprovalStatusPending
 	}
 }
@@ -847,7 +848,7 @@ func (h *ApprovalCallbackHandler) mapWeChatStatus(weChatStatus string) model.App
 	case "4": // 已撤销
 		return model.ApprovalStatusCanceled
 	default:
-		fmt.Printf("警告: 未预期的企业微信状态 %s，默认为 pending\n", weChatStatus)
+		logger.Warnf("未预期的企业微信状态 %s，默认为 pending", weChatStatus)
 		return model.ApprovalStatusPending
 	}
 }

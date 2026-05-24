@@ -16,6 +16,7 @@ import (
 
 	"github.com/fisker086/keyops/internal/approval"
 	"github.com/fisker086/keyops/internal/model"
+	"github.com/fisker086/keyops/pkg/logger"
 )
 
 // TicketHandler 工单处理器
@@ -760,7 +761,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	// 获取模板信息
 	var template model.FormTemplate
 	if err := h.db.First(&template, ticket.TemplateID).Error; err != nil {
-		fmt.Printf("自动创建审批失败：获取模板失败: %v\n", err)
+		logger.Errorf("自动创建审批失败：获取模板失败: %v", err)
 		return
 	}
 
@@ -772,7 +773,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	// 解析审批配置
 	var approvalConfig map[string]interface{}
 	if err := json.Unmarshal(template.ApprovalConfig, &approvalConfig); err != nil {
-		fmt.Printf("自动创建审批失败：解析模板审批配置失败: %v\n", err)
+		logger.Errorf("自动创建审批失败：解析模板审批配置失败: %v", err)
 		return
 	}
 
@@ -797,7 +798,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	}
 
 	if !hasApprovalCode || approvalCode == "" {
-		fmt.Printf("自动创建审批失败：模板未配置审批代码\n")
+		logger.Warnf("自动创建审批失败：模板未配置审批代码")
 		return
 	}
 
@@ -817,7 +818,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 		} else if platform == "wechat" {
 			platformName = "企业微信审批"
 		}
-		fmt.Printf("工单 %s 自动创建%s失败：模板配置中缺少app_id或app_secret，请先在\"设计工单\"页面完善三方审批配置\n", 
+		logger.Warnf("工单 %s 自动创建%s失败：模板配置中缺少app_id或app_secret，请先在\"设计工单\"页面完善三方审批配置",
 			ticket.TicketNumber, platformName)
 		return
 	}
@@ -869,7 +870,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 			formFields, err := tempProvider.GetApprovalFormDetail(ctx, approvalCode)
 			cancel()
 			if err != nil {
-				fmt.Printf("工单 %s 自动创建审批失败：从飞书API获取表单详情失败: %v\n", ticket.TicketNumber, err)
+				logger.Warnf("工单 %s 自动创建审批失败：从飞书API获取表单详情失败: %v", ticket.TicketNumber, err)
 			} else {
 				formFieldsFromAPI = formFields
 				// 将表单详情保存到config中，供后续使用
@@ -883,7 +884,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	// 构建表单数据
 	formData := h.buildFormDataFromTicket(ticket, fieldMappings, &config)
 	if formData == "" {
-		fmt.Printf("工单 %s 自动创建审批失败：构建表单数据失败 (平台: %s, 审批代码: %s)\n", ticket.TicketNumber, platform, approvalCode)
+		logger.Warnf("工单 %s 自动创建审批失败：构建表单数据失败 (平台: %s, 审批代码: %s)", ticket.TicketNumber, platform, approvalCode)
 		return
 	}
 
@@ -922,7 +923,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 				applicantUsername = applicantName
 			}
 		} else {
-			fmt.Printf("工单 %s 自动创建审批失败：无法获取申请人用户名\n", ticket.TicketNumber)
+			logger.Warnf("工单 %s 自动创建审批失败：无法获取申请人用户名", ticket.TicketNumber)
 			return
 		}
 	}
@@ -945,7 +946,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	case model.ApprovalPlatformWeChat:
 		providerInstance = approval.NewWeChatProvider(&config, h.db)
 	default:
-		fmt.Printf("自动创建审批失败：不支持的审批平台: %s\n", platform)
+		logger.Warnf("自动创建审批失败：不支持的审批平台: %s", platform)
 		return
 	}
 
@@ -998,7 +999,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 
 	externalID, err := providerInstance.CreateApprovalWithFormData(ctx, approvalCode, formData, approvalRecord)
 	if err != nil {
-		fmt.Printf("自动创建审批失败：创建第三方审批实例失败: %v\n", err)
+		logger.Errorf("自动创建审批失败：创建第三方审批实例失败: %v", err)
 		return
 	}
 
@@ -1008,7 +1009,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 
 	// 保存到数据库
 	if err := h.db.Create(approvalRecord).Error; err != nil {
-		fmt.Printf("自动创建审批失败：保存审批记录失败: %v\n", err)
+		logger.Errorf("自动创建审批失败：保存审批记录失败: %v", err)
 		return
 	}
 
@@ -1034,7 +1035,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 		ticket.ApprovalSteps = datatypes.JSON(stepsJSON)
 	}
 	if err := h.db.Save(ticket).Error; err != nil {
-		fmt.Printf("自动创建审批失败：更新工单审批信息失败: %v\n", err)
+		logger.Errorf("自动创建审批失败：更新工单审批信息失败: %v", err)
 		return
 	}
 }
@@ -1045,13 +1046,13 @@ func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappi
 	var formFields []map[string]interface{}
 	if config.FormFields != "" {
 		if err := json.Unmarshal([]byte(config.FormFields), &formFields); err != nil {
-			fmt.Printf("构建表单数据失败：解析表单字段配置失败: %v\n", err)
+			logger.Warnf("构建表单数据失败：解析表单字段配置失败: %v", err)
 			return ""
 		}
 	} else {
 		// 如果 FormFields 为空，使用 field_mappings 直接构建表单数据
 		if len(fieldMappings) == 0 {
-			fmt.Printf("构建表单数据失败：配置FormFields为空且字段映射为空，无法构建表单数据\n")
+			logger.Warnf("构建表单数据失败：配置FormFields为空且字段映射为空，无法构建表单数据")
 			return ""
 		}
 		// 从字段映射构建表单字段结构（用于后续处理）
@@ -1105,7 +1106,7 @@ func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappi
 	if ticket.FormData != nil {
 		if formDataBytes, err := json.Marshal(ticket.FormData); err == nil {
 			if err := json.Unmarshal(formDataBytes, &ticketFormData); err != nil {
-				fmt.Printf("构建表单数据失败：解析工单表单数据失败: %v\n", err)
+				logger.Warnf("构建表单数据失败：解析工单表单数据失败: %v", err)
 			}
 		}
 	}
@@ -1181,7 +1182,7 @@ func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappi
 
 	jsonData, err := json.Marshal(formData)
 	if err != nil {
-		fmt.Printf("构建表单数据失败：序列化表单数据失败: %v\n", err)
+		logger.Warnf("构建表单数据失败：序列化表单数据失败: %v", err)
 		return ""
 	}
 	return string(jsonData)

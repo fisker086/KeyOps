@@ -13,6 +13,7 @@ import (
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -372,22 +373,22 @@ func (p *FeishuProvider) createApprovalViaHTTPWithCode(ctx context.Context, toke
 	userID := approval.ApplicantName
 	if userID == "" {
 		userID = approval.ApplicantID // 如果ApplicantName为空，fallback到ApplicantID
-		fmt.Printf("飞书审批 - 警告：ApplicantName为空，使用ApplicantID: %s\n", userID)
+		logger.Warnf("Feishu approval: ApplicantName is empty, fallback to ApplicantID: %s", userID)
 	}
 	
 	// 如果userID看起来像UUID（36个字符且包含连字符），尝试查询用户名
 	if len(userID) == 36 && strings.Contains(userID, "-") {
-		fmt.Printf("飞书审批 - 警告：userID是UUID格式，尝试查询用户名: %s\n", userID)
+		logger.Warnf("Feishu approval: applicant id looks like UUID, attempting username lookup: %s", userID)
 		var user model.User
 		if err := p.db.Where("id = ?", userID).First(&user).Error; err == nil {
 			userID = user.Username
-			fmt.Printf("飞书审批 - 查询到用户名: %s\n", userID)
+			logger.Infof("Feishu approval: resolved applicant username: %s", userID)
 		} else {
-			fmt.Printf("飞书审批 - 错误：userID是UUID格式但查询用户名失败: %v，将使用UUID（可能失败）\n", err)
+			logger.Warnf("Feishu approval: failed to resolve applicant username from UUID: %v; fallback to UUID", err)
 		}
 	}
 	
-	fmt.Printf("飞书审批 - 最终使用的userID: %s (原始ApplicantID: %s, 原始ApplicantName: %s)\n", userID, approval.ApplicantID, approval.ApplicantName)
+	logger.Infof("Feishu approval: using user_id=%s (raw applicant_id=%s applicant_name=%s)", userID, approval.ApplicantID, approval.ApplicantName)
 	openID := userID // 对于飞书，OpenID通常与UserID相同
 
 	reqBody := map[string]interface{}{

@@ -1434,6 +1434,11 @@ UPDATE menus SET parent_id = 'menu-bastion', sort = 5 WHERE id = 'menu-system-us
 UPDATE menus SET parent_id = 'menu-bastion', sort = 6 WHERE id = 'menu-permission-rules';
 UPDATE menus SET parent_id = 'menu-bastion', sort = 7 WHERE id = 'menu-blacklist';
 UPDATE menus SET parent_id = 'menu-bastion', sort = 8 WHERE id = 'menu-bastion-settings';
+DELETE FROM menu_permissions WHERE menu_id = 'menu-k8s-api-keys';
+DELETE FROM menus WHERE id = 'menu-k8s-api-keys';
+-- 防御性清理：兼容老库残留，确保 k8s 菜单下不再出现该入口（幂等）
+DELETE FROM menu_permissions WHERE menu_id = 'menu-k8s-api-keys';
+DELETE FROM menus WHERE id = 'menu-k8s-api-keys';
 
 -- 更新组织管理分组（原用户权限）
 UPDATE menus SET title = '组织管理' WHERE id = 'menu-user-permission';

@@ -1681,7 +1681,6 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-cluster-list', 'menu-k8s-management', '/clusters', 'clusterList', 'pages/cluster/ClusterManagement', false, 1, '集群列表', 'ViewList', false, '', false, false, NOW(), NOW()),
 ('menu-cluster-permissions', 'menu-k8s-management', '/cluster-permissions', 'clusterPermissions', 'pages/cluster/ClusterPermissionManagement', false, 2, '权限管理', 'Security', false, '', false, false, NOW(), NOW()),
 ('menu-operation-audit', 'menu-k8s-management', '/operation-audit', 'operationAudit', 'pages/cluster/OperationAudit', false, 3, '操作审计', 'History', false, '', false, false, NOW(), NOW()),
-('menu-k8s-api-keys', 'menu-k8s-management', '/k8s/api-keys', 'k8sApiKeys', 'pages/k8s/ApiKeys', false, 4, 'MCP密钥', 'Key', false, '', false, false, NOW(), NOW()),
 
 -- k8s 资源类子菜单
 ('menu-k8s-operations', 'menu-k8s', '', 'k8sOperations', '', false, 2, '资源管理', 'GridView', false, '', false, false, NOW(), NOW()),
@@ -3291,7 +3290,12 @@ INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, ti
 UPDATE menus SET parent_id = 'menu-k8s-management', sort = 1 WHERE id = 'menu-cluster-list';
 UPDATE menus SET parent_id = 'menu-k8s-management', sort = 2 WHERE id = 'menu-cluster-permissions';
 UPDATE menus SET parent_id = 'menu-k8s-management', sort = 3 WHERE id = 'menu-operation-audit';
-UPDATE menus SET parent_id = 'menu-k8s-management', sort = 4 WHERE id = 'menu-k8s-api-keys';
+-- 15. 删除 k8s API 密钥菜单（入口改为系统设置页内 Tab）
+DELETE FROM menu_permissions WHERE menu_id = 'menu-k8s-api-keys';
+DELETE FROM menus WHERE id = 'menu-k8s-api-keys';
+-- 15.1 防御性清理：兼容老库残留，确保 k8s 菜单下不再出现该入口（幂等）
+DELETE FROM menu_permissions WHERE menu_id = 'menu-k8s-api-keys';
+DELETE FROM menus WHERE id = 'menu-k8s-api-keys';
 -- 13. 新增集群概览菜单
 INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
 ('menu-k8s-cluster-overview', 'menu-k8s-operations', '/k8s/cluster-overview', 'k8sClusterOverview', 'pages/k8s/ClusterOverview', false, 1, '集群概览', 'Dashboard', false, '', false, false, NOW(), NOW());

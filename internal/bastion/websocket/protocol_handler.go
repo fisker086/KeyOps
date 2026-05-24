@@ -19,6 +19,7 @@ import (
 // ProtocolHandler 统一协议处理器
 type ProtocolHandler struct {
 	hostRepo       repository.HostRepository
+	systemUserRepo repository.SystemUserRepository
 	storage        storage.Storage
 	proxyID        string
 	sessionManager *SessionManager
@@ -26,9 +27,10 @@ type ProtocolHandler struct {
 }
 
 // NewProtocolHandler 创建统一协议处理器
-func NewProtocolHandler(hostRepo repository.HostRepository, st storage.Storage, proxyID string, sm *SessionManager) *ProtocolHandler {
+func NewProtocolHandler(hostRepo repository.HostRepository, systemUserRepo repository.SystemUserRepository, st storage.Storage, proxyID string, sm *SessionManager) *ProtocolHandler {
 	return &ProtocolHandler{
 		hostRepo:       hostRepo,
+		systemUserRepo: systemUserRepo,
 		storage:        st,
 		proxyID:        proxyID,
 		sessionManager: sm,
@@ -59,6 +61,29 @@ func (h *ProtocolHandler) HandleConnection(c *gin.Context) {
 	host, err := h.getHostInfo(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	systemUserID := c.Query("systemUserId")
+	if systemUserID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing systemUserId"})
+		return
+	}
+	userID := c.Query("userId")
+	username := c.Query("username")
+	if h.systemUserRepo == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "system user repository not configured"})
+		return
+	}
+	if ok, err := h.systemUserRepo.CheckUserHasPermission(userID, host.ID, systemUserID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check system user permission"})
+		return
+	} else if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "No permission to use this system user"})
+		return
+	}
+	systemUser, err := h.systemUserRepo.FindByID(systemUserID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "system user not found"})
 		return
 	}
 
@@ -97,9 +122,6 @@ func (h *ProtocolHandler) HandleConnection(c *gin.Context) {
 
 	// 先创建登录记录（无论连接成功与否都需要记录）
 	startTime := time.Now()
-	userID := c.Query("userId")
-	username := c.Query("username")
-
 	loginRecord := &storage.LoginRecord{
 		SessionID: sessionID,
 		UserID:    userID,
@@ -137,9 +159,9 @@ func (h *ProtocolHandler) HandleConnection(c *gin.Context) {
 		HostID:     host.ID,
 		HostIP:     host.IP,
 		HostPort:   host.Port,
-		Username:   "", // TODO: 从 SystemUser 获取
-		Password:   "", // TODO: 从 SystemUser 获取
-		PrivateKey: "", // TODO: 从 SystemUser 获取
+		Username:   systemUser.Username,
+		Password:   systemUser.Password,
+		PrivateKey: systemUser.PrivateKey,
 		Protocol:   protocolType,
 		SessionID:  sessionID,
 		UserID:     userID,
@@ -147,62 +169,7 @@ func (h *ProtocolHandler) HandleConnection(c *gin.Context) {
 		Timeout:    30 * time.Second,
 		Options:    make(map[string]interface{}),
 	}
-
-	// ============================================================================
-	// TODO: 获取 SystemUser 认证信息（RDP/SSH 都需要）
-	// ============================================================================
-	//
-	// 实现步骤：
-	// 1. 从查询参数或请求体中获取 systemUserId
-	//    systemUserId := c.Query("systemUserId")
-	//    或从权限规则中自动选择匹配的 SystemUser
-	//
-	// 2. 查询 SystemUser 信息
-	//    systemUserRepo := repository.NewSystemUserRepository(h.storage.GetDB())
-	//    systemUser, err := systemUserRepo.FindByID(systemUserId)
-	//    if err != nil {
-	//        return fmt.Errorf("system user not found: %w", err)
-	//    }
-	//
-	// 3. 根据协议类型设置认证信息
-	//    if protocolType == protocol.ProtocolRDP {
-	//        // RDP 使用用户名和密码
-	//        config.Username = systemUser.Username
-	//        config.Password = systemUser.Password  // 需要解密
-	//        // Windows 域（如果配置）
-	//        if domain := systemUser.Domain; domain != "" {
-	//            config.Options["domain"] = domain
-	//        }
-	//        // RDP 安全模式
-	//        if systemUser.AuthType == "password" {
-	//            config.Options["security"] = "nla"  // 推荐 NLA
-	//        }
-	//    } else if protocolType == protocol.ProtocolSSH {
-	//        // SSH 可以使用密码或密钥
-	//        config.Username = systemUser.Username
-	//        if systemUser.AuthType == "password" {
-	//            config.Password = systemUser.Password  // 需要解密
-	//        } else if systemUser.AuthType == "key" {
-	//            config.PrivateKey = systemUser.PrivateKey  // 需要解密
-	//            if systemUser.Passphrase != "" {
-	//                config.Options["passphrase"] = systemUser.Passphrase  // 需要解密
-	//            }
-	//        }
-	//    }
-	//
-	// 4. 设置 RDP 特定选项（如果使用 RDP）
-	//    if protocolType == protocol.ProtocolRDP {
-	//        config.Options["width"] = 1920
-	//        config.Options["height"] = 1080
-	//        config.Options["dpi"] = 96
-	//        config.Options["colorDepth"] = 24
-	//        config.Options["enableDrive"] = true  // 启用文件传输
-	//        config.Options["ignoreCert"] = false // 生产环境建议设为 false
-	//    }
-	//
-	// 5. 解密敏感信息（密码、密钥等）
-	//    - 使用从jwt_secret提取的AES密钥解密
-	//
+	config.Options["passphrase"] = systemUser.Passphrase
 
 	// 连接到目标主机
 	ctx := context.Background()

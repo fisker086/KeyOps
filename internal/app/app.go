@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/fisker086/keyops/internal/audit"
@@ -130,7 +129,7 @@ func CloseDatabase() error {
 
 // Shutdown 优雅关闭应用程序
 func Shutdown(app *App) {
-	fmt.Println("\n[Shutdown] Received shutdown signal, starting graceful shutdown...")
+	logger.Infof("[Shutdown] Received shutdown signal, starting graceful shutdown")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -138,42 +137,42 @@ func Shutdown(app *App) {
 	// 1. 停止账单同步调度器
 	// if app.BackgroundServices.BillSync != nil {
 	// 	app.BackgroundServices.BillSync.Stop()
-	// 	fmt.Println("[Shutdown] Bill sync scheduler stopped")
+	// 	logger.Infof("[Shutdown] Bill sync scheduler stopped")
 	// }
 
 	// 2. Close MongoDB connections
 	if app.BastionMongo != nil {
 		if err := app.BastionMongo.Disconnect(ctx); err != nil {
-			fmt.Printf("[Shutdown] Bastion MongoDB close error: %v\n", err)
+			logger.Warnf("[Shutdown] Bastion MongoDB close error: %v", err)
 		} else {
-			fmt.Println("[Shutdown] Bastion MongoDB connection closed")
+			logger.Infof("[Shutdown] Bastion MongoDB connection closed")
 		}
 	}
 	if app.MongoClient != nil {
 		if err := app.MongoClient.Close(ctx); err != nil {
-			fmt.Printf("[Shutdown] MongoDB (bill) close error: %v\n", err)
+			logger.Warnf("[Shutdown] MongoDB (bill) close error: %v", err)
 		} else {
-			fmt.Println("[Shutdown] MongoDB (bill) connection closed")
+			logger.Infof("[Shutdown] MongoDB (bill) connection closed")
 		}
 	}
 
 	// 3. Stop SSH server
 	if app.SSHServer != nil {
 		if err := app.SSHServer.Stop(); err != nil {
-			fmt.Printf("[Shutdown] SSH server stop error: %v\n", err)
+			logger.Warnf("[Shutdown] SSH server stop error: %v", err)
 		} else {
-			fmt.Println("[Shutdown] SSH server stopped")
+			logger.Infof("[Shutdown] SSH server stopped")
 		}
 	}
 
 	// 4. Close database (MySQL/PostgreSQL)
 	if err := CloseDatabase(); err != nil {
-		fmt.Printf("[Shutdown] Database close error: %v\n", err)
+		logger.Warnf("[Shutdown] Database close error: %v", err)
 	} else {
-		fmt.Println("[Shutdown] Database connection closed")
+		logger.Infof("[Shutdown] Database connection closed")
 	}
 
-	fmt.Println("[Shutdown] Graceful shutdown completed")
+	logger.Infof("[Shutdown] Graceful shutdown completed")
 }
 
 // WaitForShutdown 阻塞等待关闭信号，然后触发优雅关闭

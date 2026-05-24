@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/fisker086/keyops/internal/model"
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/fisker086/keyops/pkg/twofactor"
 )
 
@@ -86,8 +86,7 @@ func (h *TwoFactorHandler) UpdateGlobalConfig(c *gin.Context) {
 		return
 	}
 
-	// 添加调试日志
-	fmt.Printf("收到2FA配置更新请求: enabled=%v, issuer=%s\n", req.Enabled, req.Issuer)
+	logger.Infof("收到2FA配置更新请求: enabled=%v, issuer=%s", req.Enabled, req.Issuer)
 
 	var config model.TwoFactorConfig
 	if err := h.db.First(&config).Error; err != nil {

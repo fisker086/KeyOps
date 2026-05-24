@@ -7,6 +7,7 @@ import (
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -65,7 +66,7 @@ func (h *ProxyHandler) RegisterProxy(c *gin.Context) {
 		}
 
 		// 记录日志：更新已存在的 proxy
-		fmt.Printf("[RegisterProxy] Updated existing proxy: proxy_id=%s, id=%s, host=%s\n",
+		logger.Infof("[RegisterProxy] Updated existing proxy: proxy_id=%s, id=%s, host=%s",
 			req.ProxyID, existing.ID, req.HostName)
 	} else if result.Error == gorm.ErrRecordNotFound {
 		// 不存在，创建新记录
@@ -86,7 +87,7 @@ func (h *ProxyHandler) RegisterProxy(c *gin.Context) {
 		}
 
 		// 记录日志：创建新的 proxy
-		fmt.Printf("[RegisterProxy] Created new proxy: proxy_id=%s, id=%s, host=%s\n",
+		logger.Infof("[RegisterProxy] Created new proxy: proxy_id=%s, id=%s, host=%s",
 			req.ProxyID, proxy.ID, req.HostName)
 	} else {
 		// 其他数据库错误

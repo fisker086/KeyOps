@@ -1,7 +1,9 @@
 package api_key
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	apiKeyService "github.com/fisker086/keyops/internal/service/api_key"
@@ -57,9 +59,19 @@ func (h *ApiKeyHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
 	}
+	req.Name = strings.TrimSpace(req.Name)
 
 	key, rawKey, err := h.service.Create(userID, req.Name, req.ExpiresAt, req.Permissions)
 	if err != nil {
+		switch {
+		case errors.Is(err, apiKeyService.ErrInvalidAPIKeyName),
+			errors.Is(err, apiKeyService.ErrAPIKeyNameTooLong),
+			errors.Is(err, apiKeyService.ErrInvalidAPIKeyExpires),
+			errors.Is(err, apiKeyService.ErrInvalidPermission),
+			errors.Is(err, apiKeyService.ErrTooManyPermissions):
+			c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
+			return
+		}
 		model.HandleError(c, http.StatusInternalServerError, err)
 		return
 	}
@@ -79,12 +91,20 @@ func (h *ApiKeyHandler) Revoke(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.service.Revoke(userID, id); err != nil {
-		model.HandleError(c, http.StatusInternalServerError, err)
-		return
+		switch {
+		case errors.Is(err, apiKeyService.ErrAPIKeyNotFound):
+			c.JSON(http.StatusNotFound, model.Error(404, err.Error()))
+			return
+		case errors.Is(err, apiKeyService.ErrAPIKeyForbidden):
+			c.JSON(http.StatusForbidden, model.Error(403, err.Error()))
+			return
+		default:
+			model.HandleError(c, http.StatusInternalServerError, err)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, model.Success(gin.H{"success": true}))
 }
-
 
 

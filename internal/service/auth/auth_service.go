@@ -17,6 +17,7 @@ import (
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
 	pkgconfig "github.com/fisker086/keyops/pkg/config"
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/fisker086/keyops/pkg/sshkey"
 	"github.com/fisker086/keyops/pkg/twofactor"
 	"github.com/golang-jwt/jwt/v5"
@@ -133,7 +134,7 @@ func (s *AuthService) applyAdminWhitelistOnLogin(user *model.User) {
 	prev := user.Role
 	user.Role = "admin"
 	if err := s.repo.UpdateUser(user); err != nil {
-		fmt.Printf(" [Login] admin_whitelist 更新角色失败: %v\n", err)
+		logger.Warnf("[Login] admin_whitelist update role failed: %v", err)
 		user.Role = prev
 	}
 }
@@ -259,7 +260,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 
 			now := time.Now()
 			if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
-				fmt.Printf("更新最后登录时间失败: %v\n", err)
+				logger.Warnf("update last login failed: %v", err)
 			}
 
 			loginRecord := &model.PlatformLoginRecord{
@@ -272,7 +273,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 				Status:    "active",
 			}
 			if err := s.repo.CreatePlatformLoginRecord(loginRecord); err != nil {
-				fmt.Printf("创建平台登录记录失败: %v\n", err)
+				logger.Warnf("create platform login record failed: %v", err)
 			}
 
 			return &model.LoginResponse{
@@ -300,7 +301,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 
 			now := time.Now()
 			if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
-				fmt.Printf("更新最后登录时间失败: %v\n", err)
+				logger.Warnf("update last login failed: %v", err)
 			}
 
 			loginRecord := &model.PlatformLoginRecord{
@@ -313,7 +314,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 				Status:    "active",
 			}
 			if err := s.repo.CreatePlatformLoginRecord(loginRecord); err != nil {
-				fmt.Printf("创建平台登录记录失败: %v\n", err)
+				logger.Warnf("create platform login record failed: %v", err)
 			}
 
 			return &model.LoginResponse{
@@ -345,7 +346,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 
 			now := time.Now()
 			if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
-				fmt.Printf("更新最后登录时间失败: %v\n", err)
+				logger.Warnf("update last login failed: %v", err)
 			}
 
 			loginRecord := &model.PlatformLoginRecord{
@@ -358,7 +359,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 				Status:    "active",
 			}
 			if err := s.repo.CreatePlatformLoginRecord(loginRecord); err != nil {
-				fmt.Printf("创建平台登录记录失败: %v\n", err)
+				logger.Warnf("create platform login record failed: %v", err)
 			}
 
 			return &model.LoginResponse{
@@ -383,7 +384,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 
 	now := time.Now()
 	if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
-		fmt.Printf("更新最后登录时间失败: %v\n", err)
+		logger.Warnf("update last login failed: %v", err)
 	}
 
 	loginRecord := &model.PlatformLoginRecord{
@@ -396,12 +397,12 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 		Status:    "active",
 	}
 	if err := s.repo.CreatePlatformLoginRecord(loginRecord); err != nil {
-		fmt.Printf(" [Login] 创建平台登录记录失败: %v\n", err)
+		logger.Warnf("[Login] create platform login record failed: %v", err)
 	}
 
 	// 限制活跃会话数
 	if err := s.enforceSessionLimit(user.ID); err != nil {
-		fmt.Printf(" [Login] session limit enforcement: %v\n", err)
+		logger.Warnf("[Login] session limit enforcement: %v", err)
 	}
 
 	return &model.LoginResponse{
@@ -758,7 +759,7 @@ func (s *AuthService) RefreshTokenPair(refreshTokenString string) (newAccessToke
 
 	// 限制活跃会话数
 	if err := s.enforceSessionLimit(user.ID); err != nil {
-		fmt.Printf(" [Refresh] session limit enforcement: %v\n", err)
+		logger.Warnf("[Refresh] session limit enforcement: %v", err)
 	}
 
 	return newAccessToken, newRefreshToken, nil
@@ -790,7 +791,7 @@ func (s *AuthService) enforceSessionLimit(userID string) error {
 	}
 	for _, t := range tokens {
 		if err := s.refreshTokenRepo.RevokeByJTI(t.JTI); err != nil {
-			fmt.Printf(" [SessionLimit] revoke jti=%s failed: %v\n", t.JTI, err)
+			logger.Warnf("[SessionLimit] revoke jti=%s failed: %v", t.JTI, err)
 		}
 	}
 	return nil
@@ -1132,7 +1133,7 @@ type SSOUserInfo struct {
 // ExchangeCodeForToken 使用授权码换取访问令牌（入口，分发到各 provider）
 func (s *AuthService) ExchangeCodeForToken(code, provider, clientID, clientSecret, tokenURL, redirectURL string) (string, error) {
 	p := normalizeSSOProvider(provider)
-	fmt.Printf(" [SSO] 开始换取 Token: provider=%s (normalized=%s)\n", provider, p)
+	logger.Debugf("[SSO] exchange token start: provider=%s normalized=%s", provider, p)
 
 	switch p {
 	case SSOProviderFeishu, SSOProviderLark:
@@ -1148,7 +1149,7 @@ func (s *AuthService) ExchangeCodeForToken(code, provider, clientID, clientSecre
 // GetSSOUserInfo 获取 SSO 用户信息（入口，分发到各 provider）
 func (s *AuthService) GetSSOUserInfo(accessToken, provider, userInfoURL, oauthCode, agentID string) (*SSOUserInfo, error) {
 	p := normalizeSSOProvider(provider)
-	fmt.Printf(" [SSO] 获取用户信息: provider=%s (normalized=%s)\n", provider, p)
+	logger.Debugf("[SSO] get user info: provider=%s normalized=%s", provider, p)
 
 	switch p {
 	case SSOProviderFeishu, SSOProviderLark:
@@ -1169,7 +1170,7 @@ func encodeBasicAuth(username, password string) string {
 
 // CreateOrUpdateSSOUser 创建或更新 SSO 用户
 func (s *AuthService) CreateOrUpdateSSOUser(ssoUserInfo *SSOUserInfo) (*model.User, error) {
-	fmt.Printf(" [SSO] 创建或更新用户: username=%s, email=%s\n", ssoUserInfo.Username, ssoUserInfo.Email)
+	logger.Debugf("[SSO] create or update user: username=%s email=%s", ssoUserInfo.Username, ssoUserInfo.Email)
 
 	var user *model.User
 	var err error
@@ -1192,7 +1193,7 @@ func (s *AuthService) CreateOrUpdateSSOUser(ssoUserInfo *SSOUserInfo) (*model.Us
 
 	// 用户存在，更新信息
 	if user != nil {
-		fmt.Printf(" [SSO] 用户已存在，更新信息: userID=%s\n", user.ID)
+		logger.Debugf("[SSO] user exists, updating info: userID=%s", user.ID)
 
 		// 更新用户信息
 		if ssoUserInfo.Name != "" {
@@ -1215,7 +1216,7 @@ func (s *AuthService) CreateOrUpdateSSOUser(ssoUserInfo *SSOUserInfo) (*model.Us
 	}
 
 	// 用户不存在，创建新用户
-	fmt.Printf(" [SSO] 创建新用户\n")
+	logger.Debugf("[SSO] creating new user")
 
 	// 生成随机密码（SSO用户不使用密码登录）
 	randomPassword := uuid.New().String()
@@ -1243,13 +1244,13 @@ func (s *AuthService) CreateOrUpdateSSOUser(ssoUserInfo *SSOUserInfo) (*model.Us
 		return nil, fmt.Errorf("创建用户失败: %w", err)
 	}
 
-	fmt.Printf(" [SSO] 新用户创建成功: userID=%s, username=%s\n", user.ID, user.Username)
+	logger.Debugf("[SSO] new user created: userID=%s username=%s", user.ID, user.Username)
 	return user, nil
 }
 
 // LoginWithSSO SSO 登录主流程
 func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.LoginResponse, string, error) {
-	fmt.Printf(" [SSO] 开始 SSO 登录流程\n")
+	logger.Debugf("[SSO] login flow start")
 
 	authSettings, err := s.settingRepo.GetByCategory("auth")
 	if err != nil {
@@ -1317,7 +1318,7 @@ func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.Logi
 
 	now := time.Now()
 	if err := s.repo.UpdateUserLastLogin(user.ID, now, loginIP); err != nil {
-		fmt.Printf(" [SSO] 更新最后登录时间失败: %v\n", err)
+		logger.Warnf("[SSO] update last login failed: %v", err)
 	}
 
 	loginRecord := &model.PlatformLoginRecord{
@@ -1330,14 +1331,13 @@ func (s *AuthService) LoginWithSSO(code, loginIP, userAgent string) (*model.Logi
 		Status:    "active",
 	}
 	if err := s.repo.CreatePlatformLoginRecord(loginRecord); err != nil {
-		fmt.Printf(" [SSO] 创建平台登录记录失败: %v\n", err)
+		logger.Warnf("[SSO] create platform login record failed: %v", err)
 	}
 
 	if err := s.enforceSessionLimit(user.ID); err != nil {
-		fmt.Printf(" [SSO] session limit enforcement: %v\n", err)
+		logger.Warnf("[SSO] session limit enforcement: %v", err)
 	}
-
-	fmt.Printf(" [SSO] 登录成功: userID=%s, username=%s\n", user.ID, user.Username)
+	logger.Debugf("[SSO] login success: userID=%s username=%s", user.ID, user.Username)
 
 	return &model.LoginResponse{
 		AccessToken: accessTkn,

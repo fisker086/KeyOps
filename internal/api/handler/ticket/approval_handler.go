@@ -15,6 +15,7 @@ import (
 	"github.com/fisker086/keyops/internal/approval"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/service/release"
+	"github.com/fisker086/keyops/pkg/logger"
 )
 
 // ApprovalHandler 审批处理器
@@ -498,7 +499,7 @@ func (h *ApprovalHandler) CreateThirdPartyApproval(c *gin.Context) {
 	}
 	if err := h.db.Save(&ticket).Error; err != nil {
 		// 记录错误但不影响返回结果
-		fmt.Printf("更新工单审批信息失败: %v\n", err)
+		logger.Warnf("更新工单审批信息失败: %v", err)
 	}
 
 	// 添加提交记录

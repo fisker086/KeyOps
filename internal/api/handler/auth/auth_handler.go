@@ -13,6 +13,7 @@ import (
 	"github.com/fisker086/keyops/internal/repository"
 	authService "github.com/fisker086/keyops/internal/service/auth"
 	pkgconfig "github.com/fisker086/keyops/pkg/config"
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -191,7 +192,7 @@ func (h *AuthHandler) EstablishSession(c *gin.Context) {
 
 	setRefreshTokenCookie(c, refreshTkn, time.Now().Add(authService.RefreshTokenExpiry))
 	if err := h.service.EnforceSessionLimitForUser(user.ID); err != nil {
-		fmt.Printf(" [EstablishSession] session limit enforcement: %v\n", err)
+		logger.Warnf("[EstablishSession] session limit enforcement: %v", err)
 	}
 
 	c.JSON(http.StatusOK, model.Success(gin.H{
@@ -566,7 +567,7 @@ func (h *AuthHandler) InitiateSSO(c *gin.Context) {
 		authorizationURL += "?" + params.Encode()
 	}
 
-	fmt.Printf(" [SSO] 生成授权 URL: %s\n", authorizationURL)
+	logger.Infof("[SSO] 生成授权 URL: %s", authorizationURL)
 
 	c.JSON(http.StatusOK, model.Success(gin.H{
 		"authUrl": authorizationURL,
@@ -583,21 +584,21 @@ func (h *AuthHandler) SSOCallback(c *gin.Context) {
 	// 检查是否有错误参数
 	if errorParam != "" {
 		errorDesc := c.Query("error_description")
-		fmt.Printf(" [SSO] 授权失败: %s - %s\n", errorParam, errorDesc)
+		logger.Warnf("[SSO] 授权失败: %s - %s", errorParam, errorDesc)
 		// 重定向到登录页并显示错误
 		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/?error=%s&error_description=%s", errorParam, errorDesc))
 		return
 	}
 
 	if code == "" {
-		fmt.Printf(" [SSO] 缺少授权码\n")
+		logger.Warnf("[SSO] 缺少授权码")
 		c.Redirect(http.StatusTemporaryRedirect, "/?error=missing_code")
 		return
 	}
 
 	nextPath := decodeSSONextFromState(state)
 	if state == "" {
-		fmt.Printf(" [SSO] 缺少 state 参数，将使用默认落地路径 /\n")
+		logger.Warnf("[SSO] 缺少 state 参数，将使用默认落地路径 /")
 	}
 
 	loginIP := c.ClientIP()
@@ -605,13 +606,13 @@ func (h *AuthHandler) SSOCallback(c *gin.Context) {
 
 	_, refreshTkn, err := h.service.LoginWithSSO(code, loginIP, userAgent)
 	if err != nil {
-		fmt.Printf(" [SSO] 登录失败: %v\n", err)
+		logger.Warnf("[SSO] 登录失败: %v", err)
 		errorMsg := url.QueryEscape(err.Error())
 		c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/?error=sso_login_failed&error_description=%s", errorMsg))
 		return
 	}
 
-	fmt.Printf(" [SSO] 登录成功，重定向到前端 path=%s\n", nextPath)
+	logger.Infof("[SSO] 登录成功，重定向到前端 path=%s", nextPath)
 
 	// 将 refresh_token 写入 HttpOnly Cookie
 	setRefreshTokenCookie(c, refreshTkn, time.Now().Add(authService.RefreshTokenExpiry))

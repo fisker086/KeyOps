@@ -1,13 +1,12 @@
 package middleware
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/service"
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,12 +21,10 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 
 		// WebSocket 升级请求特殊处理：允许通过 query 参数传递 token
 		if strings.Contains(c.Request.URL.Path, "/ws/") {
-			fmt.Printf("[AuthMiddleware] WebSocket 请求: %s %s\n", c.Request.Method, c.Request.URL.Path)
-			log.Printf("[AuthMiddleware] WebSocket 请求: %s %s", c.Request.Method, c.Request.URL.Path)
+			logger.Debugf("[AuthMiddleware] WebSocket request: %s %s", c.Request.Method, c.Request.URL.Path)
 			tokenString := c.Query("token")
 			if tokenString == "" {
-				fmt.Printf("[AuthMiddleware] WebSocket请求缺少token参数\n")
-				log.Printf("[AuthMiddleware] WebSocket请求缺少token参数")
+				logger.Warnf("[AuthMiddleware] WebSocket missing token query parameter")
 				c.JSON(http.StatusUnauthorized, model.Error(401, "WebSocket请求缺少token参数"))
 				c.Abort()
 				return
@@ -35,14 +32,12 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 			// 验证Token
 			claims, err := authService.ValidateToken(tokenString)
 			if err != nil {
-				fmt.Printf("[AuthMiddleware] Token验证失败: %v\n", err)
-				log.Printf("[AuthMiddleware] Token验证失败: %v", err)
+				logger.Warnf("[AuthMiddleware] token validation failed: %v", err)
 				c.JSON(http.StatusUnauthorized, model.Error(401, "Token无效或已过期: "+err.Error()))
 				c.Abort()
 				return
 			}
-			fmt.Printf("[AuthMiddleware] Token验证成功，用户ID: %s\n", claims.UserID)
-			log.Printf("[AuthMiddleware] Token验证成功，用户ID: %s", claims.UserID)
+			logger.Debugf("[AuthMiddleware] token validated, user_id=%s", claims.UserID)
 			setUser(c, claims.UserID, claims.Username, claims.Role)
 			c.Next()
 			return
@@ -58,12 +53,9 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 				return
 			}
 		} else {
-			tokenString = c.Query("token")
-			if tokenString == "" {
-				c.JSON(http.StatusUnauthorized, model.Error(401, "缺少Authorization Header或token参数"))
-				c.Abort()
-				return
-			}
+			c.JSON(http.StatusUnauthorized, model.Error(401, "缺少Authorization Header"))
+			c.Abort()
+			return
 		}
 
 		claims, err := authService.ValidateToken(tokenString)

@@ -32,6 +32,7 @@ var upgrader = websocket.Upgrader{
 // Handler WebSocket 处理器
 type Handler struct {
 	hostRepo       repository.HostRepository
+	systemUserRepo repository.SystemUserRepository
 	storage        storage.Storage
 	proxyID        string
 	sessionManager *SessionManager
@@ -47,9 +48,10 @@ type TokenInfo struct {
 }
 
 // NewHandler 创建新的 WebSocket 处理器
-func NewHandler(hostRepo repository.HostRepository, st storage.Storage, proxyID string, sm *SessionManager, blMgr *blacklist.Manager, apiClient *apiclient.ApiClient) *Handler {
+func NewHandler(hostRepo repository.HostRepository, systemUserRepo repository.SystemUserRepository, st storage.Storage, proxyID string, sm *SessionManager, blMgr *blacklist.Manager, apiClient *apiclient.ApiClient) *Handler {
 	return &Handler{
 		hostRepo:       hostRepo,
+		systemUserRepo: systemUserRepo,
 		storage:        st,
 		proxyID:        proxyID,
 		sessionManager: sm,
@@ -62,9 +64,14 @@ func NewHandler(hostRepo repository.HostRepository, st storage.Storage, proxyID 
 func (h *Handler) HandleSSH(c *gin.Context) {
 	// 获取 Token（从 API Server 获取）
 	token := c.Query("token")
+	systemUserID := c.Query("systemUserId")
 	if token == "" {
 		logger.Infof("Missing token")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing token"})
+		return
+	}
+	if systemUserID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing systemUserId"})
 		return
 	}
 
@@ -81,6 +88,33 @@ func (h *Handler) HandleSSH(c *gin.Context) {
 	if err != nil {
 		logger.Infof("Host not found: %s, error: %v", tokenInfo.HostID, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Host not found"})
+		return
+	}
+	if h.systemUserRepo == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "system user repository not configured"})
+		return
+	}
+	hasPermission, err := h.systemUserRepo.CheckUserHasPermission(tokenInfo.UserID, host.ID, systemUserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check system user permission"})
+		return
+	}
+	if !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"error": "No permission to use this system user"})
+		return
+	}
+	systemUser, err := h.systemUserRepo.FindByID(systemUserID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "System user not found"})
+		return
+	}
+	if systemUser.Status != "active" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "System user is inactive"})
+		return
+	}
+	requiredProtocol := "ssh"
+	if systemUser.Protocol != requiredProtocol {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "System user protocol mismatch"})
 		return
 	}
 
@@ -154,7 +188,7 @@ func (h *Handler) HandleSSH(c *gin.Context) {
 	})
 
 	// 连接到目标主机
-	if err := h.proxySSHConnection(ws, host, sessionID, rec); err != nil {
+	if err := h.proxySSHConnection(ws, host, systemUser, tokenInfo, sessionID, rec); err != nil {
 		logger.Infof("SSH proxy error: %v", err)
 		// 发送错误消息给客户端
 		errMsg := map[string]interface{}{
@@ -191,7 +225,7 @@ func (h *Handler) HandleSSH(c *gin.Context) {
 }
 
 // proxySSHConnection 代理 SSH 连接
-func (h *Handler) proxySSHConnection(ws *websocket.Conn, host *model.Host, sessionID string, rec *recorder.Recorder) error {
+func (h *Handler) proxySSHConnection(ws *websocket.Conn, host *model.Host, systemUser *model.SystemUser, tokenInfo *TokenInfo, sessionID string, rec *recorder.Recorder) error {
 	// 创建命令拦截器和解析器
 	var blockedCount int
 
@@ -201,8 +235,7 @@ func (h *Handler) proxySSHConnection(ws *websocket.Conn, host *model.Host, sessi
 		// 检查是否为危险命令（只检测，不通知，因为输入拦截器已经通知过了）
 		isBlocked := false
 		reason := ""
-		// TODO: host.Username 已移除，需要从 SystemUser 获取
-		username := "" // TODO: 从 SystemUser 获取
+		username := systemUser.Username
 		if h.blacklistMgr != nil && h.blacklistMgr.IsBlocked(cmd, username) {
 			reason = h.blacklistMgr.GetBlockReason(cmd, username)
 			blockedCount++
@@ -215,8 +248,8 @@ func (h *Handler) proxySSHConnection(ws *websocket.Conn, host *model.Host, sessi
 			ProxyID:    h.proxyID,
 			SessionID:  sessionID,
 			HostID:     host.ID,
-			UserID:     "system", // TODO: 从认证获取
-			Username:   username, // TODO: 从 SystemUser 获取
+			UserID:     tokenInfo.UserID,
+			Username:   username,
 			HostIP:     host.IP,
 			Command:    cmd,
 			ExecutedAt: time.Now(),
@@ -235,15 +268,14 @@ func (h *Handler) proxySSHConnection(ws *websocket.Conn, host *model.Host, sessi
 	})
 
 	// 创建 SSH 客户端配置
-	// TODO: 认证信息需要从 SystemUser 获取
 	cfg := sshclient.SSHConfig{
 		Host:       host.IP,
 		Port:       host.Port,
-		Username:   "", // TODO: 从 SystemUser 获取
-		Password:   "", // TODO: 从 SystemUser 获取
-		PrivateKey: "", // TODO: 从 SystemUser 获取
-		Passphrase: "", // TODO: 从 SystemUser 获取
-		AuthType:   "", // TODO: 从 SystemUser 获取（"password" 或 "key"）
+		Username:   systemUser.Username,
+		Password:   systemUser.Password,
+		PrivateKey: systemUser.PrivateKey,
+		Passphrase: systemUser.Passphrase,
+		AuthType:   systemUser.AuthType,
 		Timeout:    30 * time.Second,
 	}
 
@@ -364,8 +396,7 @@ func (h *Handler) proxySSHConnection(ws *websocket.Conn, host *model.Host, sessi
 					command := string(commandBuffer)
 
 					// 检查黑名单（在命令执行前，带通知功能）
-					// TODO: host.Username 已移除，需要从 SystemUser 获取
-					username := "" // TODO: 从 SystemUser 获取
+					username := systemUser.Username
 					if command != "" && h.blacklistMgr != nil && h.blacklistMgr.IsBlockedWithNotify(command, username, host.IP) {
 						reason := h.blacklistMgr.GetBlockReason(command, username)
 						logger.Infof("[ProxyAgent] ⛔ BLOCKING command for user %s on %s: %s - %s", username, host.IP, command, reason)

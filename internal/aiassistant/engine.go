@@ -89,8 +89,16 @@ func (e *Engine) logLLMConfig(err error) {
 	if err == nil {
 		return
 	}
+	maskedKey := ""
+	if e.apiKey != "" {
+		if len(e.apiKey) <= 8 {
+			maskedKey = "****"
+		} else {
+			maskedKey = e.apiKey[:4] + "****" + e.apiKey[len(e.apiKey)-4:]
+		}
+	}
 	logger.Warnf("ai_assistant LLM error (model=%s base_url=%s api_key=%s): %v",
-		e.model, e.baseURL, e.apiKey, err)
+		e.model, e.baseURL, maskedKey, err)
 }
 
 func (e *Engine) createChatCompletion(ctx context.Context, req openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {

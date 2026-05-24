@@ -150,32 +150,3 @@ func (h *RoutingHandler) GetAvailableProxies(c *gin.Context) {
 		"msg":  "success",
 	})
 }
-
-// Deprecated: 以下方法为兼容性保留，将来会移除
-func (h *RoutingHandler) ListRoutingRules(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": []interface{}{},
-		"msg":  "Routing rules are deprecated, use tag-based routing instead",
-	})
-}
-
-func (h *RoutingHandler) GetRoutingRule(c *gin.Context) {
-	c.JSON(http.StatusNotFound, gin.H{"error": "Routing rules are deprecated"})
-}
-
-func (h *RoutingHandler) CreateRoutingRule(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{"error": "Routing rules are deprecated, use tag-based routing instead"})
-}
-
-func (h *RoutingHandler) UpdateRoutingRule(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{"error": "Routing rules are deprecated, use tag-based routing instead"})
-}
-
-func (h *RoutingHandler) DeleteRoutingRule(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{"error": "Routing rules are deprecated, use tag-based routing instead"})
-}
-
-func (h *RoutingHandler) ToggleRoutingRule(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, gin.H{"error": "Routing rules are deprecated, use tag-based routing instead"})
-}
