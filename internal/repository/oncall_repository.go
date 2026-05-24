@@ -8,19 +8,27 @@ import (
 )
 
 // OnCallScheduleRepository 值班排班仓库
-type OnCallScheduleRepository struct {
+type OnCallScheduleRepository interface {
+	Create(schedule *model.OnCallSchedule) error
+	Update(schedule *model.OnCallSchedule) error
+	Delete(id uint) error
+	FindByID(id uint) (*model.OnCallSchedule, error)
+	List(departmentID string, page, pageSize int) (int64, []model.OnCallSchedule, error)
+}
+
+type onCallScheduleRepository struct {
 	db *gorm.DB
 }
 
-func NewOnCallScheduleRepository(db *gorm.DB) *OnCallScheduleRepository {
-	return &OnCallScheduleRepository{db: db}
+func NewOnCallScheduleRepository(db *gorm.DB) OnCallScheduleRepository {
+	return &onCallScheduleRepository{db: db}
 }
 
-func (r *OnCallScheduleRepository) Create(schedule *model.OnCallSchedule) error {
+func (r *onCallScheduleRepository) Create(schedule *model.OnCallSchedule) error {
 	return r.db.Create(schedule).Error
 }
 
-func (r *OnCallScheduleRepository) Update(schedule *model.OnCallSchedule) error {
+func (r *onCallScheduleRepository) Update(schedule *model.OnCallSchedule) error {
 	// 使用 Select 明确指定要更新的字段，排除 created_at、updated_at 和 uid
 	// updated_at 会由数据库自动更新（如果设置了 ON UPDATE CURRENT_TIMESTAMP）
 	return r.db.Model(schedule).
@@ -33,17 +41,17 @@ func (r *OnCallScheduleRepository) Update(schedule *model.OnCallSchedule) error 
 		}).Error
 }
 
-func (r *OnCallScheduleRepository) Delete(id uint) error {
+func (r *onCallScheduleRepository) Delete(id uint) error {
 	return r.db.Delete(&model.OnCallSchedule{}, "id = ?", id).Error
 }
 
-func (r *OnCallScheduleRepository) FindByID(id uint) (*model.OnCallSchedule, error) {
+func (r *onCallScheduleRepository) FindByID(id uint) (*model.OnCallSchedule, error) {
 	var schedule model.OnCallSchedule
 	err := r.db.Where("id = ?", id).First(&schedule).Error
 	return &schedule, err
 }
 
-func (r *OnCallScheduleRepository) List(departmentID string, page, pageSize int) (int64, []model.OnCallSchedule, error) {
+func (r *onCallScheduleRepository) List(departmentID string, page, pageSize int) (int64, []model.OnCallSchedule, error) {
 	var schedules []model.OnCallSchedule
 	var total int64
 
@@ -62,19 +70,30 @@ func (r *OnCallScheduleRepository) List(departmentID string, page, pageSize int)
 }
 
 // OnCallShiftRepository 值班班次仓库
-type OnCallShiftRepository struct {
+type OnCallShiftRepository interface {
+	Create(shift *model.OnCallShift) error
+	Update(shift *model.OnCallShift) error
+	Delete(id uint) error
+	FindByID(id uint) (*model.OnCallShift, error)
+	ListBySchedule(scheduleID uint) ([]model.OnCallShift, error)
+	ListByScheduleWithUser(scheduleID uint) ([]model.OnCallShiftWithUser, error)
+	GetCurrentOnCallUsers(departmentID string, atTime time.Time) ([]string, error)
+	GetOnCallUserForSchedule(scheduleID uint, atTime time.Time) (string, error)
+}
+
+type onCallShiftRepository struct {
 	db *gorm.DB
 }
 
-func NewOnCallShiftRepository(db *gorm.DB) *OnCallShiftRepository {
-	return &OnCallShiftRepository{db: db}
+func NewOnCallShiftRepository(db *gorm.DB) OnCallShiftRepository {
+	return &onCallShiftRepository{db: db}
 }
 
-func (r *OnCallShiftRepository) Create(shift *model.OnCallShift) error {
+func (r *onCallShiftRepository) Create(shift *model.OnCallShift) error {
 	return r.db.Create(shift).Error
 }
 
-func (r *OnCallShiftRepository) Update(shift *model.OnCallShift) error {
+func (r *onCallShiftRepository) Update(shift *model.OnCallShift) error {
 	// 使用 Omit 明确排除 created_at 和 updated_at 字段，然后使用 Updates 更新
 	// 这样可以确保不会更新这些字段，即使它们被包含在结构体中
 	return r.db.Model(shift).
@@ -90,17 +109,17 @@ func (r *OnCallShiftRepository) Update(shift *model.OnCallShift) error {
 		}).Error
 }
 
-func (r *OnCallShiftRepository) Delete(id uint) error {
+func (r *onCallShiftRepository) Delete(id uint) error {
 	return r.db.Delete(&model.OnCallShift{}, "id = ?", id).Error
 }
 
-func (r *OnCallShiftRepository) FindByID(id uint) (*model.OnCallShift, error) {
+func (r *onCallShiftRepository) FindByID(id uint) (*model.OnCallShift, error) {
 	var shift model.OnCallShift
 	err := r.db.Where("id = ?", id).First(&shift).Error
 	return &shift, err
 }
 
-func (r *OnCallShiftRepository) ListBySchedule(scheduleID uint) ([]model.OnCallShift, error) {
+func (r *onCallShiftRepository) ListBySchedule(scheduleID uint) ([]model.OnCallShift, error) {
 	var shifts []model.OnCallShift
 	err := r.db.Where("schedule_id = ? AND status = ?", scheduleID, "active").
 		Order("start_time ASC").Find(&shifts).Error
@@ -108,7 +127,7 @@ func (r *OnCallShiftRepository) ListBySchedule(scheduleID uint) ([]model.OnCallS
 }
 
 // ListByScheduleWithUser 获取排班的班次列表（包含用户名，返回所有状态的班次）
-func (r *OnCallShiftRepository) ListByScheduleWithUser(scheduleID uint) ([]model.OnCallShiftWithUser, error) {
+func (r *onCallShiftRepository) ListByScheduleWithUser(scheduleID uint) ([]model.OnCallShiftWithUser, error) {
 	var results []model.OnCallShiftWithUser
 	err := r.db.Table("on_call_shifts").
 		Select("on_call_shifts.*, users.username as username").
@@ -120,7 +139,7 @@ func (r *OnCallShiftRepository) ListByScheduleWithUser(scheduleID uint) ([]model
 }
 
 // GetCurrentOnCallUsers 获取当前值班的用户列表
-func (r *OnCallShiftRepository) GetCurrentOnCallUsers(departmentID string, atTime time.Time) ([]string, error) {
+func (r *onCallShiftRepository) GetCurrentOnCallUsers(departmentID string, atTime time.Time) ([]string, error) {
 	var userIDs []string
 
 	// 查找所有启用的排班
@@ -162,7 +181,7 @@ func (r *OnCallShiftRepository) GetCurrentOnCallUsers(departmentID string, atTim
 }
 
 // GetOnCallUserForSchedule 获取指定排班的当前值班用户
-func (r *OnCallShiftRepository) GetOnCallUserForSchedule(scheduleID uint, atTime time.Time) (string, error) {
+func (r *onCallShiftRepository) GetOnCallUserForSchedule(scheduleID uint, atTime time.Time) (string, error) {
 	var userID string
 	err := r.db.Model(&model.OnCallShift{}).
 		Where("schedule_id = ? AND status = ? AND start_time <= ? AND end_time >= ?",
@@ -174,25 +193,32 @@ func (r *OnCallShiftRepository) GetOnCallUserForSchedule(scheduleID uint, atTime
 }
 
 // OnCallAssignmentRepository 告警分配仓库
-type OnCallAssignmentRepository struct {
+type OnCallAssignmentRepository interface {
+	Create(assignment *model.OnCallAssignment) error
+	FindByAlertID(alertID uint64) (*model.OnCallAssignment, error)
+	ListByUser(userID string, page, pageSize int) (int64, []model.OnCallAssignment, error)
+	ListByAlert(alertID uint64) ([]model.OnCallAssignment, error)
+}
+
+type onCallAssignmentRepository struct {
 	db *gorm.DB
 }
 
-func NewOnCallAssignmentRepository(db *gorm.DB) *OnCallAssignmentRepository {
-	return &OnCallAssignmentRepository{db: db}
+func NewOnCallAssignmentRepository(db *gorm.DB) OnCallAssignmentRepository {
+	return &onCallAssignmentRepository{db: db}
 }
 
-func (r *OnCallAssignmentRepository) Create(assignment *model.OnCallAssignment) error {
+func (r *onCallAssignmentRepository) Create(assignment *model.OnCallAssignment) error {
 	return r.db.Create(assignment).Error
 }
 
-func (r *OnCallAssignmentRepository) FindByAlertID(alertID uint64) (*model.OnCallAssignment, error) {
+func (r *onCallAssignmentRepository) FindByAlertID(alertID uint64) (*model.OnCallAssignment, error) {
 	var assignment model.OnCallAssignment
 	err := r.db.Where("alert_id = ?", alertID).Order("assigned_at DESC").First(&assignment).Error
 	return &assignment, err
 }
 
-func (r *OnCallAssignmentRepository) ListByUser(userID string, page, pageSize int) (int64, []model.OnCallAssignment, error) {
+func (r *onCallAssignmentRepository) ListByUser(userID string, page, pageSize int) (int64, []model.OnCallAssignment, error) {
 	var assignments []model.OnCallAssignment
 	var total int64
 
@@ -207,7 +233,7 @@ func (r *OnCallAssignmentRepository) ListByUser(userID string, page, pageSize in
 	return total, assignments, err
 }
 
-func (r *OnCallAssignmentRepository) ListByAlert(alertID uint64) ([]model.OnCallAssignment, error) {
+func (r *onCallAssignmentRepository) ListByAlert(alertID uint64) ([]model.OnCallAssignment, error) {
 	var assignments []model.OnCallAssignment
 	err := r.db.Where("alert_id = ?", alertID).Order("assigned_at DESC").Find(&assignments).Error
 	return assignments, err

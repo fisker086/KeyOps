@@ -27,21 +27,21 @@ type DeployProdStarter interface {
 }
 
 type Service struct {
-	repo              *repository.ReleaseRunRepository
+	repo              repository.ReleaseRunRepository
 	db                *gorm.DB
-	appRepo           *repository.ApplicationRepository
-	bindingRepo       *repository.ApplicationDeployBindingRepository
-	settingRepo       *repository.SettingRepository
+	appRepo           repository.ApplicationRepository
+	bindingRepo       repository.ApplicationDeployBindingRepository
+	settingRepo       repository.SettingRepository
 	jenkinsSvc        *jenkinsService.JenkinsService
 	deployProdStarter DeployProdStarter // 若设置则审批通过后走编排（如 Temporal），否则直接执行
 }
 
-func NewService(repo *repository.ReleaseRunRepository) *Service {
+func NewService(repo repository.ReleaseRunRepository) *Service {
 	return &Service{repo: repo}
 }
 
 // SetDependencies 注入 DB、应用、绑定、设置与 Jenkins 依赖（用于执行发布与创建 prod 审批）
-func (s *Service) SetDependencies(db *gorm.DB, appRepo *repository.ApplicationRepository, bindingRepo *repository.ApplicationDeployBindingRepository, jenkinsSvc *jenkinsService.JenkinsService) {
+func (s *Service) SetDependencies(db *gorm.DB, appRepo repository.ApplicationRepository, bindingRepo repository.ApplicationDeployBindingRepository, jenkinsSvc *jenkinsService.JenkinsService) {
 	s.db = db
 	s.appRepo = appRepo
 	s.bindingRepo = bindingRepo
@@ -49,7 +49,7 @@ func (s *Service) SetDependencies(db *gorm.DB, appRepo *repository.ApplicationRe
 }
 
 // SetSettingRepository 注入设置仓库（用于读取 release_approval 创建第三方审批）
-func (s *Service) SetSettingRepository(repo *repository.SettingRepository) {
+func (s *Service) SetSettingRepository(repo repository.SettingRepository) {
 	s.settingRepo = repo
 }
 

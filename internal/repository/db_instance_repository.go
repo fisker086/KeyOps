@@ -5,31 +5,41 @@ import (
 	"gorm.io/gorm"
 )
 
-type DBInstanceRepository struct {
+type DBInstanceRepository interface {
+	Create(instance *model.DBInstance) error
+	Update(instance *model.DBInstance) error
+	Delete(id uint) error
+	GetByID(id uint) (*model.DBInstance, error)
+	ExistsByName(name string, excludeID *uint) (bool, error)
+	List(offset, limit int, filters map[string]interface{}) ([]model.DBInstance, int64, error)
+	TestConnection(instance *model.DBInstance) error
+}
+
+type dbInstanceRepository struct {
 	db *gorm.DB
 }
 
-func NewDBInstanceRepository(db *gorm.DB) *DBInstanceRepository {
-	return &DBInstanceRepository{db: db}
+func NewDBInstanceRepository(db *gorm.DB) DBInstanceRepository {
+	return &dbInstanceRepository{db: db}
 }
 
 // Create 创建数据库实例
-func (r *DBInstanceRepository) Create(instance *model.DBInstance) error {
+func (r *dbInstanceRepository) Create(instance *model.DBInstance) error {
 	return r.db.Create(instance).Error
 }
 
 // Update 更新数据库实例
-func (r *DBInstanceRepository) Update(instance *model.DBInstance) error {
+func (r *dbInstanceRepository) Update(instance *model.DBInstance) error {
 	return r.db.Model(instance).Omit("created_at").Updates(instance).Error
 }
 
 // Delete 删除数据库实例
-func (r *DBInstanceRepository) Delete(id uint) error {
+func (r *dbInstanceRepository) Delete(id uint) error {
 	return r.db.Delete(&model.DBInstance{}, "id = ?", id).Error
 }
 
 // GetByID 根据ID获取实例
-func (r *DBInstanceRepository) GetByID(id uint) (*model.DBInstance, error) {
+func (r *dbInstanceRepository) GetByID(id uint) (*model.DBInstance, error) {
 	var instance model.DBInstance
 	err := r.db.Where("id = ?", id).First(&instance).Error
 	if err != nil {
@@ -39,7 +49,7 @@ func (r *DBInstanceRepository) GetByID(id uint) (*model.DBInstance, error) {
 }
 
 // ExistsByName 检查名称是否已存在。excludeID 不为 nil 时排除该 ID（用于更新时允许原名）
-func (r *DBInstanceRepository) ExistsByName(name string, excludeID *uint) (bool, error) {
+func (r *dbInstanceRepository) ExistsByName(name string, excludeID *uint) (bool, error) {
 	var count int64
 	query := r.db.Model(&model.DBInstance{}).Where("name = ?", name)
 	if excludeID != nil {
@@ -52,7 +62,7 @@ func (r *DBInstanceRepository) ExistsByName(name string, excludeID *uint) (bool,
 }
 
 // List 获取实例列表
-func (r *DBInstanceRepository) List(offset, limit int, filters map[string]interface{}) ([]model.DBInstance, int64, error) {
+func (r *dbInstanceRepository) List(offset, limit int, filters map[string]interface{}) ([]model.DBInstance, int64, error) {
 	var instances []model.DBInstance
 	var total int64
 
@@ -80,7 +90,7 @@ func (r *DBInstanceRepository) List(offset, limit int, filters map[string]interf
 }
 
 // TestConnection 测试连接（不保存到数据库）
-func (r *DBInstanceRepository) TestConnection(instance *model.DBInstance) error {
+func (r *dbInstanceRepository) TestConnection(instance *model.DBInstance) error {
 	// 这里只做基本验证，实际连接测试在 service 层实现
 	if instance.Host == "" {
 		return gorm.ErrRecordNotFound

@@ -8,34 +8,47 @@ import (
 	"gorm.io/gorm"
 )
 
-type ApplicationRepository struct {
+type ApplicationRepository interface {
+	Create(app *model.Application) error
+	Update(app *model.Application) error
+	Delete(id string) error
+	FindByID(id string) (*model.Application, error)
+	FindAll() ([]model.Application, error)
+	FindByOrg(org string) ([]model.Application, error)
+	FindByDepartment(department string) ([]model.Application, error)
+	FindByStatus(status string) ([]model.Application, error)
+	FindBySrvType(srvType string) ([]model.Application, error)
+	Search(params map[string]interface{}) ([]model.Application, error)
+	SearchWithUserFilter(params map[string]interface{}, userID, username string, isAdmin bool) ([]model.Application, error)
+	SearchWithUserFilterPaginated(params map[string]interface{}, userID, username string, isAdmin bool, page, pageSize int) ([]model.Application, int64, error)
+	CheckNameExists(name string, excludeID string) (bool, error)
+	FindByGitURL(repoURL string) (*model.Application, error)
+}
+
+type applicationRepository struct {
 	db *gorm.DB
 }
 
-func NewApplicationRepository(db *gorm.DB) *ApplicationRepository {
-	return &ApplicationRepository{db: db}
+func NewApplicationRepository(db *gorm.DB) ApplicationRepository {
+	return &applicationRepository{db: db}
 }
 
-// Create 创建应用
-func (r *ApplicationRepository) Create(app *model.Application) error {
+func (r *applicationRepository) Create(app *model.Application) error {
 	return r.db.Create(app).Error
 }
 
-// Update 更新应用
-func (r *ApplicationRepository) Update(app *model.Application) error {
+func (r *applicationRepository) Update(app *model.Application) error {
 	return r.db.Model(&model.Application{}).
 		Where("id = ?", app.ID).
 		Omit("created_at").
 		Updates(app).Error
 }
 
-// Delete 删除应用
-func (r *ApplicationRepository) Delete(id string) error {
+func (r *applicationRepository) Delete(id string) error {
 	return r.db.Delete(&model.Application{}, "id = ?", id).Error
 }
 
-// FindByID 根据ID查找应用
-func (r *ApplicationRepository) FindByID(id string) (*model.Application, error) {
+func (r *applicationRepository) FindByID(id string) (*model.Application, error) {
 	var app model.Application
 	err := r.db.Where("id = ?", id).First(&app).Error
 	if err != nil {
@@ -44,43 +57,37 @@ func (r *ApplicationRepository) FindByID(id string) (*model.Application, error) 
 	return &app, nil
 }
 
-// FindAll 查找所有应用
-func (r *ApplicationRepository) FindAll() ([]model.Application, error) {
+func (r *applicationRepository) FindAll() ([]model.Application, error) {
 	var apps []model.Application
 	err := r.db.Order("updated_at DESC").Find(&apps).Error
 	return apps, err
 }
 
-// FindByOrg 根据事业部查找应用
-func (r *ApplicationRepository) FindByOrg(org string) ([]model.Application, error) {
+func (r *applicationRepository) FindByOrg(org string) ([]model.Application, error) {
 	var apps []model.Application
 	err := r.db.Where("org = ?", org).Order("updated_at DESC").Find(&apps).Error
 	return apps, err
 }
 
-// FindByDepartment 根据部门查找应用
-func (r *ApplicationRepository) FindByDepartment(department string) ([]model.Application, error) {
+func (r *applicationRepository) FindByDepartment(department string) ([]model.Application, error) {
 	var apps []model.Application
 	err := r.db.Where("department = ?", department).Order("updated_at DESC").Find(&apps).Error
 	return apps, err
 }
 
-// FindByStatus 根据状态查找应用
-func (r *ApplicationRepository) FindByStatus(status string) ([]model.Application, error) {
+func (r *applicationRepository) FindByStatus(status string) ([]model.Application, error) {
 	var apps []model.Application
 	err := r.db.Where("status = ?", status).Order("updated_at DESC").Find(&apps).Error
 	return apps, err
 }
 
-// FindBySrvType 根据应用类型查找应用
-func (r *ApplicationRepository) FindBySrvType(srvType string) ([]model.Application, error) {
+func (r *applicationRepository) FindBySrvType(srvType string) ([]model.Application, error) {
 	var apps []model.Application
 	err := r.db.Where("srv_type = ?", srvType).Order("updated_at DESC").Find(&apps).Error
 	return apps, err
 }
 
-// Search 搜索应用（支持多条件）
-func (r *ApplicationRepository) Search(params map[string]interface{}) ([]model.Application, error) {
+func (r *applicationRepository) Search(params map[string]interface{}) ([]model.Application, error) {
 	var apps []model.Application
 	query := r.db.Model(&model.Application{})
 
@@ -113,10 +120,7 @@ func (r *ApplicationRepository) Search(params map[string]interface{}) ([]model.A
 	return apps, err
 }
 
-// SearchWithUserFilter 搜索应用（支持多条件和用户权限过滤）
-// userID: 当前用户ID；username: 当前用户名（前端可能存的是用户名，两者任一匹配即可）
-// isAdmin: 是否为管理员，管理员可以看到所有应用
-func (r *ApplicationRepository) SearchWithUserFilter(params map[string]interface{}, userID, username string, isAdmin bool) ([]model.Application, error) {
+func (r *applicationRepository) SearchWithUserFilter(params map[string]interface{}, userID, username string, isAdmin bool) ([]model.Application, error) {
 	var apps []model.Application
 	query := r.db.Model(&model.Application{})
 
@@ -153,9 +157,7 @@ func (r *ApplicationRepository) SearchWithUserFilter(params map[string]interface
 	return apps, err
 }
 
-// SearchWithUserFilterPaginated 分页搜索应用（支持多条件、用户权限过滤）
-// 返回 list 和 total；userID/username 用于负责人匹配（前端可能存的是用户名）
-func (r *ApplicationRepository) SearchWithUserFilterPaginated(params map[string]interface{}, userID, username string, isAdmin bool, page, pageSize int) ([]model.Application, int64, error) {
+func (r *applicationRepository) SearchWithUserFilterPaginated(params map[string]interface{}, userID, username string, isAdmin bool, page, pageSize int) ([]model.Application, int64, error) {
 	query := r.db.Model(&model.Application{})
 
 	if name, ok := params["name"].(string); ok && name != "" {
@@ -208,9 +210,7 @@ func (r *ApplicationRepository) SearchWithUserFilterPaginated(params map[string]
 	return apps, total, err
 }
 
-// addUserFilter 添加用户过滤条件（检查用户是否在运维/测试/研发负责人中）
-// 同时支持 userID（JWT 中的用户 ID）和 username（前端可能存的是用户名），任一匹配即可
-func (r *ApplicationRepository) addUserFilter(query *gorm.DB, userID string, username string) *gorm.DB {
+func (r *applicationRepository) addUserFilter(query *gorm.DB, userID string, username string) *gorm.DB {
 	useUsername := username != "" && username != userID
 	fields := []string{"ops_owners", "test_owners", "dev_owners"}
 
@@ -247,8 +247,7 @@ func (r *ApplicationRepository) addUserFilter(query *gorm.DB, userID string, use
 	return query.Where(strings.Join(orParts, " OR "), args...)
 }
 
-// CheckNameExists 检查应用名称是否存在
-func (r *ApplicationRepository) CheckNameExists(name string, excludeID string) (bool, error) {
+func (r *applicationRepository) CheckNameExists(name string, excludeID string) (bool, error) {
 	var count int64
 	query := r.db.Model(&model.Application{}).Where("name = ?", name)
 	if excludeID != "" {
@@ -258,7 +257,6 @@ func (r *ApplicationRepository) CheckNameExists(name string, excludeID string) (
 	return count > 0, err
 }
 
-// normalizeGitURL 规范化 Git URL 便于匹配（去空格、去 .git 后缀、去末尾斜杠）
 func normalizeGitURL(u string) string {
 	s := strings.TrimSpace(u)
 	s = strings.TrimSuffix(s, ".git")
@@ -266,8 +264,7 @@ func normalizeGitURL(u string) string {
 	return s
 }
 
-// FindByGitURL 根据仓库 URL 查找应用（匹配 git_url 规范化后的值）
-func (r *ApplicationRepository) FindByGitURL(repoURL string) (*model.Application, error) {
+func (r *applicationRepository) FindByGitURL(repoURL string) (*model.Application, error) {
 	norm := normalizeGitURL(repoURL)
 	if norm == "" {
 		return nil, gorm.ErrRecordNotFound
@@ -284,4 +281,3 @@ func (r *ApplicationRepository) FindByGitURL(repoURL string) (*model.Application
 	}
 	return nil, gorm.ErrRecordNotFound
 }
-

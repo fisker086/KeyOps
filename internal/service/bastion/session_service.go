@@ -1,4 +1,4 @@
-package auth
+package bastion
 
 import (
 	"crypto/rand"
@@ -30,11 +30,11 @@ var (
 )
 
 type SessionService struct {
-	repo     *repository.SessionRepository
-	hostRepo *repository.HostRepository
+	repo     repository.SessionRepository
+	hostRepo repository.HostRepository
 }
 
-func NewSessionService(repo *repository.SessionRepository, hostRepo *repository.HostRepository) *SessionService {
+func NewSessionService(repo repository.SessionRepository, hostRepo repository.HostRepository) *SessionService {
 	return &SessionService{
 		repo:     repo,
 		hostRepo: hostRepo,

@@ -11,13 +11,13 @@ import (
 )
 
 type AppDeployBindingHandler struct {
-	bindingRepo *repository.ApplicationDeployBindingRepository
-	appRepo     *repository.ApplicationRepository
+	bindingRepo repository.ApplicationDeployBindingRepository
+	appRepo     repository.ApplicationRepository
 }
 
 func NewAppDeployBindingHandler(
-	bindingRepo *repository.ApplicationDeployBindingRepository,
-	appRepo *repository.ApplicationRepository,
+	bindingRepo repository.ApplicationDeployBindingRepository,
+	appRepo repository.ApplicationRepository,
 ) *AppDeployBindingHandler {
 	return &AppDeployBindingHandler{
 		bindingRepo: bindingRepo,

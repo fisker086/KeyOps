@@ -8,21 +8,54 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository struct {
+type UserRepository interface {
+	CreateUser(user *model.User) error
+	FindUserByUsername(username string) (*model.User, error)
+	FindUserByEmail(email string) (*model.User, error)
+	FindUserByID(id string) (*model.User, error)
+	UpdateUser(user *model.User) error
+	UpdateUserLastLogin(userID string, loginTime time.Time, loginIP string) error
+	FindAllUsers() ([]model.User, error)
+	CreatePlatformLoginRecord(record *model.PlatformLoginRecord) error
+	FindPlatformLoginRecords(page, pageSize int, userID string) ([]model.PlatformLoginRecord, int64, error)
+	UpdatePlatformLoginRecordLogout(recordID string) error
+	UpdatePlatformLoginRecordLogoutByUser(userID string) error
+	GetDB() *gorm.DB
+	FindAllUsersWithPagination(page, pageSize int, keyword string) ([]model.User, int64, error)
+	DeleteUser(userID string) error
+	UpdateUserRole(userID, role string) error
+	UpdateUserStatus(userID, status string) error
+	AssignRolesToUser(userID string, roleIDs []string, createdBy string) error
+	GetUserRoles(userID string) ([]string, error)
+	GetUserWithGroups(userID string) (*model.UserWithGroups, error)
+	FindAllUsersWithGroups(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error)
+	RemoveUserFromGroup(userID, groupID string) error
+	AddUserToGroup(userID, groupID, createdBy string) error
+	GetUsersInGroup(groupID string) ([]model.User, error)
+	AssignHostsToUser(userID string, hostIDs []string, createdBy string) error
+	GetUserHosts(userID string) ([]string, error)
+	GetUserHostGroupIDs(userID string) ([]string, error)
+	AddUserToHost(userID, hostID, createdBy string) error
+	RemoveUserFromHost(userID, hostID string) error
+	GetUserWithGroupsAndHosts(userID string) (*model.UserWithGroups, error)
+	FindAllUsersWithGroupsAndHosts(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error)
+}
+
+type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &userRepository{db: db}
 }
 
 // ===== User Methods =====
 
-func (r *UserRepository) CreateUser(user *model.User) error {
+func (r *userRepository) CreateUser(user *model.User) error {
 	return r.db.Create(user).Error
 }
 
-func (r *UserRepository) FindUserByUsername(username string) (*model.User, error) {
+func (r *userRepository) FindUserByUsername(username string) (*model.User, error) {
 	var users []model.User
 	result := r.db.Where("username = ?", username).Find(&users)
 	if result.Error != nil {
@@ -34,7 +67,7 @@ func (r *UserRepository) FindUserByUsername(username string) (*model.User, error
 	return &users[0], nil
 }
 
-func (r *UserRepository) FindUserByEmail(email string) (*model.User, error) {
+func (r *userRepository) FindUserByEmail(email string) (*model.User, error) {
 	var users []model.User
 	result := r.db.Where("email = ?", email).Find(&users)
 	if result.Error != nil {
@@ -46,7 +79,7 @@ func (r *UserRepository) FindUserByEmail(email string) (*model.User, error) {
 	return &users[0], nil
 }
 
-func (r *UserRepository) FindUserByID(id string) (*model.User, error) {
+func (r *userRepository) FindUserByID(id string) (*model.User, error) {
 	var user model.User
 	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
@@ -55,11 +88,11 @@ func (r *UserRepository) FindUserByID(id string) (*model.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) UpdateUser(user *model.User) error {
+func (r *userRepository) UpdateUser(user *model.User) error {
 	return r.db.Save(user).Error
 }
 
-func (r *UserRepository) UpdateUserLastLogin(userID string, loginTime time.Time, loginIP string) error {
+func (r *userRepository) UpdateUserLastLogin(userID string, loginTime time.Time, loginIP string) error {
 	return r.db.Model(&model.User{}).
 		Where("id = ?", userID).
 		Updates(map[string]interface{}{
@@ -68,7 +101,7 @@ func (r *UserRepository) UpdateUserLastLogin(userID string, loginTime time.Time,
 		}).Error
 }
 
-func (r *UserRepository) FindAllUsers() ([]model.User, error) {
+func (r *userRepository) FindAllUsers() ([]model.User, error) {
 	var users []model.User
 	err := r.db.Select("id, username, email, full_name, role, status, created_at").
 		Where("status = ?", "active").
@@ -82,11 +115,11 @@ func (r *UserRepository) FindAllUsers() ([]model.User, error) {
 
 // ===== Platform Login Record Methods =====
 
-func (r *UserRepository) CreatePlatformLoginRecord(record *model.PlatformLoginRecord) error {
+func (r *userRepository) CreatePlatformLoginRecord(record *model.PlatformLoginRecord) error {
 	return r.db.Create(record).Error
 }
 
-func (r *UserRepository) FindPlatformLoginRecords(page, pageSize int, userID string) ([]model.PlatformLoginRecord, int64, error) {
+func (r *userRepository) FindPlatformLoginRecords(page, pageSize int, userID string) ([]model.PlatformLoginRecord, int64, error) {
 	var records []model.PlatformLoginRecord
 	var total int64
 
@@ -106,7 +139,7 @@ func (r *UserRepository) FindPlatformLoginRecords(page, pageSize int, userID str
 	return records, total, err
 }
 
-func (r *UserRepository) UpdatePlatformLoginRecordLogout(recordID string) error {
+func (r *userRepository) UpdatePlatformLoginRecordLogout(recordID string) error {
 	return r.db.Model(&model.PlatformLoginRecord{}).
 		Where("id = ? AND status = ?", recordID, "active").
 		Updates(map[string]interface{}{
@@ -114,7 +147,7 @@ func (r *UserRepository) UpdatePlatformLoginRecordLogout(recordID string) error 
 		}).Error
 }
 
-func (r *UserRepository) UpdatePlatformLoginRecordLogoutByUser(userID string) error {
+func (r *userRepository) UpdatePlatformLoginRecordLogoutByUser(userID string) error {
 	// 更新该用户最近的活跃登录记录
 	return r.db.Model(&model.PlatformLoginRecord{}).
 		Where("user_id = ? AND status = ?", userID, "active").
@@ -125,14 +158,14 @@ func (r *UserRepository) UpdatePlatformLoginRecordLogoutByUser(userID string) er
 		}).Error
 }
 
-func (r *UserRepository) GetDB() *gorm.DB {
+func (r *userRepository) GetDB() *gorm.DB {
 	return r.db
 }
 
 // ===== User Management Methods =====
 
 // FindAllUsersWithPagination 分页获取所有用户
-func (r *UserRepository) FindAllUsersWithPagination(page, pageSize int, keyword string) ([]model.User, int64, error) {
+func (r *userRepository) FindAllUsersWithPagination(page, pageSize int, keyword string) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
 
@@ -157,21 +190,21 @@ func (r *UserRepository) FindAllUsersWithPagination(page, pageSize int, keyword 
 }
 
 // DeleteUser 删除用户（软删除，设置status为inactive）
-func (r *UserRepository) DeleteUser(userID string) error {
+func (r *userRepository) DeleteUser(userID string) error {
 	return r.db.Model(&model.User{}).
 		Where("id = ?", userID).
 		Update("status", "inactive").Error
 }
 
 // UpdateUserRole 更新用户角色
-func (r *UserRepository) UpdateUserRole(userID, role string) error {
+func (r *userRepository) UpdateUserRole(userID, role string) error {
 	return r.db.Model(&model.User{}).
 		Where("id = ?", userID).
 		Update("role", role).Error
 }
 
 // UpdateUserStatus 更新用户状态
-func (r *UserRepository) UpdateUserStatus(userID, status string) error {
+func (r *userRepository) UpdateUserStatus(userID, status string) error {
 	return r.db.Model(&model.User{}).
 		Where("id = ?", userID).
 		Update("status", status).Error
@@ -181,7 +214,7 @@ func (r *UserRepository) UpdateUserStatus(userID, status string) error {
 
 // AssignRolesToUser 给用户分配角色（统一使用 role_members 表管理）
 // 系统角色和自定义角色都统一在 roles 表中，通过 role_members 表关联
-func (r *UserRepository) AssignRolesToUser(userID string, roleIDs []string, createdBy string) error {
+func (r *userRepository) AssignRolesToUser(userID string, roleIDs []string, createdBy string) error {
 	// 先删除该用户现有的所有角色（包括系统角色和自定义角色）
 	if err := r.db.Where("user_id = ?", userID).Delete(&model.RoleMember{}).Error; err != nil {
 		return fmt.Errorf("删除现有角色失败: %w", err)
@@ -229,7 +262,7 @@ func (r *UserRepository) AssignRolesToUser(userID string, roleIDs []string, crea
 
 // GetUserRoles 获取用户有权限访问的角色ID列表（统一从 role_members 表获取）
 // 系统角色和自定义角色都统一在 roles 表中，通过 role_members 表关联
-func (r *UserRepository) GetUserRoles(userID string) ([]string, error) {
+func (r *userRepository) GetUserRoles(userID string) ([]string, error) {
 	var roleMembers []model.RoleMember
 	err := r.db.Where("user_id = ?", userID).Find(&roleMembers).Error
 	if err != nil {
@@ -245,7 +278,7 @@ func (r *UserRepository) GetUserRoles(userID string) ([]string, error) {
 }
 
 // GetUserWithGroups 获取用户及其分组信息
-func (r *UserRepository) GetUserWithGroups(userID string) (*model.UserWithGroups, error) {
+func (r *userRepository) GetUserWithGroups(userID string) (*model.UserWithGroups, error) {
 	// 获取用户信息
 	user, err := r.FindUserByID(userID)
 	if err != nil {
@@ -265,7 +298,7 @@ func (r *UserRepository) GetUserWithGroups(userID string) (*model.UserWithGroups
 }
 
 // FindAllUsersWithGroups 获取所有用户及其分组信息（分页）
-func (r *UserRepository) FindAllUsersWithGroups(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error) {
+func (r *userRepository) FindAllUsersWithGroups(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error) {
 	// 获取用户列表
 	users, total, err := r.FindAllUsersWithPagination(page, pageSize, keyword)
 	if err != nil {
@@ -290,13 +323,13 @@ func (r *UserRepository) FindAllUsersWithGroups(page, pageSize int, keyword stri
 }
 
 // RemoveUserFromGroup 从分组中移除用户
-func (r *UserRepository) RemoveUserFromGroup(userID, groupID string) error {
+func (r *userRepository) RemoveUserFromGroup(userID, groupID string) error {
 	return r.db.Where("user_id = ? AND group_id = ?", userID, groupID).
 		Delete(&model.UserGroupPermission{}).Error
 }
 
 // AddUserToGroup 将用户添加到分组
-func (r *UserRepository) AddUserToGroup(userID, groupID, createdBy string) error {
+func (r *userRepository) AddUserToGroup(userID, groupID, createdBy string) error {
 	permission := model.UserGroupPermission{
 		UserID:    userID,
 		GroupID:   groupID,
@@ -306,7 +339,7 @@ func (r *UserRepository) AddUserToGroup(userID, groupID, createdBy string) error
 }
 
 // GetUsersInGroup 获取有权限访问某个分组的所有用户
-func (r *UserRepository) GetUsersInGroup(groupID string) ([]model.User, error) {
+func (r *userRepository) GetUsersInGroup(groupID string) ([]model.User, error) {
 	var users []model.User
 	err := r.db.
 		Joins("JOIN user_group_permissions ON users.id = user_group_permissions.user_id").
@@ -318,7 +351,7 @@ func (r *UserRepository) GetUsersInGroup(groupID string) ([]model.User, error) {
 // ===== User-Host Permission Methods =====
 
 // AssignHostsToUser 给用户分配单个主机权限
-func (r *UserRepository) AssignHostsToUser(userID string, hostIDs []string, createdBy string) error {
+func (r *userRepository) AssignHostsToUser(userID string, hostIDs []string, createdBy string) error {
 	// 先删除该用户现有的所有主机权限
 	if err := r.db.Where("user_id = ?", userID).Delete(&model.UserHostPermission{}).Error; err != nil {
 		return err
@@ -343,7 +376,7 @@ func (r *UserRepository) AssignHostsToUser(userID string, hostIDs []string, crea
 }
 
 // GetUserHosts 获取用户有权限访问的主机ID列表（单独授权的）
-func (r *UserRepository) GetUserHosts(userID string) ([]string, error) {
+func (r *userRepository) GetUserHosts(userID string) ([]string, error) {
 	var permissions []model.UserHostPermission
 	err := r.db.Where("user_id = ?", userID).Find(&permissions).Error
 	if err != nil {
@@ -359,7 +392,7 @@ func (r *UserRepository) GetUserHosts(userID string) ([]string, error) {
 }
 
 // GetUserHostGroupIDs 获取用户可访问的主机组 ID：授权规则（permission_rule_host_groups）+ 旧表 user_group_permissions
-func (r *UserRepository) GetUserHostGroupIDs(userID string) ([]string, error) {
+func (r *userRepository) GetUserHostGroupIDs(userID string) ([]string, error) {
 	hostGroupIDMap := make(map[string]bool)
 
 	// 1. 角色 → 有效授权规则 → permission_rule_host_groups
@@ -431,7 +464,7 @@ func (r *UserRepository) GetUserHostGroupIDs(userID string) ([]string, error) {
 }
 
 // AddUserToHost 将用户添加到单个主机权限
-func (r *UserRepository) AddUserToHost(userID, hostID, createdBy string) error {
+func (r *userRepository) AddUserToHost(userID, hostID, createdBy string) error {
 	permission := model.UserHostPermission{
 		UserID:    userID,
 		HostID:    hostID,
@@ -441,13 +474,13 @@ func (r *UserRepository) AddUserToHost(userID, hostID, createdBy string) error {
 }
 
 // RemoveUserFromHost 从主机移除用户权限
-func (r *UserRepository) RemoveUserFromHost(userID, hostID string) error {
+func (r *userRepository) RemoveUserFromHost(userID, hostID string) error {
 	return r.db.Where("user_id = ? AND host_id = ?", userID, hostID).
 		Delete(&model.UserHostPermission{}).Error
 }
 
 // GetUserWithGroupsAndHosts 获取用户及其分组和主机权限信息
-func (r *UserRepository) GetUserWithGroupsAndHosts(userID string) (*model.UserWithGroups, error) {
+func (r *userRepository) GetUserWithGroupsAndHosts(userID string) (*model.UserWithGroups, error) {
 	// 获取用户信息
 	user, err := r.FindUserByID(userID)
 	if err != nil {
@@ -481,7 +514,7 @@ func (r *UserRepository) GetUserWithGroupsAndHosts(userID string) (*model.UserWi
 }
 
 // FindAllUsersWithGroupsAndHosts 获取所有用户及其分组和主机信息（分页）
-func (r *UserRepository) FindAllUsersWithGroupsAndHosts(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error) {
+func (r *userRepository) FindAllUsersWithGroupsAndHosts(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error) {
 	// 获取用户列表
 	users, total, err := r.FindAllUsersWithPagination(page, pageSize, keyword)
 	if err != nil {

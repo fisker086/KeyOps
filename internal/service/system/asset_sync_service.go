@@ -22,11 +22,11 @@ import (
 )
 
 type AssetSyncService struct {
-	repo     *repository.AssetSyncRepository
-	hostRepo *repository.HostRepository
+	repo     repository.AssetSyncRepository
+	hostRepo repository.HostRepository
 }
 
-func NewAssetSyncService(repo *repository.AssetSyncRepository, hostRepo *repository.HostRepository) *AssetSyncService {
+func NewAssetSyncService(repo repository.AssetSyncRepository, hostRepo repository.HostRepository) *AssetSyncService {
 	return &AssetSyncService{
 		repo:     repo,
 		hostRepo: hostRepo,

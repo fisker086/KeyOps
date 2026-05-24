@@ -18,7 +18,7 @@ type LLMConfig struct {
 }
 
 // ResolveLLMConfig 解析 LLM 配置：从数据库 settings（ai_assistant 分类）读取；无则返回 nil。
-func ResolveLLMConfig(repo *repository.SettingRepository) (*LLMConfig, error) {
+func ResolveLLMConfig(repo repository.SettingRepository) (*LLMConfig, error) {
 	cfg := &LLMConfig{}
 	if repo != nil {
 		settings, err := repo.GetByCategory(model.CategoryAiAssistant)
@@ -56,7 +56,7 @@ func ResolveLLMConfig(repo *repository.SettingRepository) (*LLMConfig, error) {
 }
 
 // GetAvailableModels 获取可选模型列表，供前端下拉选择。从 settings 的 available_models 读取，逗号分隔；空则用 model 作为唯一选项。
-func GetAvailableModels(repo *repository.SettingRepository) (models []string, defaultModel string) {
+func GetAvailableModels(repo repository.SettingRepository) (models []string, defaultModel string) {
 	llm, _ := ResolveLLMConfig(repo)
 	if llm == nil {
 		return nil, ""

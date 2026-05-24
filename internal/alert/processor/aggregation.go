@@ -11,23 +11,23 @@ import (
 	"github.com/fisker086/keyops/pkg/redis"
 )
 
-// AggregationProcessor 聚合处理器
-type AggregationProcessor struct {
-	aggregationRepo *repository.AlertAggregationRepository
-	eventRepo       *repository.AlertEventRepository
+// AggregationResult 聚合检查结果
+type AggregationResult struct {
+	ShouldNotify bool
+	InWindow     bool
+	Message      string
 }
 
-// AggregationResult 聚合结果
-type AggregationResult struct {
-	ShouldNotify bool   // 是否应该发送通知
-	InWindow     bool   // 是否在聚合窗口内
-	Message      string // 结果说明
+// AggregationProcessor 聚合处理器
+type AggregationProcessor struct {
+	aggregationRepo repository.AlertAggregationRepository
+	eventRepo       repository.AlertEventRepository
 }
 
 // NewAggregationProcessor 创建聚合处理器
 func NewAggregationProcessor(
-	aggregationRepo *repository.AlertAggregationRepository,
-	eventRepo *repository.AlertEventRepository,
+	aggregationRepo repository.AlertAggregationRepository,
+	eventRepo repository.AlertEventRepository,
 ) *AggregationProcessor {
 	return &AggregationProcessor{
 		aggregationRepo: aggregationRepo,

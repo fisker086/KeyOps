@@ -37,7 +37,7 @@ func (s *K8sService) GetNamespaceList(clusterID string, clusterName string) ([]*
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API请求失败: %s, 响应: %s", resp.Status, string(body))
+		return nil, fmt.Errorf("API请求失败: %s, 响应: %s", resp.Status, truncateForLog(string(body), 256))
 	}
 
 	var namespaceListResponse struct {
@@ -69,7 +69,6 @@ func (s *K8sService) GetNamespaceList(clusterID string, clusterName string) ([]*
 		namespaces = append(namespaces, namespace)
 	}
 
-	// 按名称排序：default 放首位，其它按字母排序
 	sort.Slice(namespaces, func(i, j int) bool {
 		ni, nj := namespaces[i].Name, namespaces[j].Name
 		if ni == "default" {
@@ -82,4 +81,11 @@ func (s *K8sService) GetNamespaceList(clusterID string, clusterName string) ([]*
 	})
 
 	return namespaces, nil
+}
+
+func truncateForLog(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
 }

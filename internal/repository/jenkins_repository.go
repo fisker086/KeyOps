@@ -5,21 +5,30 @@ import (
 	"gorm.io/gorm"
 )
 
-type JenkinsRepository struct {
+type JenkinsRepository interface {
+	Create(server *model.JenkinsServer) error
+	GetByID(id uint) (*model.JenkinsServer, error)
+	Update(server *model.JenkinsServer) error
+	Delete(id uint) error
+	List(page, pageSize int) ([]model.JenkinsServer, int64, error)
+	ListAll() ([]model.JenkinsServer, error)
+}
+
+type jenkinsRepository struct {
 	db *gorm.DB
 }
 
-func NewJenkinsRepository(db *gorm.DB) *JenkinsRepository {
-	return &JenkinsRepository{db: db}
+func NewJenkinsRepository(db *gorm.DB) JenkinsRepository {
+	return &jenkinsRepository{db: db}
 }
 
 // Create 创建Jenkins服务器
-func (r *JenkinsRepository) Create(server *model.JenkinsServer) error {
+func (r *jenkinsRepository) Create(server *model.JenkinsServer) error {
 	return r.db.Create(server).Error
 }
 
 // GetByID 根据ID获取Jenkins服务器
-func (r *JenkinsRepository) GetByID(id uint) (*model.JenkinsServer, error) {
+func (r *jenkinsRepository) GetByID(id uint) (*model.JenkinsServer, error) {
 	var server model.JenkinsServer
 	err := r.db.Where("id = ?", id).First(&server).Error
 	if err != nil {
@@ -29,17 +38,17 @@ func (r *JenkinsRepository) GetByID(id uint) (*model.JenkinsServer, error) {
 }
 
 // Update 更新Jenkins服务器
-func (r *JenkinsRepository) Update(server *model.JenkinsServer) error {
+func (r *jenkinsRepository) Update(server *model.JenkinsServer) error {
 	return r.db.Save(server).Error
 }
 
 // Delete 删除Jenkins服务器
-func (r *JenkinsRepository) Delete(id uint) error {
+func (r *jenkinsRepository) Delete(id uint) error {
 	return r.db.Delete(&model.JenkinsServer{}, id).Error
 }
 
 // List 获取Jenkins服务器列表
-func (r *JenkinsRepository) List(page, pageSize int) ([]model.JenkinsServer, int64, error) {
+func (r *jenkinsRepository) List(page, pageSize int) ([]model.JenkinsServer, int64, error) {
 	var servers []model.JenkinsServer
 	var total int64
 
@@ -60,9 +69,8 @@ func (r *JenkinsRepository) List(page, pageSize int) ([]model.JenkinsServer, int
 }
 
 // ListAll 获取所有启用的Jenkins服务器
-func (r *JenkinsRepository) ListAll() ([]model.JenkinsServer, error) {
+func (r *jenkinsRepository) ListAll() ([]model.JenkinsServer, error) {
 	var servers []model.JenkinsServer
 	err := r.db.Where("enabled = ?", true).Order("created_at DESC").Find(&servers).Error
 	return servers, err
 }
-

@@ -17,11 +17,11 @@ import (
 
 type ReleaseHandler struct {
 	service      *release.Service
-	pipelineRepo *repository.ReleasePipelineDefinitionRepository
-	bindingRepo  *repository.ApplicationDeployBindingRepository
+	pipelineRepo repository.ReleasePipelineDefinitionRepository
+	bindingRepo  repository.ApplicationDeployBindingRepository
 }
 
-func NewReleaseHandler(service *release.Service, pipelineRepo *repository.ReleasePipelineDefinitionRepository, bindingRepo *repository.ApplicationDeployBindingRepository) *ReleaseHandler {
+func NewReleaseHandler(service *release.Service, pipelineRepo repository.ReleasePipelineDefinitionRepository, bindingRepo repository.ApplicationDeployBindingRepository) *ReleaseHandler {
 	return &ReleaseHandler{service: service, pipelineRepo: pipelineRepo, bindingRepo: bindingRepo}
 }
 

@@ -14,13 +14,13 @@ import (
 
 // HostGroupHandler 主机分组处理器
 type HostGroupHandler struct {
-	groupRepo *repository.HostGroupRepository
-	hostRepo  *repository.HostRepository
-	userRepo  *repository.UserRepository
+	groupRepo repository.HostGroupRepository
+	hostRepo  repository.HostRepository
+	userRepo  repository.UserRepository
 }
 
 // NewHostGroupHandler 创建主机分组处理器
-func NewHostGroupHandler(groupRepo *repository.HostGroupRepository, hostRepo *repository.HostRepository, userRepo *repository.UserRepository) *HostGroupHandler {
+func NewHostGroupHandler(groupRepo repository.HostGroupRepository, hostRepo repository.HostRepository, userRepo repository.UserRepository) *HostGroupHandler {
 	return &HostGroupHandler{
 		groupRepo: groupRepo,
 		hostRepo:  hostRepo,

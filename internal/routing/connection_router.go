@@ -15,9 +15,9 @@ import (
 
 // ConnectionRouter 连接路由器 - 智能决策是直连还是通过代理
 type ConnectionRouter struct {
-	hostRepo    *repository.HostRepository
-	proxyRepo   *repository.ProxyRepository
-	settingRepo *repository.SettingRepository
+	hostRepo    repository.HostRepository
+	proxyRepo   repository.ProxyRepository
+	settingRepo repository.SettingRepository
 	cache       *ConnectivityCache
 }
 
@@ -89,9 +89,9 @@ func (c *ConnectivityCache) cleanup() {
 
 // NewConnectionRouter 创建连接路由器
 func NewConnectionRouter(
-	hostRepo *repository.HostRepository,
-	proxyRepo *repository.ProxyRepository,
-	settingRepo *repository.SettingRepository,
+	hostRepo repository.HostRepository,
+	proxyRepo repository.ProxyRepository,
+	settingRepo repository.SettingRepository,
 ) *ConnectionRouter {
 	return &ConnectionRouter{
 		hostRepo:    hostRepo,

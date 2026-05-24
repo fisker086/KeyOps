@@ -14,12 +14,12 @@ import (
 var ErrInstanceNameExists = errors.New("实例名称已存在")
 
 type InstanceService struct {
-	instanceRepo *repository.DBInstanceRepository
+	instanceRepo repository.DBInstanceRepository
 	crypto       *crypto.Crypto
 }
 
 func NewInstanceService(
-	instanceRepo *repository.DBInstanceRepository,
+	instanceRepo repository.DBInstanceRepository,
 	crypto *crypto.Crypto,
 ) *InstanceService {
 	return &InstanceService{

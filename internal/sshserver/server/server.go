@@ -124,7 +124,7 @@ type Server struct {
 	authStatesMu sync.RWMutex
 	// 数据库连接和仓库
 	db          *gorm.DB
-	settingRepo *repository.SettingRepository
+	settingRepo repository.SettingRepository
 }
 
 // AuthState 认证状态
@@ -418,7 +418,7 @@ func (s *Server) loadOrGenerateHostKey(path string) error {
 	}
 
 	if err := os.WriteFile(path, privateKeyBytes, 0600); err != nil {
-		return fmt.Errorf("failed to save host key to %s: %w", err)
+		return fmt.Errorf("failed to save host key to %s: %w", path, err)
 	}
 
 	signer, err := gossh.ParsePrivateKey(privateKeyBytes)

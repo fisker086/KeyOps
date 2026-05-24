@@ -12,10 +12,10 @@ import (
 )
 
 type BuildMasterHandler struct {
-	repo *repository.BuildMasterRepository
+	repo repository.BuildMasterRepository
 }
 
-func NewBuildMasterHandler(repo *repository.BuildMasterRepository) *BuildMasterHandler {
+func NewBuildMasterHandler(repo repository.BuildMasterRepository) *BuildMasterHandler {
 	return &BuildMasterHandler{repo: repo}
 }
 

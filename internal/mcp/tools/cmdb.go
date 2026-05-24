@@ -10,11 +10,11 @@ import (
 )
 
 type CmdbToolContext struct {
-	HostRepo         *repository.HostRepository
-	AppRepo          *repository.ApplicationRepository
-	DBInstanceRepo   *repository.DBInstanceRepository
-	CertRepo         *repository.DomainCertificateRepository
-	K8sClusterRepo   *repository.K8sClusterRepository
+	HostRepo         repository.HostRepository
+	AppRepo          repository.ApplicationRepository
+	DBInstanceRepo   repository.DBInstanceRepository
+	CertRepo         repository.DomainCertificateRepository
+	K8sClusterRepo   repository.K8sClusterRepository
 }
 
 func RegisterCmdbTools(registry *mcp.Registry, ctx *CmdbToolContext) {

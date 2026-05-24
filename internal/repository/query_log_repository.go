@@ -5,21 +5,27 @@ import (
 	"gorm.io/gorm"
 )
 
-type QueryLogRepository struct {
+type QueryLogRepository interface {
+	Create(log *model.QueryLog) error
+	GetByID(id uint) (*model.QueryLog, error)
+	List(offset, limit int, filters map[string]interface{}) ([]model.QueryLog, int64, error)
+}
+
+type queryLogRepository struct {
 	db *gorm.DB
 }
 
-func NewQueryLogRepository(db *gorm.DB) *QueryLogRepository {
-	return &QueryLogRepository{db: db}
+func NewQueryLogRepository(db *gorm.DB) QueryLogRepository {
+	return &queryLogRepository{db: db}
 }
 
 // Create 创建查询日志
-func (r *QueryLogRepository) Create(log *model.QueryLog) error {
+func (r *queryLogRepository) Create(log *model.QueryLog) error {
 	return r.db.Create(log).Error
 }
 
 // GetByID 根据ID获取日志
-func (r *QueryLogRepository) GetByID(id uint) (*model.QueryLog, error) {
+func (r *queryLogRepository) GetByID(id uint) (*model.QueryLog, error) {
 	var log model.QueryLog
 	err := r.db.Where("id = ?", id).First(&log).Error
 	if err != nil {
@@ -29,7 +35,7 @@ func (r *QueryLogRepository) GetByID(id uint) (*model.QueryLog, error) {
 }
 
 // List 获取日志列表
-func (r *QueryLogRepository) List(offset, limit int, filters map[string]interface{}) ([]model.QueryLog, int64, error) {
+func (r *queryLogRepository) List(offset, limit int, filters map[string]interface{}) ([]model.QueryLog, int64, error) {
 	var logs []model.QueryLog
 	var total int64
 

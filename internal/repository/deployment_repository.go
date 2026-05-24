@@ -7,21 +7,33 @@ import (
 	"gorm.io/gorm"
 )
 
-type DeploymentRepository struct {
+type DeploymentRepository interface {
+	Create(deployment *model.Deployment) error
+	GetByID(id string) (*model.Deployment, error)
+	Update(deployment *model.Deployment) error
+	UpdateStatus(id string, status string, duration *int, logPath string) error
+	List(params *DeploymentListParams) ([]*model.Deployment, int64, error)
+	Delete(id string) error
+	SaveBuildLog(deploymentID string, buildLog string) error
+	GetBuildLog(deploymentID string) (string, error)
+	FindByJenkinsBuild(jobName string, buildNumber int) (*model.Deployment, error)
+}
+
+type deploymentRepository struct {
 	db *gorm.DB
 }
 
-func NewDeploymentRepository(db *gorm.DB) *DeploymentRepository {
-	return &DeploymentRepository{db: db}
+func NewDeploymentRepository(db *gorm.DB) DeploymentRepository {
+	return &deploymentRepository{db: db}
 }
 
 // Create 创建部署记录
-func (r *DeploymentRepository) Create(deployment *model.Deployment) error {
+func (r *deploymentRepository) Create(deployment *model.Deployment) error {
 	return r.db.Create(deployment).Error
 }
 
 // GetByID 根据ID获取部署记录
-func (r *DeploymentRepository) GetByID(id string) (*model.Deployment, error) {
+func (r *deploymentRepository) GetByID(id string) (*model.Deployment, error) {
 	var deployment model.Deployment
 	err := r.db.Where("id = ?", id).First(&deployment).Error
 	if err != nil {
@@ -31,12 +43,12 @@ func (r *DeploymentRepository) GetByID(id string) (*model.Deployment, error) {
 }
 
 // Update 更新部署记录
-func (r *DeploymentRepository) Update(deployment *model.Deployment) error {
+func (r *deploymentRepository) Update(deployment *model.Deployment) error {
 	return r.db.Save(deployment).Error
 }
 
 // UpdateStatus 更新部署状态
-func (r *DeploymentRepository) UpdateStatus(id string, status string, duration *int, logPath string) error {
+func (r *deploymentRepository) UpdateStatus(id string, status string, duration *int, logPath string) error {
 	// 先获取当前记录，检查状态变化
 	var current model.Deployment
 	if err := r.db.Where("id = ?", id).First(&current).Error; err != nil {
@@ -74,7 +86,7 @@ func (r *DeploymentRepository) UpdateStatus(id string, status string, duration *
 }
 
 // List 查询部署记录列表
-func (r *DeploymentRepository) List(params *DeploymentListParams) ([]*model.Deployment, int64, error) {
+func (r *deploymentRepository) List(params *DeploymentListParams) ([]*model.Deployment, int64, error) {
 	var deployments []*model.Deployment
 	var total int64
 	
@@ -168,17 +180,17 @@ type DeploymentListParams struct {
 }
 
 // Delete 删除部署记录
-func (r *DeploymentRepository) Delete(id string) error {
+func (r *deploymentRepository) Delete(id string) error {
 	return r.db.Delete(&model.Deployment{}, "id = ?", id).Error
 }
 
 // SaveBuildLog 保存Jenkins构建日志
-func (r *DeploymentRepository) SaveBuildLog(deploymentID string, buildLog string) error {
+func (r *deploymentRepository) SaveBuildLog(deploymentID string, buildLog string) error {
 	return r.db.Model(&model.Deployment{}).Where("id = ?", deploymentID).Update("build_log", buildLog).Error
 }
 
 // GetBuildLog 获取Jenkins构建日志
-func (r *DeploymentRepository) GetBuildLog(deploymentID string) (string, error) {
+func (r *deploymentRepository) GetBuildLog(deploymentID string) (string, error) {
 	var deployment model.Deployment
 	err := r.db.Select("build_log").Where("id = ?", deploymentID).First(&deployment).Error
 	if err != nil {
@@ -188,7 +200,7 @@ func (r *DeploymentRepository) GetBuildLog(deploymentID string) (string, error) 
 }
 
 // FindByJenkinsBuild 根据Jenkins Job和Build Number查找部署记录
-func (r *DeploymentRepository) FindByJenkinsBuild(jobName string, buildNumber int) (*model.Deployment, error) {
+func (r *deploymentRepository) FindByJenkinsBuild(jobName string, buildNumber int) (*model.Deployment, error) {
 	var deployment model.Deployment
 	err := r.db.Where("jenkins_job = ? AND jenkins_build_number = ?", jobName, buildNumber).First(&deployment).Error
 	if err != nil {
@@ -196,4 +208,3 @@ func (r *DeploymentRepository) FindByJenkinsBuild(jobName string, buildNumber in
 	}
 	return &deployment, nil
 }
-

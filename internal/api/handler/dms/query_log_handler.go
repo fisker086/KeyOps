@@ -10,10 +10,10 @@ import (
 )
 
 type QueryLogHandler struct {
-	queryLogRepo *repository.QueryLogRepository
+	queryLogRepo repository.QueryLogRepository
 }
 
-func NewQueryLogHandler(queryLogRepo *repository.QueryLogRepository) *QueryLogHandler {
+func NewQueryLogHandler(queryLogRepo repository.QueryLogRepository) *QueryLogHandler {
 	return &QueryLogHandler{
 		queryLogRepo: queryLogRepo,
 	}

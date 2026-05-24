@@ -22,7 +22,7 @@ type FeishuProvider struct {
 	baseURL  string
 	client   *http.Client
 	db       *gorm.DB
-	hostRepo *repository.HostRepository
+	hostRepo repository.HostRepository
 }
 
 // NewFeishuProvider 创建飞书审批提供者

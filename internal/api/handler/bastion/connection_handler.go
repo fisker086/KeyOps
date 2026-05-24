@@ -47,26 +47,26 @@ var upgrader = websocket.Upgrader{
 // ConnectionHandler 连接处理器 - 统一入口（支持直连和代理）
 type ConnectionHandler struct {
 	router         *routing.ConnectionRouter
-	hostRepo       *repository.HostRepository
+	hostRepo       repository.HostRepository
 	authSvc        *authService.AuthService
 	storage        storage.Storage
 	blacklistMgr   *blacklist.Manager
-	systemUserRepo *repository.SystemUserRepository
-	settingRepo    *repository.SettingRepository
-	sessionRepo    *repository.SessionRepository // 堡垒机登录/会话审计（MySQL 或 Mongo）
+	systemUserRepo repository.SystemUserRepository
+	settingRepo    repository.SettingRepository
+	sessionRepo    repository.SessionRepository // 堡垒机登录/会话审计（MySQL 或 Mongo）
 }
 
 // NewConnectionHandler 创建连接处理器
 func NewConnectionHandler(
 	r *routing.ConnectionRouter,
-	hostRepo *repository.HostRepository,
+	hostRepo repository.HostRepository,
 	authSvc *authService.AuthService,
 	st storage.Storage,
 	db *gorm.DB,
 	notificationMgr *notification.NotificationManager,
-	systemUserRepo *repository.SystemUserRepository,
-	settingRepo *repository.SettingRepository,
-	sessionRepo *repository.SessionRepository,
+	systemUserRepo repository.SystemUserRepository,
+	settingRepo repository.SettingRepository,
+	sessionRepo repository.SessionRepository,
 ) *ConnectionHandler {
 	// 初始化黑名单管理器（从数据库读取，带高级检测防绕过）
 	blacklistMgr := blacklist.NewManagerFromDB(db)

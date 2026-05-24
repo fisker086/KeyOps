@@ -24,7 +24,7 @@ type ProxyHandler struct {
 	auditor        types.Auditor
 	recorder       types.SessionRecorder
 	blacklistMgr   *blacklist.Manager               // 黑名单管理器
-	systemUserRepo *repository.SystemUserRepository // 系统用户仓库（用于新权限架构）
+	systemUserRepo repository.SystemUserRepository // 系统用户仓库（用于新权限架构）
 }
 
 // NewProxyHandler 创建代理处理器
@@ -49,7 +49,7 @@ func NewProxyHandlerV2(
 	auditor types.Auditor,
 	recorder types.SessionRecorder,
 	blacklistMgr *blacklist.Manager,
-	systemUserRepo *repository.SystemUserRepository,
+	systemUserRepo repository.SystemUserRepository,
 ) types.TerminalHandler {
 	return &ProxyHandler{
 		selector:       selector,
@@ -105,7 +105,7 @@ func (h *ProxyHandler) HandleTerminal(ctx context.Context, channel ssh.Channel, 
 		if shouldExit {
 			// 用户选择退出
 			menu.ShowGoodbye()
-			return nil
+			break
 		}
 
 		if selectedHost == nil {

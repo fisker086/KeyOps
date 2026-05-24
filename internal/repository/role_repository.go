@@ -6,21 +6,39 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type RoleRepository struct {
+type RoleRepository interface {
+	Create(role *model.Role) error
+	Update(role *model.Role) error
+	Delete(id string) error
+	FindByID(id string) (*model.Role, error)
+	FindAll() ([]model.Role, error)
+	FindByStatus(status string) ([]model.Role, error)
+	FindAllWithMembers() ([]model.RoleWithMembers, error)
+	FindByIDWithMembers(id string) (*model.RoleWithMembers, error)
+	AddMember(roleID, userID, addedBy string) error
+	RemoveMember(roleID, userID string) error
+	GetMembersByRoleID(roleID string) ([]model.User, error)
+	GetRolesByUserID(userID string) ([]model.Role, error)
+	IsMember(roleID, userID string) (bool, error)
+	BatchAddMembers(roleID string, userIDs []string, addedBy string) error
+	BatchRemoveMembers(roleID string, userIDs []string) error
+}
+
+type roleRepository struct {
 	db *gorm.DB
 }
 
-func NewRoleRepository(db *gorm.DB) *RoleRepository {
-	return &RoleRepository{db: db}
+func NewRoleRepository(db *gorm.DB) RoleRepository {
+	return &roleRepository{db: db}
 }
 
 // Create 创建角色
-func (r *RoleRepository) Create(role *model.Role) error {
+func (r *roleRepository) Create(role *model.Role) error {
 	return r.db.Create(role).Error
 }
 
 // Update 更新角色
-func (r *RoleRepository) Update(role *model.Role) error {
+func (r *roleRepository) Update(role *model.Role) error {
 	// 使用 Updates 并排除 created_at 和 created_by 字段，避免零值覆盖
 	return r.db.Model(&model.Role{}).
 		Where("id = ?", role.ID).
@@ -29,7 +47,7 @@ func (r *RoleRepository) Update(role *model.Role) error {
 }
 
 // Delete 删除角色
-func (r *RoleRepository) Delete(id string) error {
+func (r *roleRepository) Delete(id string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 删除角色成员关系
 		if err := tx.Delete(&model.RoleMember{}, "role_id = ?", id).Error; err != nil {
@@ -41,7 +59,7 @@ func (r *RoleRepository) Delete(id string) error {
 }
 
 // FindByID 根据ID查找角色
-func (r *RoleRepository) FindByID(id string) (*model.Role, error) {
+func (r *roleRepository) FindByID(id string) (*model.Role, error) {
 	var role model.Role
 	err := r.db.Where("id = ?", id).First(&role).Error
 	if err != nil {
@@ -51,21 +69,21 @@ func (r *RoleRepository) FindByID(id string) (*model.Role, error) {
 }
 
 // FindAll 查找所有角色
-func (r *RoleRepository) FindAll() ([]model.Role, error) {
+func (r *roleRepository) FindAll() ([]model.Role, error) {
 	var roles []model.Role
 	err := r.db.Order("priority DESC, created_at DESC").Find(&roles).Error
 	return roles, err
 }
 
 // FindByStatus 根据状态查找角色
-func (r *RoleRepository) FindByStatus(status string) ([]model.Role, error) {
+func (r *roleRepository) FindByStatus(status string) ([]model.Role, error) {
 	var roles []model.Role
 	err := r.db.Where("status = ?", status).Order("priority DESC, created_at DESC").Find(&roles).Error
 	return roles, err
 }
 
 // FindAllWithMembers 查找所有角色及其成员数
-func (r *RoleRepository) FindAllWithMembers() ([]model.RoleWithMembers, error) {
+func (r *roleRepository) FindAllWithMembers() ([]model.RoleWithMembers, error) {
 	var roles []model.RoleWithMembers
 
 	err := r.db.Table("roles").
@@ -82,7 +100,7 @@ func (r *RoleRepository) FindAllWithMembers() ([]model.RoleWithMembers, error) {
 }
 
 // FindByIDWithMembers 根据ID查找角色及其成员
-func (r *RoleRepository) FindByIDWithMembers(id string) (*model.RoleWithMembers, error) {
+func (r *roleRepository) FindByIDWithMembers(id string) (*model.RoleWithMembers, error) {
 	var role model.RoleWithMembers
 
 	// 查找角色
@@ -113,7 +131,7 @@ var roleMemberConflict = clause.OnConflict{
 }
 
 // AddMember 添加成员到角色
-func (r *RoleRepository) AddMember(roleID, userID, addedBy string) error {
+func (r *roleRepository) AddMember(roleID, userID, addedBy string) error {
 	member := &model.RoleMember{
 		RoleID:  roleID,
 		UserID:  userID,
@@ -123,12 +141,12 @@ func (r *RoleRepository) AddMember(roleID, userID, addedBy string) error {
 }
 
 // RemoveMember 从角色移除成员
-func (r *RoleRepository) RemoveMember(roleID, userID string) error {
+func (r *roleRepository) RemoveMember(roleID, userID string) error {
 	return r.db.Delete(&model.RoleMember{}, "role_id = ? AND user_id = ?", roleID, userID).Error
 }
 
 // GetMembersByRoleID 获取角色的所有成员
-func (r *RoleRepository) GetMembersByRoleID(roleID string) ([]model.User, error) {
+func (r *roleRepository) GetMembersByRoleID(roleID string) ([]model.User, error) {
 	var users []model.User
 
 	err := r.db.Table("users").
@@ -142,7 +160,7 @@ func (r *RoleRepository) GetMembersByRoleID(roleID string) ([]model.User, error)
 }
 
 // GetRolesByUserID 获取用户所在的所有角色
-func (r *RoleRepository) GetRolesByUserID(userID string) ([]model.Role, error) {
+func (r *roleRepository) GetRolesByUserID(userID string) ([]model.Role, error) {
 	var roles []model.Role
 
 	err := r.db.Table("roles").
@@ -157,7 +175,7 @@ func (r *RoleRepository) GetRolesByUserID(userID string) ([]model.Role, error) {
 }
 
 // IsMember 检查用户是否是角色成员
-func (r *RoleRepository) IsMember(roleID, userID string) (bool, error) {
+func (r *roleRepository) IsMember(roleID, userID string) (bool, error) {
 	var count int64
 	err := r.db.Table("role_members").
 		Where("role_id = ? AND user_id = ?", roleID, userID).
@@ -166,7 +184,7 @@ func (r *RoleRepository) IsMember(roleID, userID string) (bool, error) {
 }
 
 // BatchAddMembers 批量添加成员（已在成员表中则跳过，避免 uk_role_user 重复键）
-func (r *RoleRepository) BatchAddMembers(roleID string, userIDs []string, addedBy string) error {
+func (r *roleRepository) BatchAddMembers(roleID string, userIDs []string, addedBy string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for _, userID := range userIDs {
 			member := &model.RoleMember{
@@ -183,6 +201,6 @@ func (r *RoleRepository) BatchAddMembers(roleID string, userIDs []string, addedB
 }
 
 // BatchRemoveMembers 批量移除成员
-func (r *RoleRepository) BatchRemoveMembers(roleID string, userIDs []string) error {
+func (r *roleRepository) BatchRemoveMembers(roleID string, userIDs []string) error {
 	return r.db.Delete(&model.RoleMember{}, "role_id = ? AND user_id IN ?", roleID, userIDs).Error
 }

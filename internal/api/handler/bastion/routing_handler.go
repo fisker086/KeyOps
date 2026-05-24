@@ -14,17 +14,17 @@ import (
 // RoutingHandler 路由管理处理器（基于标签的路由配置）
 type RoutingHandler struct {
 	router      *routing.ConnectionRouter
-	settingRepo *repository.SettingRepository
-	hostRepo    *repository.HostRepository
-	proxyRepo   *repository.ProxyRepository
+	settingRepo repository.SettingRepository
+	hostRepo    repository.HostRepository
+	proxyRepo   repository.ProxyRepository
 }
 
 // NewRoutingHandler 创建路由处理器
 func NewRoutingHandler(
 	r *routing.ConnectionRouter,
-	settingRepo *repository.SettingRepository,
-	hostRepo *repository.HostRepository,
-	proxyRepo *repository.ProxyRepository,
+	settingRepo repository.SettingRepository,
+	hostRepo repository.HostRepository,
+	proxyRepo repository.ProxyRepository,
 ) *RoutingHandler {
 	return &RoutingHandler{
 		router:      r,

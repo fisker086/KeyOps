@@ -1398,7 +1398,7 @@ func (h *AlertHandler) GetDomainCertificates(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.domainCertRepo.(*repository.DomainCertificateRepository)
+	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
 	
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
@@ -1424,7 +1424,7 @@ func (h *AlertHandler) GetDomainCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.domainCertRepo.(*repository.DomainCertificateRepository)
+	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
@@ -1442,7 +1442,7 @@ func (h *AlertHandler) CreateDomainCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.domainCertRepo.(*repository.DomainCertificateRepository)
+	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
 	
 	var req model.DomainCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1465,7 +1465,7 @@ func (h *AlertHandler) UpdateDomainCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.domainCertRepo.(*repository.DomainCertificateRepository)
+	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var req model.DomainCertificate
@@ -1490,7 +1490,7 @@ func (h *AlertHandler) DeleteDomainCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.domainCertRepo.(*repository.DomainCertificateRepository)
+	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err := repo.Delete(uint(id)); err != nil {
@@ -1507,7 +1507,7 @@ func (h *AlertHandler) RefreshDomainCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.domainCertRepo.(*repository.DomainCertificateRepository)
+	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
@@ -1564,9 +1564,9 @@ func (h *AlertHandler) CheckCertificateAlerts(c *gin.Context) {
 
 // fetchCertificateInfo 通过HTTPS连接获取证书信息
 func (h *AlertHandler) fetchCertificateInfo(cert *model.DomainCertificate) error {
-	address := fmt.Sprintf("%s:%d", cert.Domain, cert.Port)
+	address := net.JoinHostPort(cert.Domain, strconv.Itoa(cert.Port))
 	if cert.Port == 0 {
-		address = fmt.Sprintf("%s:443", cert.Domain)
+		address = net.JoinHostPort(cert.Domain, "443")
 		cert.Port = 443
 	}
 	
@@ -1636,7 +1636,7 @@ func (h *AlertHandler) GetSslCertificates(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.sslCertRepo.(*repository.SSLCertificateRepository)
+	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
 	
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
@@ -1662,7 +1662,7 @@ func (h *AlertHandler) GetSslCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.sslCertRepo.(*repository.SSLCertificateRepository)
+	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
@@ -1680,7 +1680,7 @@ func (h *AlertHandler) CreateSslCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.sslCertRepo.(*repository.SSLCertificateRepository)
+	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
 	
 	var req model.SSLCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1702,7 +1702,7 @@ func (h *AlertHandler) UpdateSslCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.sslCertRepo.(*repository.SSLCertificateRepository)
+	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var req model.SSLCertificate
@@ -1727,7 +1727,7 @@ func (h *AlertHandler) DeleteSslCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.sslCertRepo.(*repository.SSLCertificateRepository)
+	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err := repo.Delete(uint(id)); err != nil {
@@ -1744,7 +1744,7 @@ func (h *AlertHandler) GetHostedCertificates(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.hostedCertRepo.(*repository.HostedCertificateRepository)
+	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
 	
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
@@ -1770,7 +1770,7 @@ func (h *AlertHandler) GetHostedCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.hostedCertRepo.(*repository.HostedCertificateRepository)
+	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
@@ -1788,7 +1788,7 @@ func (h *AlertHandler) CreateHostedCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.hostedCertRepo.(*repository.HostedCertificateRepository)
+	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
 	
 	var req model.HostedCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1810,7 +1810,7 @@ func (h *AlertHandler) UpdateHostedCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.hostedCertRepo.(*repository.HostedCertificateRepository)
+	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var req model.HostedCertificate
@@ -1835,7 +1835,7 @@ func (h *AlertHandler) DeleteHostedCertificate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书仓库未初始化"))
 		return
 	}
-	repo := h.hostedCertRepo.(*repository.HostedCertificateRepository)
+	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
 	
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err := repo.Delete(uint(id)); err != nil {

@@ -23,10 +23,10 @@ const (
 //   - ECR: ecr_region, ecr_access_key_id, ecr_secret_access_key（可选，不填则用默认凭证）
 //   - Nexus: nexus_url, nexus_repository（可选）, nexus_username, nexus_password
 type Service struct {
-	settingRepo *repository.SettingRepository
+	settingRepo repository.SettingRepository
 }
 
-func NewService(settingRepo *repository.SettingRepository) *Service {
+func NewService(settingRepo repository.SettingRepository) *Service {
 	return &Service{settingRepo: settingRepo}
 }
 

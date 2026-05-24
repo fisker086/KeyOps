@@ -18,7 +18,7 @@ import (
 
 // ProtocolHandler 统一协议处理器
 type ProtocolHandler struct {
-	hostRepo       *repository.HostRepository
+	hostRepo       repository.HostRepository
 	storage        storage.Storage
 	proxyID        string
 	sessionManager *SessionManager
@@ -26,7 +26,7 @@ type ProtocolHandler struct {
 }
 
 // NewProtocolHandler 创建统一协议处理器
-func NewProtocolHandler(hostRepo *repository.HostRepository, st storage.Storage, proxyID string, sm *SessionManager) *ProtocolHandler {
+func NewProtocolHandler(hostRepo repository.HostRepository, st storage.Storage, proxyID string, sm *SessionManager) *ProtocolHandler {
 	return &ProtocolHandler{
 		hostRepo:       hostRepo,
 		storage:        st,

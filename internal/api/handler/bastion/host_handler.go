@@ -10,11 +10,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HostHandler struct {
-	service *bastionService.HostService
+// HostService 定义了 host handler 依赖的 service 接口
+type HostService interface {
+	CheckIPAndPortDuplicate(ip string, port int, excludeID string) error
+	CreateHost(host *model.Host) error
+	GetHost(id string) (*model.Host, error)
+	UpdateHost(id string, host *model.Host) error
+	DeleteHost(id string) error
+	ListHosts(page, pageSize int, search string, tags []string) ([]model.Host, int64, error)
+	ListHostsByPermissions(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error)
 }
 
-func NewHostHandler(service *bastionService.HostService) *HostHandler {
+// Ensure concrete service satisfies the interface
+var _ HostService = (*bastionService.HostService)(nil)
+
+type HostHandler struct {
+	service HostService
+}
+
+func NewHostHandler(service HostService) *HostHandler {
 	return &HostHandler{service: service}
 }
 

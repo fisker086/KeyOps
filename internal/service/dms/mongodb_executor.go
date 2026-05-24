@@ -2,6 +2,7 @@ package dms
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -96,7 +97,7 @@ func (e *MongoDBExecutor) getClient(ctx context.Context) (*mongo.Client, error) 
 			}
 			errMsg = fmt.Sprintf("认证失败: 请检查用户名、密码和认证数据库(authDatabase)是否正确。当前认证数据库: %s。错误详情: %v", authDB, err)
 		}
-		return nil, fmt.Errorf(errMsg)
+		return nil, errors.New(errMsg)
 	}
 
 	e.client = client

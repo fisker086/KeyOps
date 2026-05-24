@@ -13,10 +13,10 @@ import (
 type K8sPermissionHandler struct {
 	permissionService *k8sService.K8sPermissionService
 	clusterService    *k8sService.K8sClusterService
-	roleRepo          *repository.RoleRepository
+	roleRepo          repository.RoleRepository
 }
 
-func NewK8sPermissionHandler(permissionService *k8sService.K8sPermissionService, clusterService *k8sService.K8sClusterService, roleRepo *repository.RoleRepository) *K8sPermissionHandler {
+func NewK8sPermissionHandler(permissionService *k8sService.K8sPermissionService, clusterService *k8sService.K8sClusterService, roleRepo repository.RoleRepository) *K8sPermissionHandler {
 	return &K8sPermissionHandler{
 		permissionService: permissionService,
 		clusterService:    clusterService,

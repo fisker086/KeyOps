@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/pkg/casbin"
 	"github.com/fisker086/keyops/pkg/logger"
 )
@@ -69,7 +70,7 @@ func (s *K8sPermissionService) CheckPermission(sub string, clusterID string, nam
 	// 使用casbin检查权限
 	hasPermission, err := casbin.Enforce(sub, resourcePath, string(action))
 	if err != nil {
-		logger.Errorf("Casbin权限检查失败: %v", err)
+		logger.Errorf("[CheckPerm] Casbin检查失败: sub=%s path=%s action=%s err=%v", sub, resourcePath, action, err)
 		return false, err
 	}
 
@@ -78,7 +79,7 @@ func (s *K8sPermissionService) CheckPermission(sub string, clusterID string, nam
 		namespacePath := BuildResourcePath(clusterID, namespace, ResourceTypeNamespace, "")
 		hasPermission, err = casbin.Enforce(sub, namespacePath, string(action))
 		if err != nil {
-			logger.Errorf("Casbin命名空间权限检查失败: %v", err)
+			logger.Errorf("[CheckPerm] 命名空间级Casbin检查失败: sub=%s path=%s err=%v", sub, namespacePath, err)
 			return false, err
 		}
 	}
@@ -88,7 +89,7 @@ func (s *K8sPermissionService) CheckPermission(sub string, clusterID string, nam
 		clusterPath := fmt.Sprintf("/k8s/cluster/%s", clusterID)
 		hasPermission, err = casbin.Enforce(sub, clusterPath, string(action))
 		if err != nil {
-			logger.Errorf("Casbin集群权限检查失败: %v", err)
+			logger.Errorf("[CheckPerm] 集群级Casbin检查失败: sub=%s path=%s err=%v", sub, clusterPath, err)
 			return false, err
 		}
 	}
@@ -536,4 +537,86 @@ func ReloadPolicy() error {
 // GetAllPolicies 获取所有策略
 func GetAllPolicies() ([][]string, error) {
 	return casbin.GetFilteredPolicy(-1)
+}
+
+// GetResourceTypeFromString 将字符串资源类型转换为 ResourceType
+func GetResourceTypeFromString(resourceType string) ResourceType {
+	resourceTypeLower := strings.ToLower(resourceType)
+	switch resourceTypeLower {
+	case "deployment":
+		return ResourceTypeDeployment
+	case "statefulset":
+		return ResourceTypeStatefulSet
+	case "daemonset":
+		return ResourceTypeDaemonSet
+	case "service":
+		return ResourceTypeService
+	case "pod":
+		return ResourceTypePod
+	case "ingress":
+		return ResourceTypeIngress
+	case "pvc":
+		return ResourceTypePVC
+	default:
+		return ResourceTypeNamespace
+	}
+}
+
+// CheckYamlEditPermission 检查用户是否有编辑YAML的权限
+func (s *K8sPermissionService) CheckYamlEditPermission(userID string, clusterID string, namespace string, resourceType ResourceType, resourceName string, roles []model.Role) bool {
+	if clusterID == "" {
+		return true
+	}
+
+	hasPermission, err := s.CheckPermission(userID, clusterID, namespace, resourceType, resourceName, ActionWrite)
+	if err == nil && !hasPermission {
+		hasPermission, err = s.CheckPermission(userID, clusterID, namespace, resourceType, resourceName, ActionAdmin)
+	}
+
+	if err == nil && !hasPermission && len(roles) > 0 {
+		for _, role := range roles {
+			if role.ID == "role:admin" {
+				hasPermission = true
+				break
+			}
+			hasPermission, err = s.CheckPermission(role.ID, clusterID, namespace, resourceType, resourceName, ActionWrite)
+			if err == nil && hasPermission {
+				break
+			}
+			if !hasPermission {
+				hasPermission, err = s.CheckPermission(role.ID, clusterID, namespace, resourceType, resourceName, ActionAdmin)
+				if err == nil && hasPermission {
+					break
+				}
+			}
+		}
+	}
+
+	return hasPermission
+}
+
+// CheckResourcePermission 检查用户对某资源的权限
+func (s *K8sPermissionService) CheckResourcePermission(userID string, clusterID string, namespace string, resourceType ResourceType, resourceName string, action Action, roles []model.Role) bool {
+	if clusterID == "" {
+		return true
+	}
+
+	hasPermission, err := s.CheckPermission(userID, clusterID, namespace, resourceType, resourceName, action)
+	if err == nil && hasPermission {
+		return true
+	}
+
+	if len(roles) > 0 {
+		for _, role := range roles {
+			if role.ID == "role:admin" {
+				return true
+			}
+			hasPermission, err = s.CheckPermission(role.ID, clusterID, namespace, resourceType, resourceName, action)
+			if err == nil && hasPermission {
+				return true
+			}
+		}
+	}
+
+	return false
 }

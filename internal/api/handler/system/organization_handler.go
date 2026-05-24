@@ -10,10 +10,10 @@ import (
 )
 
 type OrganizationHandler struct {
-	repo *repository.OrganizationRepository
+	repo repository.OrganizationRepository
 }
 
-func NewOrganizationHandler(repo *repository.OrganizationRepository) *OrganizationHandler {
+func NewOrganizationHandler(repo repository.OrganizationRepository) *OrganizationHandler {
 	return &OrganizationHandler{repo: repo}
 }
 

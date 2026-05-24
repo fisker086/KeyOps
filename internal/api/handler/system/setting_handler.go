@@ -20,12 +20,12 @@ import (
 )
 
 type SettingHandler struct {
-	repo            *repository.SettingRepository
+	repo            repository.SettingRepository
 	notificationMgr *notification.NotificationManager
 	configSync      *distributed.ConfigSyncManager
 }
 
-func NewSettingHandler(repo *repository.SettingRepository, notificationMgr *notification.NotificationManager) *SettingHandler {
+func NewSettingHandler(repo repository.SettingRepository, notificationMgr *notification.NotificationManager) *SettingHandler {
 	h := &SettingHandler{
 		repo:            repo,
 		notificationMgr: notificationMgr,

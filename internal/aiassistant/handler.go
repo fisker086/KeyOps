@@ -40,11 +40,11 @@ type Handler struct {
 	runners          map[string]tools.Runner   // 各工具集执行器（如 k8s），key 为工具集 ID
 	reportSender     InspectionReportSender   // 可选：巡检完成后将报告发送到告警渠道
 	scheduleStarter   ScheduleWorkflowStarter  // 可选：Temporal 等，触发时走工作流（原子 巡检+发报告）
-	settingRepo      *repository.SettingRepository // 可选：用于从系统设置读取 LLM 配置
+	settingRepo      repository.SettingRepository // 可选：用于从系统设置读取 LLM 配置
 }
 
 // NewHandler 创建。store 可选；getUserRoleIDs 可选；runners 为各工具集 ID 到 Runner 的映射；settingRepo 可选，用于从系统设置读取 LLM Key/URL。
-func NewHandler(sessionMgr *SessionManager, scheduleMgr *ScheduleManager, envMgr *EnvManager, store *Store, jwtSecret string, getUserRoleIDs GetUserRoleIDsFunc, runners map[string]tools.Runner, settingRepo *repository.SettingRepository) *Handler {
+func NewHandler(sessionMgr *SessionManager, scheduleMgr *ScheduleManager, envMgr *EnvManager, store *Store, jwtSecret string, getUserRoleIDs GetUserRoleIDsFunc, runners map[string]tools.Runner, settingRepo repository.SettingRepository) *Handler {
 	return &Handler{
 		sessionMgr:    sessionMgr,
 		scheduleMgr:   scheduleMgr,

@@ -16,6 +16,41 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AuthService 接口：handler 依赖的认证服务方法集合
+type AuthService interface {
+	Register(*model.RegisterRequest) (*model.User, error)
+	Login(*model.LoginRequest, string, string) (*model.LoginResponse, string, error)
+	Logout(string, string) error
+	ValidateRefreshToken(string) (*authService.RefreshClaims, error)
+	GetUserByID(string) (*model.User, error)
+	GenerateTokenPair(*model.User) (string, string, error)
+	EnforceSessionLimitForUser(string) error
+	GetAllUsers() ([]model.User, error)
+	GetUsersWithPagination(page, pageSize int, keyword string) ([]model.User, int64, error)
+	GetUserWithGroupsAndHosts(string) (*model.UserWithGroups, error)
+	GetPlatformLoginRecords(page, pageSize int, userID string) ([]model.PlatformLoginRecord, int64, error)
+	CreateUser(*model.RegisterRequest, string, string, *string) (*model.User, error)
+	UpdateUserInfo(string, string, string, *string) error
+	UpdateUserExpiration(string, *string, *bool) error
+	UpdateUserRole(string, string) error
+	UpdateUserStatus(string, string) error
+	DeleteUser(string) error
+	ResetUserPassword(string, string) error
+	LoginWithSSO(string, string, string) (*model.LoginResponse, string, error)
+	RefreshTokenPair(string) (string, string, error)
+	AssignRolesToUser(string, []string, string) error
+	GetUserRoles(string) ([]string, error)
+	GetUserWithGroups(string) (*model.UserWithGroups, error)
+	GetUsersWithGroups(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error)
+	AssignHostsToUser(string, []string, string) error
+	GetUserHosts(string) ([]string, error)
+	GetUsersWithGroupsAndHosts(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error)
+	GenerateSSHKey(string) error
+	DeleteSSHKey(string) error
+	GetSSHPrivateKey(string) (string, string, error)
+	UpdateUserAuthMethod(string, string) error
+}
+
 const refreshCookieName = "refresh_token"
 
 // refreshCookieSecure 本地 HTTP 开发默认不写 Secure；HTTPS 或 AUTH_COOKIE_SECURE=true 时启用。
@@ -46,12 +81,14 @@ func clearRefreshTokenCookie(c *gin.Context) {
 }
 
 type AuthHandler struct {
-	service       *authService.AuthService
-	settingRepo   *repository.SettingRepository
-	roleRepo *repository.RoleRepository
+	service       AuthService
+	settingRepo   repository.SettingRepository
+	roleRepo repository.RoleRepository
 }
 
-func NewAuthHandler(service *authService.AuthService, settingRepo *repository.SettingRepository, roleRepo *repository.RoleRepository) *AuthHandler {
+var _ AuthService = (*authService.AuthService)(nil)
+
+func NewAuthHandler(service AuthService, settingRepo repository.SettingRepository, roleRepo repository.RoleRepository) *AuthHandler {
 	return &AuthHandler{
 		service:     service,
 		settingRepo: settingRepo,

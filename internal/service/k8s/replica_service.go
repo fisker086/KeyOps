@@ -186,7 +186,7 @@ func (s *K8sService) ScaleReplica(clusterID string, clusterName string, nodeID u
 		tlsConfig = &tls.Config{InsecureSkipVerify: true}
 	} else if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" {
 		clusterService := NewK8sClusterService(s.clusterRepo)
-		authInfo, err := clusterService.parseKubeconfigAuth(cluster.Kubeconfig)
+		authInfo, err := clusterService.getClusterAuth(cluster)
 		if err != nil {
 			return nil, fmt.Errorf("解析Kubeconfig失败: %v", err)
 		}

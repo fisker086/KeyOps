@@ -19,10 +19,10 @@ import (
 
 // DeploymentService 部署记录服务
 type DeploymentService struct {
-	deploymentRepo *repository.DeploymentRepository
+	deploymentRepo repository.DeploymentRepository
 	kubedogService *KubeDogService
 	k8sService     *K8sService
-	clusterRepo    *repository.K8sClusterRepository
+	clusterRepo    repository.K8sClusterRepository
 }
 
 // CreateDeploymentRequest 创建部署请求
@@ -49,10 +49,10 @@ type CreateDeploymentRequest struct {
 
 // NewDeploymentService 创建部署记录服务
 func NewDeploymentService(
-	deploymentRepo *repository.DeploymentRepository,
+	deploymentRepo repository.DeploymentRepository,
 	kubedogService *KubeDogService,
 	k8sService *K8sService,
-	clusterRepo *repository.K8sClusterRepository,
+	clusterRepo repository.K8sClusterRepository,
 	cfg interface{}, // config.Config - kept for compatibility but not used directly
 ) *DeploymentService {
 	return &DeploymentService{
@@ -278,7 +278,7 @@ func (s *DeploymentService) applyK8sYAML(cluster *model.K8sCluster, namespace st
 		authHeader = "Bearer " + cluster.Token
 	} else if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" && s.clusterRepo != nil {
 		clusterService := NewK8sClusterService(s.clusterRepo)
-		authInfo, err := clusterService.parseKubeconfigAuth(cluster.Kubeconfig)
+		authInfo, err := clusterService.getClusterAuth(cluster)
 		if err != nil {
 			return "", "", fmt.Errorf("解析 Kubeconfig 失败: %v", err)
 		}

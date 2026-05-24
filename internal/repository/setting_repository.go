@@ -18,16 +18,28 @@ func LogicalSettingKey(category, key string) string {
 	return key
 }
 
-type SettingRepository struct {
+type SettingRepository interface {
+	GetAll() ([]model.Setting, error)
+	GetByCategory(category string) ([]model.Setting, error)
+	Get(key string) (string, error)
+	GetByKey(key string) (*model.Setting, error)
+	GetSettingByKey(key string) (*model.Setting, error)
+	SetSetting(setting *model.Setting) error
+	Upsert(setting *model.Setting) error
+	BatchUpsert(settings []model.Setting) error
+	Delete(key string) error
+}
+
+type settingRepository struct {
 	db *gorm.DB
 }
 
-func NewSettingRepository(db *gorm.DB) *SettingRepository {
-	return &SettingRepository{db: db}
+func NewSettingRepository(db *gorm.DB) SettingRepository {
+	return &settingRepository{db: db}
 }
 
 // GetAll 获取所有设置
-func (r *SettingRepository) GetAll() ([]model.Setting, error) {
+func (r *settingRepository) GetAll() ([]model.Setting, error) {
 	var settings []model.Setting
 	err := r.db.Order("category ASC").
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "key"}, Desc: false}).
@@ -36,7 +48,7 @@ func (r *SettingRepository) GetAll() ([]model.Setting, error) {
 }
 
 // GetByCategory 根据分类获取设置
-func (r *SettingRepository) GetByCategory(category string) ([]model.Setting, error) {
+func (r *settingRepository) GetByCategory(category string) ([]model.Setting, error) {
 	var settings []model.Setting
 	err := r.db.Where("category = ?", category).
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "key"}, Desc: false}).
@@ -45,7 +57,7 @@ func (r *SettingRepository) GetByCategory(category string) ([]model.Setting, err
 }
 
 // Get 根据key获取设置值（返回字符串）
-func (r *SettingRepository) Get(key string) (string, error) {
+func (r *settingRepository) Get(key string) (string, error) {
 	setting, err := r.GetByKey(key)
 	if err != nil {
 		return "", err
@@ -57,7 +69,7 @@ func (r *SettingRepository) Get(key string) (string, error) {
 }
 
 // GetByKey 根据key获取设置
-func (r *SettingRepository) GetByKey(key string) (*model.Setting, error) {
+func (r *settingRepository) GetByKey(key string) (*model.Setting, error) {
 	var setting model.Setting
 	err := r.db.Where(&model.Setting{Key: key}).First(&setting).Error
 	if err != nil {
@@ -71,17 +83,17 @@ func (r *SettingRepository) GetByKey(key string) (*model.Setting, error) {
 }
 
 // GetSettingByKey 根据key获取设置（别名方法，保持兼容性）
-func (r *SettingRepository) GetSettingByKey(key string) (*model.Setting, error) {
+func (r *settingRepository) GetSettingByKey(key string) (*model.Setting, error) {
 	return r.GetByKey(key)
 }
 
 // SetSetting 设置配置（别名方法，保持兼容性）
-func (r *SettingRepository) SetSetting(setting *model.Setting) error {
+func (r *settingRepository) SetSetting(setting *model.Setting) error {
 	return r.Upsert(setting)
 }
 
 // Upsert 更新或插入设置
-func (r *SettingRepository) Upsert(setting *model.Setting) error {
+func (r *settingRepository) Upsert(setting *model.Setting) error {
 	// 先尝试查找
 	var existing model.Setting
 	err := r.db.Where(&model.Setting{Key: setting.Key}).First(&existing).Error
@@ -102,7 +114,7 @@ func (r *SettingRepository) Upsert(setting *model.Setting) error {
 }
 
 // BatchUpsert 批量更新或插入设置
-func (r *SettingRepository) BatchUpsert(settings []model.Setting) error {
+func (r *settingRepository) BatchUpsert(settings []model.Setting) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for _, setting := range settings {
 			var existing model.Setting
@@ -129,6 +141,6 @@ func (r *SettingRepository) BatchUpsert(settings []model.Setting) error {
 }
 
 // Delete 删除设置
-func (r *SettingRepository) Delete(key string) error {
+func (r *settingRepository) Delete(key string) error {
 	return r.db.Where(&model.Setting{Key: key}).Delete(&model.Setting{}).Error
 }

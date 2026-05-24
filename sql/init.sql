@@ -38,20 +38,25 @@ CREATE TABLE IF NOT EXISTS users (
     last_login_time TIMESTAMP NULL COMMENT 'Last login time',
     last_login_ip VARCHAR(45) COMMENT 'Last login IP address',
     organization_id VARCHAR(36) COMMENT '所属部门ID（关联organizations表）',
-                                                                                                                                                    -- 2FA related fields
+    
+    -- 2FA related fields
     two_factor_enabled BOOLEAN DEFAULT FALSE COMMENT 'Whether 2FA is enabled for this user',
     two_factor_secret VARCHAR(255) COMMENT '2FA secret key (encrypted)',
     two_factor_backup_codes TEXT COMMENT '2FA backup codes (JSON array, encrypted)',
     two_factor_verified_at TIMESTAMP NULL COMMENT 'When 2FA was verified and enabled',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                                                                                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_username (username),                                                                                                                  INDEX idx_email (email),
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_username (username),
+    INDEX idx_email (email),
     INDEX idx_status (status),
     INDEX idx_role (role),
     INDEX idx_auth_method (auth_method),
     INDEX idx_expires_at (expires_at),
     INDEX idx_two_factor_enabled (two_factor_enabled),
     INDEX idx_organization_id (organization_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci                                                                              COMMENT='Platform users with SSH key authentication support';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Platform users with SSH key authentication support';
 
 -- ============================================================================
 -- Host Management Tables
@@ -356,7 +361,7 @@ CREATE TABLE IF NOT EXISTS ssh_host_keys (
     comment TEXT COMMENT 'Description or comment',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     UNIQUE KEY uk_key_type_name (key_type, key_name),
     INDEX idx_key_name (key_name),
     INDEX idx_fingerprint (fingerprint)
@@ -580,49 +585,49 @@ CREATE TABLE IF NOT EXISTS approvals (
     type VARCHAR(50) NOT NULL COMMENT 'Approval type: host_access, host_group_access, deployment',
     status VARCHAR(50) DEFAULT 'pending' COMMENT 'Status: pending, approved, rejected, canceled, expired',
     platform VARCHAR(50) DEFAULT 'internal' COMMENT 'Approval platform: internal, feishu, dingtalk, wechat, custom',
-
+    
     -- Applicant information
     applicant_id VARCHAR(36) NOT NULL COMMENT 'Applicant user ID',
     applicant_name VARCHAR(100) COMMENT 'Applicant name',
     applicant_email VARCHAR(100) COMMENT 'Applicant email',
-
+    
     -- Approver information
     approver_ids TEXT COMMENT 'Approver IDs (JSON array)',
     approver_names TEXT COMMENT 'Approver names (JSON array)',
     current_approver VARCHAR(100) COMMENT 'Current approver name',
-
+    
     -- Resource information
     resource_type VARCHAR(50) COMMENT 'Resource type: host, host_group',
     resource_ids TEXT COMMENT 'Resource IDs (JSON array)',
     resource_names TEXT COMMENT 'Resource names (JSON array)',
-
+    
     -- Permission information
     permissions TEXT COMMENT 'Permissions (JSON array)',
     duration INT COMMENT 'Permission duration in hours',
     expires_at TIMESTAMP NULL COMMENT 'Permission expiration time',
-
+    
     -- Approval details
     reason TEXT COMMENT 'Application reason',
     approval_note TEXT COMMENT 'Approval note',
     reject_reason TEXT COMMENT 'Reject reason',
     priority VARCHAR(20) DEFAULT 'normal' COMMENT '优先级: low/normal/high/urgent',
-
+    
     -- External platform information
     external_id VARCHAR(255) COMMENT 'External platform approval ID',
     external_url TEXT COMMENT 'External platform approval URL',
     external_data TEXT COMMENT 'External platform data (JSON)',
-
+    
     -- Deployment related fields (when type is deployment)
     deploy_config TEXT COMMENT 'Deployment configuration (JSON format)',
     deployment_id VARCHAR(36) COMMENT 'Associated deployment record ID',
     deployed BOOLEAN DEFAULT FALSE COMMENT 'Whether deployment has been executed',
-
+    
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     approved_at TIMESTAMP NULL COMMENT 'Approved time',
     rejected_at TIMESTAMP NULL COMMENT 'Rejected time',
-
+    
     INDEX idx_applicant_id (applicant_id),
     INDEX idx_status (status),
     INDEX idx_type (type),
@@ -643,7 +648,7 @@ CREATE TABLE IF NOT EXISTS approval_comments (
     action VARCHAR(50) COMMENT 'Action: submit, approve, reject, comment, cancel',
     comment TEXT COMMENT 'Comment content',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     INDEX idx_approval_id (approval_id),
     INDEX idx_user_id (user_id),
     INDEX idx_created_at (created_at),
@@ -727,35 +732,35 @@ CREATE TABLE IF NOT EXISTS approval_configs (
     name VARCHAR(100) NOT NULL COMMENT 'Configuration name',
     type VARCHAR(20) NOT NULL COMMENT 'Platform type: feishu, dingtalk, wechat',
     enabled BOOLEAN DEFAULT false COMMENT 'Enable status, only one can be enabled per type',
-
+    
     -- 应用凭证
     app_id VARCHAR(100) NOT NULL COMMENT 'Application ID or AppKey',
     app_secret VARCHAR(200) NOT NULL COMMENT 'Application Secret',
-
+    
     -- 平台特定字段
     approval_code VARCHAR(100) COMMENT 'Feishu approval definition code',
     process_code VARCHAR(100) COMMENT 'DingTalk process code',
     template_id VARCHAR(100) COMMENT 'WeChat Work template ID',
-
+    
     -- 表单字段映射
     form_fields TEXT COMMENT 'Form field mapping JSON',
-
+    
     -- 审批人配置
     approver_user_ids TEXT COMMENT '审批人用户ID列表(JSON)',
-
+    
     -- API配置
     api_base_url VARCHAR(500) DEFAULT '' COMMENT 'API基础URL，用户自定义填写',
     api_path VARCHAR(200) DEFAULT '' COMMENT 'API调用路径（创建审批）',
     api_path_get VARCHAR(200) DEFAULT '' COMMENT '获取审批API路径',
     api_path_cancel VARCHAR(200) DEFAULT '' COMMENT '取消审批API路径',
-
+    
     -- 回调配置
     callback_url VARCHAR(500) DEFAULT '' COMMENT '回调URL',
-
+    
     -- 时间戳
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
-
+    
     INDEX idx_approval_config_type (type),
     INDEX idx_approval_config_enabled (enabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -770,25 +775,25 @@ CREATE TABLE IF NOT EXISTS system_users (
     id VARCHAR(36) PRIMARY KEY COMMENT 'System user unique identifier',
     name VARCHAR(100) NOT NULL COMMENT 'System user name (display name)',
     username VARCHAR(100) NOT NULL COMMENT 'OS username (e.g., root, admin, dev)',
-
+    
     -- 认证信息 (明确认证方式，不支持 auto)
     auth_type VARCHAR(20) DEFAULT 'password' COMMENT 'Auth type: password, key',
     password TEXT COMMENT 'Encrypted password',
     private_key TEXT COMMENT 'SSH private key',
     passphrase TEXT COMMENT 'Private key passphrase',
-
+    
     -- 协议和设置
     protocol VARCHAR(20) DEFAULT 'ssh' COMMENT 'Protocol: ssh, rdp',
-
+    
     -- 其他设置
     priority INT DEFAULT 0 COMMENT 'Priority (higher = preferred)',
     description TEXT COMMENT 'Description',
     status VARCHAR(20) DEFAULT 'active' COMMENT 'Status: active, inactive',
-
+    
     created_by VARCHAR(36) COMMENT 'Creator user ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     INDEX idx_username (username),
     INDEX idx_status (status),
     INDEX idx_protocol (protocol),
@@ -802,17 +807,17 @@ CREATE TABLE IF NOT EXISTS roles (
     id VARCHAR(36) PRIMARY KEY COMMENT 'Role unique identifier',
     name VARCHAR(100) NOT NULL UNIQUE COMMENT 'Role name',
     description TEXT COMMENT 'Role description',
-
+    
     -- 显示相关
     color VARCHAR(20) COMMENT 'Display color (hex code)',
     icon VARCHAR(50) COMMENT 'Display icon',
     priority INT DEFAULT 0 COMMENT 'Priority',
-
+    
     status VARCHAR(20) DEFAULT 'active' COMMENT 'Status: active, inactive',
     created_by VARCHAR(36) COMMENT 'Creator user ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     INDEX idx_name (name),
     INDEX idx_status (status),
     INDEX idx_priority (priority)
@@ -826,7 +831,7 @@ CREATE TABLE IF NOT EXISTS role_members (
     user_id VARCHAR(36) NOT NULL COMMENT 'User ID',
     added_by VARCHAR(36) COMMENT 'Who added this user',
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY uk_role_user (role_id, user_id),
@@ -840,34 +845,34 @@ COMMENT='Role membership';
 CREATE TABLE IF NOT EXISTS permission_rules (
     id VARCHAR(36) PRIMARY KEY COMMENT 'Permission rule unique identifier',
     name VARCHAR(200) NOT NULL COMMENT 'Rule name',
-
+    
     -- 授权对象
     role_id VARCHAR(36) NOT NULL COMMENT 'Role ID',
-
+    
     -- 资产范围
     host_group_id VARCHAR(36) COMMENT 'Host group ID (NULL = all hosts)',
     host_ids TEXT COMMENT 'Specific host IDs (JSON array, optional)',
-
+    
     -- 系统用户
     system_user_id VARCHAR(36) COMMENT 'System user ID (nullable, using many-to-many table)',
-
+    
     -- 时间限制
     valid_from TIMESTAMP NULL COMMENT 'Valid from (NULL = no start limit)',
     valid_to TIMESTAMP NULL COMMENT 'Valid to (NULL = no end limit)',
-
+    
     -- 状态
     enabled BOOLEAN DEFAULT true COMMENT 'Is enabled',
     priority INT DEFAULT 0 COMMENT 'Priority (higher = preferred)',
-
+    
     description TEXT COMMENT 'Description',
     created_by VARCHAR(36) COMMENT 'Creator user ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
     FOREIGN KEY (host_group_id) REFERENCES host_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (system_user_id) REFERENCES system_users(id) ON DELETE CASCADE,
-
+    
     INDEX idx_role_id (role_id),
     INDEX idx_host_group_id (host_group_id),
     INDEX idx_system_user_id (system_user_id),
@@ -884,12 +889,12 @@ CREATE TABLE IF NOT EXISTS permission_rule_system_users (
     permission_rule_id VARCHAR(36) NOT NULL COMMENT 'Permission rule ID',
     system_user_id VARCHAR(36) NOT NULL COMMENT 'System user ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     UNIQUE KEY uk_rule_system_user (permission_rule_id, system_user_id),
     INDEX idx_permission_rule_id (permission_rule_id),
     INDEX idx_system_user_id (system_user_id),
     INDEX idx_rule_user (permission_rule_id, system_user_id),
-
+    
     FOREIGN KEY (permission_rule_id) REFERENCES permission_rules(id) ON DELETE CASCADE,
     FOREIGN KEY (system_user_id) REFERENCES system_users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -901,12 +906,12 @@ CREATE TABLE IF NOT EXISTS permission_rule_host_groups (
     permission_rule_id VARCHAR(36) NOT NULL COMMENT 'Permission rule ID',
     host_group_id VARCHAR(36) NOT NULL COMMENT 'Host group ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     UNIQUE KEY uk_rule_host_group (permission_rule_id, host_group_id),
     INDEX idx_permission_rule_id (permission_rule_id),
     INDEX idx_host_group_id (host_group_id),
     INDEX idx_rule_group (permission_rule_id, host_group_id),
-
+    
     FOREIGN KEY (permission_rule_id) REFERENCES permission_rules(id) ON DELETE CASCADE,
     FOREIGN KEY (host_group_id) REFERENCES host_groups(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -1097,8 +1102,8 @@ COMMIT;
 -- Note: organization_id will be set after organizations table is created
 INSERT IGNORE INTO users (id, username, password, full_name, email, role, status, organization_id, created_at, updated_at)
 VALUES
-    ('00000000-0000-0000-0000-000000000001',
-     'admin',
+    ('00000000-0000-0000-0000-000000000001', 
+     'admin', 
      '$2a$10$j/lQBaOvW9dMo/O13g65qeCwYnxuaZerNcB/eA3IZZXxRp4MbePhG',
      'System Admin',
      'admin@keyops.local',
@@ -1145,7 +1150,7 @@ CREATE TABLE IF NOT EXISTS user_expiration_logs (
     reason TEXT COMMENT 'Reason or notes',
     performed_by VARCHAR(36) COMMENT 'Admin user ID who performed the action',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     INDEX idx_user_id (user_id),
     INDEX idx_username (username),
     INDEX idx_action (action),
@@ -1166,7 +1171,7 @@ CREATE TABLE IF NOT EXISTS permission_expiration_logs (
     reason TEXT COMMENT 'Reason or notes',
     performed_by VARCHAR(36) COMMENT 'Admin user ID who performed the action',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     INDEX idx_rule_id (rule_id),
     INDEX idx_role_id (role_id),
     INDEX idx_action (action),
@@ -1184,7 +1189,7 @@ CREATE TABLE IF NOT EXISTS expiration_notification_config (
     message_template TEXT COMMENT 'Custom message template',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     UNIQUE KEY uk_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Expiration notification configuration';
@@ -1235,7 +1240,7 @@ CREATE TABLE IF NOT EXISTS menus (
     component VARCHAR(255) COMMENT '前端组件路径',
     hidden BOOLEAN DEFAULT FALSE COMMENT '是否隐藏',
     sort INT DEFAULT 0 COMMENT '排序',
-
+    
     -- 菜单元数据
     title VARCHAR(100) NOT NULL COMMENT '菜单标题',
     icon VARCHAR(50) COMMENT '菜单图标',
@@ -1243,10 +1248,10 @@ CREATE TABLE IF NOT EXISTS menus (
     active_name VARCHAR(100) COMMENT '激活菜单名称',
     close_tab BOOLEAN DEFAULT FALSE COMMENT '是否自动关闭标签页',
     default_menu BOOLEAN DEFAULT FALSE COMMENT '是否是默认菜单',
-
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     INDEX idx_parent_id (parent_id),
     INDEX idx_sort (sort),
     INDEX idx_name (name)
@@ -1261,7 +1266,7 @@ CREATE TABLE IF NOT EXISTS menu_permissions (
     menu_id VARCHAR(36) NOT NULL COMMENT '菜单ID',
     created_by VARCHAR(36) COMMENT '创建者用户ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    
     FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE CASCADE,
     UNIQUE KEY uk_role_menu (role_id, menu_id),
     INDEX idx_role_id (role_id),
@@ -1420,7 +1425,7 @@ CREATE TABLE IF NOT EXISTS apis (
     description VARCHAR(255) COMMENT 'API描述',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     INDEX idx_path (path),
     INDEX idx_method (method),
     INDEX idx_group (`group`),
@@ -1438,28 +1443,28 @@ CREATE TABLE IF NOT EXISTS k8s_clusters (
     name VARCHAR(100) NOT NULL UNIQUE COMMENT 'Cluster name',
     display_name VARCHAR(100) COMMENT 'Display name',
     description TEXT COMMENT 'Cluster description',
-
+    
     -- 连接配置
     api_server VARCHAR(255) NOT NULL COMMENT 'Kubernetes API server URL',
     token TEXT COMMENT 'Bearer token for authentication',
     kubeconfig TEXT COMMENT 'Kubeconfig content (alternative to token)',
     auth_type VARCHAR(20) DEFAULT 'token' COMMENT 'Auth type: token, kubeconfig',
-
+    
     -- 集群信息
     version VARCHAR(50) COMMENT 'Kubernetes version',
     region VARCHAR(100) COMMENT 'Region/Zone',
     environment VARCHAR(50) COMMENT 'Environment: dev, test, prod',
-
+    
     -- 状态和设置
     status VARCHAR(20) DEFAULT 'active' COMMENT 'Status: active, inactive, error',
     default_namespace VARCHAR(100) COMMENT 'Default namespace',
-
+    
     -- 审计和元数据
     created_by VARCHAR(36) COMMENT 'Creator user ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_checked_at TIMESTAMP NULL COMMENT 'Last health check time',
-
+    
     INDEX idx_name (name),
     INDEX idx_status (status),
     INDEX idx_environment (environment),
@@ -1474,18 +1479,18 @@ CREATE TABLE IF NOT EXISTS cluster_permissions (
     cluster_id VARCHAR(36) NOT NULL COMMENT 'Cluster ID',
     user_id VARCHAR(36) NULL COMMENT 'User ID (if user-level permission)',
     role_id VARCHAR(36) NULL COMMENT 'Role ID (if role-level permission)',
-
+    
     -- 权限类型
     permission_type VARCHAR(20) DEFAULT 'read' COMMENT 'Permission type: read, write, admin',
-
+    
     -- 命名空间限制（可选，NULL表示所有命名空间）
     allowed_namespaces TEXT COMMENT 'Allowed namespaces (JSON array, NULL = all)',
-
+    
     -- 元数据
     created_by VARCHAR(36) COMMENT 'Creator user ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     INDEX idx_cluster_id (cluster_id),
     INDEX idx_user_id (user_id),
     INDEX idx_role_id (role_id),
@@ -1552,7 +1557,7 @@ CREATE TABLE IF NOT EXISTS db_instances (
     created_by VARCHAR(36) NOT NULL COMMENT '创建人',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     INDEX idx_db_type (db_type),
     INDEX idx_is_enabled (is_enabled),
     INDEX idx_created_by (created_by),
@@ -1574,7 +1579,7 @@ CREATE TABLE IF NOT EXISTS db_permission_metadata (
     description TEXT COMMENT '权限说明',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    
     INDEX idx_user_id (user_id),
     INDEX idx_instance_id (instance_id),
     INDEX idx_expires_at (expires_at),
@@ -1603,7 +1608,7 @@ CREATE TABLE IF NOT EXISTS query_logs (
     client_ip VARCHAR(45) COMMENT '客户端IP',
     user_agent VARCHAR(255) COMMENT '用户代理',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '执行时间',
-
+    
     INDEX idx_user_id (user_id),
     INDEX idx_instance_id (instance_id),
     INDEX idx_db_type (db_type),
@@ -2589,7 +2594,7 @@ INSERT INTO alert_levels (level_name, color, is_default, level_desc) VALUES
 ('P2', '#ff7d00', TRUE, '高优先级 - 重要功能受影响，需要及时响应（通常要求 1-2 小时内响应）'),
 ('P3', '#f7ba1e', TRUE, '中等优先级 - 非核心功能受影响，需要关注（通常要求 4-8 小时内响应）'),
 ('P4', '#9fdb1d', TRUE, '低优先级 - 轻微问题或优化建议，可以稍后处理（通常要求 1-2 个工作日内响应）')
-ON DUPLICATE KEY UPDATE
+ON DUPLICATE KEY UPDATE 
     color = VALUES(color),
     is_default = VALUES(is_default),
     level_desc = VALUES(level_desc),
@@ -2847,7 +2852,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 COMMENT='组织架构表（支持层级结构）';
 
 -- 添加users表的外键约束（需要在organizations表创建之后）
-ALTER TABLE users ADD CONSTRAINT fk_users_organization_id
+ALTER TABLE users ADD CONSTRAINT fk_users_organization_id 
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL;
 
 -- Insert organization test data
@@ -2861,7 +2866,7 @@ INSERT INTO organizations (id, unit_code, unit_name, unit_type, unit_owner, is_a
 
 -- LineOfBiz (业务线，属于对应的 BizGroup)
 INSERT INTO organizations (id, unit_code, unit_name, unit_type, unit_owner, is_active, parent_id, sort_order)
-SELECT UUID(), 'tech-rd', '技术研发', 'LineOfBiz', '王五', TRUE,
+SELECT UUID(), 'tech-rd', '技术研发', 'LineOfBiz', '王五', TRUE, 
     (SELECT id FROM organizations WHERE unit_code = 'tech-group' LIMIT 1), 1
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group');
 
@@ -3016,9 +3021,9 @@ SELECT UUID(), 'pr-dept', '公关部门', 'Department', '马二三', TRUE,
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'marketing-brand');
 
 -- 更新admin用户的部门关联（关联到backend-dept部门）
-UPDATE users
+UPDATE users 
 SET organization_id = (SELECT id FROM organizations WHERE unit_code = 'backend-dept' LIMIT 1)
-WHERE username = 'admin'
+WHERE username = 'admin' 
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'backend-dept');
 
 -- ============================================================================
@@ -3072,10 +3077,10 @@ COMMENT='应用服务管理表';
 -- 技术组（tech-group）下的应用
 -- 技术研发业务线（tech-rd）下的应用
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
-    'xxl-job-admin', FALSE, 'MIDDLEWARE', 'K8S', 'Running',
+    'xxl-job-admin', FALSE, 'MIDDLEWARE', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
     '大陆',
     '业务定时任务调度系统', '2024-06-19 13:34:48', NULL
@@ -3085,10 +3090,10 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
 
 
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
-    'web-frontend', FALSE, 'WEB', 'K8S', 'Running',
+    'web-frontend', FALSE, 'WEB', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
     '大陆',
     'Web前端应用', '2024-04-01 11:00:00', NULL
@@ -3098,10 +3103,10 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
 
 
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
-    'nginx-proxy', FALSE, 'SERVER', 'ECS', 'Running',
+    'nginx-proxy', FALSE, 'SERVER', 'ECS', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
     '大陆',
     'Nginx反向代理', '2024-01-05 09:00:00', NULL
@@ -3113,10 +3118,10 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
 -- 业务组（business-group）下的应用
 -- 业务运营业务线（business-ops）下的应用
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
-    'crm-system', TRUE, 'WEB', 'K8S', 'Running',
+    'crm-system', TRUE, 'WEB', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
     '大陆',
     'CRM客户管理系统（核心业务系统）', '2024-01-20 10:00:00', NULL
@@ -3125,10 +3130,10 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'product-dept');
 
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
-    'report-service', FALSE, 'WEB', 'K8S', 'Running',
+    'report-service', FALSE, 'WEB', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
     '香港',
     '报表服务系统', '2024-03-15 14:00:00', NULL
@@ -3137,10 +3142,10 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'product-dept');
 
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
-    'analytics-service', FALSE, 'DATAWARE', 'K8S', 'Running',
+    'analytics-service', FALSE, 'DATAWARE', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
     '北美',
     '数据分析服务', '2024-04-10 11:00:00', NULL
@@ -3149,10 +3154,10 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'product-dept');
 
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
-    'notification-service', FALSE, 'MIDDLEWARE', 'K8S', 'Running',
+    'notification-service', FALSE, 'MIDDLEWARE', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
     '大陆',
     '消息通知服务', '2024-02-25 09:30:00', NULL
@@ -3163,10 +3168,10 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
 -- 一些已下线的应用
 
 INSERT INTO applications (id, org, line_of_biz, name, is_critical, srv_type, virtual_tech, status, department, site, description, online_at, offline_at)
-SELECT UUID(),
+SELECT UUID(), 
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-group' LIMIT 1),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
-    'old-crm', FALSE, 'WEB', 'EC2', 'Stopped',
+    'old-crm', FALSE, 'WEB', 'EC2', 'Stopped', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
     '香港',
     '旧版CRM系统（已迁移）', '2019-06-01 00:00:00', '2023-12-31 23:59:59'
@@ -3181,16 +3186,16 @@ WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
 -- ============================================================================
 
 -- Show created tables
-SELECT
-    TABLE_NAME,
+SELECT 
+    TABLE_NAME, 
     TABLE_ROWS,
     ROUND(DATA_LENGTH / 1024 / 1024, 2) AS 'Size_MB',
     TABLE_COMMENT
-FROM
-    information_schema.TABLES
-WHERE
+FROM 
+    information_schema.TABLES 
+WHERE 
     TABLE_SCHEMA = 'keyops'
-ORDER BY
+ORDER BY 
     TABLE_NAME;
 
 -- ============================================================================
@@ -3202,7 +3207,7 @@ ORDER BY
 -- 确保 admin 角色拥有所有菜单权限
 -- 先删除可能存在的旧权限，然后重新分配所有菜单权限
 DELETE FROM menu_permissions WHERE role_id = 'role:admin';
-INSERT INTO menu_permissions (role_id, menu_id, created_at)
+INSERT INTO menu_permissions (role_id, menu_id, created_at) 
 SELECT 'role:admin', menus.id, NOW() FROM menus;
 -- 确保模型配置菜单对 admin 可见
 INSERT INTO menu_permissions (role_id, menu_id, created_at) VALUES
@@ -3211,7 +3216,7 @@ ON DUPLICATE KEY UPDATE menu_id = menu_id;
 
 -- 确保 user 角色拥有基础菜单权限
 DELETE FROM menu_permissions WHERE role_id = 'role:user';
-INSERT INTO menu_permissions (role_id, menu_id, created_at)
+INSERT INTO menu_permissions (role_id, menu_id, created_at) 
 SELECT 'role:user', menus.id, NOW() FROM menus
 WHERE menus.id IN (
     'menu-home',

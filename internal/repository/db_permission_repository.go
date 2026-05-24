@@ -5,21 +5,30 @@ import (
 	"gorm.io/gorm"
 )
 
-type DBPermissionRepository struct {
+type DBPermissionRepository interface {
+	Create(metadata *model.DBPermissionMetadata) error
+	Delete(userID string, instanceID uint, databaseName, tableName, permissionType string) error
+	Get(userID string, instanceID uint, databaseName, tableName, permissionType string) (*model.DBPermissionMetadata, error)
+	List(filters map[string]interface{}) ([]model.DBPermissionMetadata, error)
+	BatchCreate(metadatas []*model.DBPermissionMetadata) error
+	Update(userID string, instanceID uint, databaseName, tableName, permissionType string, updates map[string]interface{}) error
+}
+
+type dbPermissionRepository struct {
 	db *gorm.DB
 }
 
-func NewDBPermissionRepository(db *gorm.DB) *DBPermissionRepository {
-	return &DBPermissionRepository{db: db}
+func NewDBPermissionRepository(db *gorm.DB) DBPermissionRepository {
+	return &dbPermissionRepository{db: db}
 }
 
 // Create 创建权限元数据
-func (r *DBPermissionRepository) Create(metadata *model.DBPermissionMetadata) error {
+func (r *dbPermissionRepository) Create(metadata *model.DBPermissionMetadata) error {
 	return r.db.Create(metadata).Error
 }
 
 // Delete 删除权限元数据
-func (r *DBPermissionRepository) Delete(userID string, instanceID uint, databaseName, tableName, permissionType string) error {
+func (r *dbPermissionRepository) Delete(userID string, instanceID uint, databaseName, tableName, permissionType string) error {
 	query := r.db.Where("user_id = ? AND instance_id = ? AND permission_type = ?", userID, instanceID, permissionType)
 	if databaseName != "" {
 		query = query.Where("database_name = ?", databaseName)
@@ -35,7 +44,7 @@ func (r *DBPermissionRepository) Delete(userID string, instanceID uint, database
 }
 
 // Get 获取权限元数据
-func (r *DBPermissionRepository) Get(userID string, instanceID uint, databaseName, tableName, permissionType string) (*model.DBPermissionMetadata, error) {
+func (r *dbPermissionRepository) Get(userID string, instanceID uint, databaseName, tableName, permissionType string) (*model.DBPermissionMetadata, error) {
 	var metadata model.DBPermissionMetadata
 	query := r.db.Where("user_id = ? AND instance_id = ? AND permission_type = ?", userID, instanceID, permissionType)
 	if databaseName != "" {
@@ -56,7 +65,7 @@ func (r *DBPermissionRepository) Get(userID string, instanceID uint, databaseNam
 }
 
 // List 获取权限列表
-func (r *DBPermissionRepository) List(filters map[string]interface{}) ([]model.DBPermissionMetadata, error) {
+func (r *dbPermissionRepository) List(filters map[string]interface{}) ([]model.DBPermissionMetadata, error) {
 	var metadatas []model.DBPermissionMetadata
 	query := r.db.Model(&model.DBPermissionMetadata{})
 
@@ -72,7 +81,7 @@ func (r *DBPermissionRepository) List(filters map[string]interface{}) ([]model.D
 }
 
 // BatchCreate 批量创建
-func (r *DBPermissionRepository) BatchCreate(metadatas []*model.DBPermissionMetadata) error {
+func (r *dbPermissionRepository) BatchCreate(metadatas []*model.DBPermissionMetadata) error {
 	if len(metadatas) == 0 {
 		return nil
 	}
@@ -80,7 +89,7 @@ func (r *DBPermissionRepository) BatchCreate(metadatas []*model.DBPermissionMeta
 }
 
 // Update 更新权限元数据
-func (r *DBPermissionRepository) Update(userID string, instanceID uint, databaseName, tableName, permissionType string, updates map[string]interface{}) error {
+func (r *dbPermissionRepository) Update(userID string, instanceID uint, databaseName, tableName, permissionType string, updates map[string]interface{}) error {
 	query := r.db.Model(&model.DBPermissionMetadata{}).Where("user_id = ? AND instance_id = ? AND permission_type = ?", userID, instanceID, permissionType)
 	if databaseName != "" {
 		query = query.Where("database_name = ?", databaseName)

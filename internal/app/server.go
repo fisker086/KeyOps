@@ -68,7 +68,6 @@ func StartServer(
 		handlers.CloudAccount,
 		handlers.Resources,
 		handlers.BillDashboard,
-		handlers.FinOps,
 		handlers.Monitor,
 		handlers.Organization,
 		handlers.Application,

@@ -7,19 +7,29 @@ import (
 	"gorm.io/gorm"
 )
 
-type RefreshTokenRepository struct {
+type RefreshTokenRepository interface {
+	Create(token *model.RefreshToken) error
+	FindByJTI(jti string) (*model.RefreshToken, error)
+	RevokeByJTI(jti string) error
+	RevokeAllByUser(userID string) error
+	CountActiveByUser(userID string) (int64, error)
+	FindOldestActiveByUser(userID string, limit int) ([]model.RefreshToken, error)
+	CleanupExpired() error
+}
+
+type refreshTokenRepository struct {
 	db *gorm.DB
 }
 
-func NewRefreshTokenRepository(db *gorm.DB) *RefreshTokenRepository {
-	return &RefreshTokenRepository{db: db}
+func NewRefreshTokenRepository(db *gorm.DB) RefreshTokenRepository {
+	return &refreshTokenRepository{db: db}
 }
 
-func (r *RefreshTokenRepository) Create(token *model.RefreshToken) error {
+func (r *refreshTokenRepository) Create(token *model.RefreshToken) error {
 	return r.db.Create(token).Error
 }
 
-func (r *RefreshTokenRepository) FindByJTI(jti string) (*model.RefreshToken, error) {
+func (r *refreshTokenRepository) FindByJTI(jti string) (*model.RefreshToken, error) {
 	var t model.RefreshToken
 	err := r.db.Where("jti = ?", jti).First(&t).Error
 	if err != nil {
@@ -28,19 +38,19 @@ func (r *RefreshTokenRepository) FindByJTI(jti string) (*model.RefreshToken, err
 	return &t, nil
 }
 
-func (r *RefreshTokenRepository) RevokeByJTI(jti string) error {
+func (r *refreshTokenRepository) RevokeByJTI(jti string) error {
 	return r.db.Model(&model.RefreshToken{}).
 		Where("jti = ?", jti).
 		Update("revoked", true).Error
 }
 
-func (r *RefreshTokenRepository) RevokeAllByUser(userID string) error {
+func (r *refreshTokenRepository) RevokeAllByUser(userID string) error {
 	return r.db.Model(&model.RefreshToken{}).
 		Where("user_id = ? AND revoked = ?", userID, false).
 		Update("revoked", true).Error
 }
 
-func (r *RefreshTokenRepository) CountActiveByUser(userID string) (int64, error) {
+func (r *refreshTokenRepository) CountActiveByUser(userID string) (int64, error) {
 	var count int64
 	err := r.db.Model(&model.RefreshToken{}).
 		Where("user_id = ? AND revoked = ? AND expires_at > ?", userID, false, time.Now()).
@@ -48,7 +58,7 @@ func (r *RefreshTokenRepository) CountActiveByUser(userID string) (int64, error)
 	return count, err
 }
 
-func (r *RefreshTokenRepository) FindOldestActiveByUser(userID string, limit int) ([]model.RefreshToken, error) {
+func (r *refreshTokenRepository) FindOldestActiveByUser(userID string, limit int) ([]model.RefreshToken, error) {
 	var tokens []model.RefreshToken
 	err := r.db.Where("user_id = ? AND revoked = ? AND expires_at > ?", userID, false, time.Now()).
 		Order("created_at ASC").
@@ -57,6 +67,6 @@ func (r *RefreshTokenRepository) FindOldestActiveByUser(userID string, limit int
 	return tokens, err
 }
 
-func (r *RefreshTokenRepository) CleanupExpired() error {
+func (r *refreshTokenRepository) CleanupExpired() error {
 	return r.db.Where("expires_at <= ?", time.Now()).Delete(&model.RefreshToken{}).Error
 }

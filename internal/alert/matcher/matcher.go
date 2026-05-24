@@ -11,11 +11,11 @@ import (
 
 // StrategyMatcher 策略匹配器
 type StrategyMatcher struct {
-	strategyRepo *repository.AlertStrategyRepository
+	strategyRepo repository.AlertStrategyRepository
 }
 
 // NewStrategyMatcher 创建策略匹配器
-func NewStrategyMatcher(strategyRepo *repository.AlertStrategyRepository) *StrategyMatcher {
+func NewStrategyMatcher(strategyRepo repository.AlertStrategyRepository) *StrategyMatcher {
 	return &StrategyMatcher{strategyRepo: strategyRepo}
 }
 

@@ -10,15 +10,15 @@ import (
 
 // OnCallService 值班排班服务
 type OnCallService struct {
-	scheduleRepo   *repository.OnCallScheduleRepository
-	shiftRepo      *repository.OnCallShiftRepository
-	assignmentRepo *repository.OnCallAssignmentRepository
+	scheduleRepo   repository.OnCallScheduleRepository
+	shiftRepo      repository.OnCallShiftRepository
+	assignmentRepo repository.OnCallAssignmentRepository
 }
 
 func NewOnCallService(
-	scheduleRepo *repository.OnCallScheduleRepository,
-	shiftRepo *repository.OnCallShiftRepository,
-	assignmentRepo *repository.OnCallAssignmentRepository,
+	scheduleRepo repository.OnCallScheduleRepository,
+	shiftRepo repository.OnCallShiftRepository,
+	assignmentRepo repository.OnCallAssignmentRepository,
 ) *OnCallService {
 	return &OnCallService{
 		scheduleRepo:   scheduleRepo,

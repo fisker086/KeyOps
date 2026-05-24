@@ -56,7 +56,6 @@ func Setup(
 	cloudAccountHandler *handler.CloudAccountHandler,
 	resourcesHandler *handler.ResourcesHandler,
 	billDashboardHandler *handler.BillDashboardHandler,
-	finOpsHandler *handler.FinOpsHandler,
 	monitorHandler *handler.MonitorHandler,
 	organizationHandler *handler.OrganizationHandler,
 	applicationHandler *handler.ApplicationHandler,
@@ -74,7 +73,7 @@ func Setup(
 	buildMasterHandler *handler.BuildMasterHandler,
 	aiAssistantHandler *aiassistant.Handler,
 	k8sPermissionService *service.K8sPermissionService,
-	roleRepo *repository.RoleRepository,
+	roleRepo repository.RoleRepository,
 	mode string,
 ) *gin.Engine {
 	r := gin.New()
@@ -900,7 +899,7 @@ func Setup(
 			// 云账单同步和查询
 			bill.POST("/sync/:cloud_account_id", billHandler.SyncBilling)   // 同步账单
 			bill.POST("/trigger-sync", billHandler.TriggerSync)             // 手动触发账单同步（兼容文档）
-			bill.GET("/check-budget-alerts", billHandler.CheckBudgetAlerts) // 手动检查预算告警
+	
 			bill.GET("/summary-by-cloud", billHandler.GetSummaryByCloud)    // 按云厂商汇总
 			bill.GET("/pricing", billHandler.GetPricing)                    // 获取定价信息
 
@@ -918,16 +917,6 @@ func Setup(
 			// Dashboard
 			bill.GET("/dashboard", billDashboardHandler.GetDashboardData)         // Dashboard 数据
 			bill.GET("/recommendations", billDashboardHandler.GetRecommendations) // 优化建议
-
-			// Budgets
-			budgets := bill.Group("/budgets")
-			{
-				budgets.GET("", finOpsHandler.ListBudgets)
-				budgets.POST("", finOpsHandler.CreateBudget)
-				budgets.PUT("/:id", finOpsHandler.UpdateBudget)
-				budgets.DELETE("/:id", finOpsHandler.DeleteBudget)
-			}
-
 
 		}
 

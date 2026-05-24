@@ -10,10 +10,10 @@ import (
 )
 
 type RoleHandler struct {
-	repo *repository.RoleRepository
+	repo repository.RoleRepository
 }
 
-func NewRoleHandler(repo *repository.RoleRepository) *RoleHandler {
+func NewRoleHandler(repo repository.RoleRepository) *RoleHandler {
 	return &RoleHandler{repo: repo}
 }
 

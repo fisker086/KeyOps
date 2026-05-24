@@ -19,11 +19,11 @@ import (
 
 type FileHandler struct {
 	db             *gorm.DB
-	hostRepo       *repository.HostRepository
-	systemUserRepo *repository.SystemUserRepository
+	hostRepo       repository.HostRepository
+	systemUserRepo repository.SystemUserRepository
 }
 
-func NewFileHandler(db *gorm.DB, hostRepo *repository.HostRepository, systemUserRepo *repository.SystemUserRepository) *FileHandler {
+func NewFileHandler(db *gorm.DB, hostRepo repository.HostRepository, systemUserRepo repository.SystemUserRepository) *FileHandler {
 	return &FileHandler{
 		db:             db,
 		hostRepo:       hostRepo,

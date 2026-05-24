@@ -16,11 +16,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type SessionHandler struct {
-	service *bastionService.SessionService
+// SessionService defines the methods used by SessionHandler
+type SessionService interface {
+	CreateSession(hostID string, userID string) (*model.SessionResponse, error)
+	GetLoginRecordsByUser(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error)
+	GetSessionRecordings(page, pageSize int, search string) ([]model.SessionRecording, int64, error)
+	GetSessionRecording(sessionID string) (*model.SessionRecording, error)
+	CreateSessionRecording(recording *model.SessionRecording) error
+	GetCommandRecords(page, pageSize int, search, hostFilter string) ([]model.CommandRecord, int64, error)
+	CreateCommandRecord(record *model.CommandRecord) error
+	GetCommandsBySession(sessionID string) ([]model.CommandRecord, error)
+	TerminateSession(sessionID string) error
 }
 
-func NewSessionHandler(service *bastionService.SessionService) *SessionHandler {
+var _ SessionService = (*bastionService.SessionService)(nil)
+
+type SessionHandler struct {
+	service SessionService
+}
+
+func NewSessionHandler(service SessionService) *SessionHandler {
 	return &SessionHandler{service: service}
 }
 

@@ -19,8 +19,8 @@ import (
 // OnCallNotificationService 值班通知服务
 type OnCallNotificationService struct {
 	db            *gorm.DB
-	shiftRepo     *repository.OnCallShiftRepository
-	scheduleRepo  *repository.OnCallScheduleRepository
+	shiftRepo     repository.OnCallShiftRepository
+	scheduleRepo  repository.OnCallScheduleRepository
 	stopChan      chan struct{}
 	isRunning     bool
 	checkInterval time.Duration
@@ -29,8 +29,8 @@ type OnCallNotificationService struct {
 // NewOnCallNotificationService 创建值班通知服务
 func NewOnCallNotificationService(
 	db *gorm.DB,
-	shiftRepo *repository.OnCallShiftRepository,
-	scheduleRepo *repository.OnCallScheduleRepository,
+	shiftRepo repository.OnCallShiftRepository,
+	scheduleRepo repository.OnCallScheduleRepository,
 ) *OnCallNotificationService {
 	return &OnCallNotificationService{
 		db:            db,

@@ -1,4 +1,4 @@
-package auth
+package monitor
 
 import (
 	"errors"
@@ -11,10 +11,10 @@ import (
 )
 
 type MonitorService struct {
-	repo *repository.MonitorRepository
+	repo repository.MonitorRepository
 }
 
-func NewMonitorService(repo *repository.MonitorRepository) *MonitorService {
+func NewMonitorService(repo repository.MonitorRepository) *MonitorService {
 	return &MonitorService{repo: repo}
 }
 

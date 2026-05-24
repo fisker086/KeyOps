@@ -10,10 +10,10 @@ import (
 )
 
 type SystemUserHandler struct {
-	repo *repository.SystemUserRepository
+	repo repository.SystemUserRepository
 }
 
-func NewSystemUserHandler(repo *repository.SystemUserRepository) *SystemUserHandler {
+func NewSystemUserHandler(repo repository.SystemUserRepository) *SystemUserHandler {
 	return &SystemUserHandler{repo: repo}
 }
 

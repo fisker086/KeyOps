@@ -9,27 +9,48 @@ import (
 	"gorm.io/gorm"
 )
 
-type HostRepository struct {
+type HostRepository interface {
+	Create(host *model.Host) error
+	Update(host *model.Host) error
+	Delete(id string) error
+	FindByID(id string) (*model.Host, error)
+	FindByIP(ip string) (*model.Host, error)
+	FindByIPAndPort(ip string, port int) (*model.Host, error)
+	FindAll(page, pageSize int, search string, tags []string) ([]model.Host, int64, error)
+	FindByUser(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error)
+	CountByStatus() (total, online, offline int64, err error)
+	CountByStatusForUser(userID string) (total, online, offline int64, err error)
+	IncrementLoginCount(id string) error
+	UpdateLastLoginTime(id string) error
+	GetHostsWithUserLoginCount(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error)
+	GetUserFrequentHosts(userID string, limit int) ([]model.Host, error)
+	UpdateStatus(id string, status string) error
+	FindAllWithPagination(page, pageSize int, search string, tags []string) ([]model.Host, int64, error)
+	FindByUserPermissions(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error)
+	GetAccessibleHostIDsForUser(userID string) ([]string, error)
+}
+
+type hostRepository struct {
 	db *gorm.DB
 }
 
-func NewHostRepository(db *gorm.DB) *HostRepository {
-	return &HostRepository{db: db}
+func NewHostRepository(db *gorm.DB) HostRepository {
+	return &hostRepository{db: db}
 }
 
-func (r *HostRepository) Create(host *model.Host) error {
+func (r *hostRepository) Create(host *model.Host) error {
 	return r.db.Create(host).Error
 }
 
-func (r *HostRepository) Update(host *model.Host) error {
+func (r *hostRepository) Update(host *model.Host) error {
 	return r.db.Save(host).Error
 }
 
-func (r *HostRepository) Delete(id string) error {
+func (r *hostRepository) Delete(id string) error {
 	return r.db.Delete(&model.Host{}, "id = ?", id).Error
 }
 
-func (r *HostRepository) FindByID(id string) (*model.Host, error) {
+func (r *hostRepository) FindByID(id string) (*model.Host, error) {
 	var host model.Host
 	err := r.db.Where("id = ?", id).First(&host).Error
 	if err != nil {
@@ -38,7 +59,7 @@ func (r *HostRepository) FindByID(id string) (*model.Host, error) {
 	return &host, nil
 }
 
-func (r *HostRepository) FindByIP(ip string) (*model.Host, error) {
+func (r *hostRepository) FindByIP(ip string) (*model.Host, error) {
 	var host model.Host
 	err := r.db.Where("ip = ?", ip).First(&host).Error
 	if err != nil {
@@ -47,7 +68,7 @@ func (r *HostRepository) FindByIP(ip string) (*model.Host, error) {
 	return &host, nil
 }
 
-func (r *HostRepository) FindByIPAndPort(ip string, port int) (*model.Host, error) {
+func (r *hostRepository) FindByIPAndPort(ip string, port int) (*model.Host, error) {
 	var host model.Host
 	err := r.db.Where("ip = ? AND port = ?", ip, port).First(&host).Error
 	if err != nil {
@@ -56,7 +77,7 @@ func (r *HostRepository) FindByIPAndPort(ip string, port int) (*model.Host, erro
 	return &host, nil
 }
 
-func (r *HostRepository) FindAll(page, pageSize int, search string, tags []string) ([]model.Host, int64, error) {
+func (r *hostRepository) FindAll(page, pageSize int, search string, tags []string) ([]model.Host, int64, error) {
 	var hosts []model.Host
 	var total int64
 
@@ -84,7 +105,7 @@ func (r *HostRepository) FindAll(page, pageSize int, search string, tags []strin
 }
 
 // FindByUser 查询用户登录过的主机列表
-func (r *HostRepository) FindByUser(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error) {
+func (r *hostRepository) FindByUser(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error) {
 	var hosts []model.Host
 	var total int64
 
@@ -125,7 +146,7 @@ func (r *HostRepository) FindByUser(page, pageSize int, search string, tags []st
 	return hosts, total, err
 }
 
-func (r *HostRepository) CountByStatus() (total, online, offline int64, err error) {
+func (r *hostRepository) CountByStatus() (total, online, offline int64, err error) {
 	if err = r.db.Model(&model.Host{}).Count(&total).Error; err != nil {
 		return
 	}
@@ -139,7 +160,7 @@ func (r *HostRepository) CountByStatus() (total, online, offline int64, err erro
 }
 
 // CountByStatusForUser 统计用户有权限访问的主机状态（使用新权限架构）
-func (r *HostRepository) CountByStatusForUser(userID string) (total, online, offline int64, err error) {
+func (r *hostRepository) CountByStatusForUser(userID string) (total, online, offline int64, err error) {
 	// 使用新权限架构获取用户可访问的主机ID列表
 	hostIDs, err := r.GetAccessibleHostIDsForUser(userID)
 	if err != nil {
@@ -163,18 +184,18 @@ func (r *HostRepository) CountByStatusForUser(userID string) (total, online, off
 	return
 }
 
-func (r *HostRepository) IncrementLoginCount(id string) error {
+func (r *hostRepository) IncrementLoginCount(id string) error {
 	return r.db.Model(&model.Host{}).Where("id = ?", id).
 		UpdateColumn("login_count", gorm.Expr("login_count + 1")).Error
 }
 
-func (r *HostRepository) UpdateLastLoginTime(id string) error {
+func (r *hostRepository) UpdateLastLoginTime(id string) error {
 	return r.db.Model(&model.Host{}).Where("id = ?", id).
 		Update("last_login_time", gorm.Expr("NOW()")).Error
 }
 
 // GetHostsWithUserLoginCount 获取主机列表，并附带指定用户的登录次数和最后登录时间
-func (r *HostRepository) GetHostsWithUserLoginCount(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error) {
+func (r *hostRepository) GetHostsWithUserLoginCount(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error) {
 	var hosts []model.Host
 	var total int64
 
@@ -232,7 +253,7 @@ func (r *HostRepository) GetHostsWithUserLoginCount(page, pageSize int, search s
 }
 
 // GetUserFrequentHosts 获取用户最常用的主机（按登录次数排序，仅限用户有权限访问的主机）
-func (r *HostRepository) GetUserFrequentHosts(userID string, limit int) ([]model.Host, error) {
+func (r *hostRepository) GetUserFrequentHosts(userID string, limit int) ([]model.Host, error) {
 	// 首先获取用户有权限访问的主机ID列表（使用新权限架构）
 	accessibleHostIDs, err := r.GetAccessibleHostIDsForUser(userID)
 	if err != nil {
@@ -309,13 +330,13 @@ func (r *HostRepository) GetUserFrequentHosts(userID string, limit int) ([]model
 }
 
 // UpdateStatus 更新主机状态
-func (r *HostRepository) UpdateStatus(id string, status string) error {
+func (r *hostRepository) UpdateStatus(id string, status string) error {
 	return r.db.Model(&model.Host{}).Where("id = ?", id).
 		Update("status", status).Error
 }
 
 // FindAllWithPagination 获取所有主机（支持分页和搜索）
-func (r *HostRepository) FindAllWithPagination(page, pageSize int, search string, tags []string) ([]model.Host, int64, error) {
+func (r *hostRepository) FindAllWithPagination(page, pageSize int, search string, tags []string) ([]model.Host, int64, error) {
 	var hosts []model.Host
 	var total int64
 
@@ -355,7 +376,7 @@ func (r *HostRepository) FindAllWithPagination(page, pageSize int, search string
 }
 
 // FindByUserPermissions 查询用户有权限访问的主机（使用新权限架构）
-func (r *HostRepository) FindByUserPermissions(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error) {
+func (r *hostRepository) FindByUserPermissions(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error) {
 	var hosts []model.Host
 	var total int64
 
@@ -395,7 +416,7 @@ func (r *HostRepository) FindByUserPermissions(page, pageSize int, search string
 }
 
 // GetAccessibleHostIDsForUser 获取用户可访问的所有主机ID（新权限架构）
-func (r *HostRepository) GetAccessibleHostIDsForUser(userID string) ([]string, error) {
+func (r *hostRepository) GetAccessibleHostIDsForUser(userID string) ([]string, error) {
 	now := time.Now()
 	hostIDMap := make(map[string]bool)
 

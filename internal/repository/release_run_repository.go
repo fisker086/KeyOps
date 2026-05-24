@@ -7,19 +7,29 @@ import (
 	"gorm.io/gorm"
 )
 
-type ReleaseRunRepository struct {
+type ReleaseRunRepository interface {
+	Create(run *model.ReleaseRun) error
+	GetByID(id string) (*model.ReleaseRun, error)
+	Update(run *model.ReleaseRun) error
+	UpdateStatus(id string, status string, startedAt, completedAt *time.Time) error
+	UpdateStatusAndDeployedEnv(id string, status string, deployedEnv string, startedAt, completedAt *time.Time) error
+	GetLastSuccessfulProdRun(applicationID string) (*model.ReleaseRun, error)
+	List(repoURL, branch, status string, page, pageSize int) ([]model.ReleaseRun, int64, error)
+}
+
+type releaseRunRepository struct {
 	db *gorm.DB
 }
 
-func NewReleaseRunRepository(db *gorm.DB) *ReleaseRunRepository {
-	return &ReleaseRunRepository{db: db}
+func NewReleaseRunRepository(db *gorm.DB) ReleaseRunRepository {
+	return &releaseRunRepository{db: db}
 }
 
-func (r *ReleaseRunRepository) Create(run *model.ReleaseRun) error {
+func (r *releaseRunRepository) Create(run *model.ReleaseRun) error {
 	return r.db.Create(run).Error
 }
 
-func (r *ReleaseRunRepository) GetByID(id string) (*model.ReleaseRun, error) {
+func (r *releaseRunRepository) GetByID(id string) (*model.ReleaseRun, error) {
 	var run model.ReleaseRun
 	err := r.db.Where("id = ?", id).First(&run).Error
 	if err != nil {
@@ -28,11 +38,11 @@ func (r *ReleaseRunRepository) GetByID(id string) (*model.ReleaseRun, error) {
 	return &run, nil
 }
 
-func (r *ReleaseRunRepository) Update(run *model.ReleaseRun) error {
+func (r *releaseRunRepository) Update(run *model.ReleaseRun) error {
 	return r.db.Save(run).Error
 }
 
-func (r *ReleaseRunRepository) UpdateStatus(id string, status string, startedAt, completedAt *time.Time) error {
+func (r *releaseRunRepository) UpdateStatus(id string, status string, startedAt, completedAt *time.Time) error {
 	updates := map[string]interface{}{"status": status}
 	if startedAt != nil {
 		updates["started_at"] = startedAt
@@ -44,7 +54,7 @@ func (r *ReleaseRunRepository) UpdateStatus(id string, status string, startedAt,
 }
 
 // UpdateStatusAndDeployedEnv 更新状态并记录部署环境（执行时调用）
-func (r *ReleaseRunRepository) UpdateStatusAndDeployedEnv(id string, status string, deployedEnv string, startedAt, completedAt *time.Time) error {
+func (r *releaseRunRepository) UpdateStatusAndDeployedEnv(id string, status string, deployedEnv string, startedAt, completedAt *time.Time) error {
 	updates := map[string]interface{}{"status": status}
 	if deployedEnv != "" {
 		updates["deployed_environment"] = deployedEnv
@@ -59,7 +69,7 @@ func (r *ReleaseRunRepository) UpdateStatusAndDeployedEnv(id string, status stri
 }
 
 // GetLastSuccessfulProdRun 查询某应用最近一次 prod 部署成功的 run（用于回滚源）
-func (r *ReleaseRunRepository) GetLastSuccessfulProdRun(applicationID string) (*model.ReleaseRun, error) {
+func (r *releaseRunRepository) GetLastSuccessfulProdRun(applicationID string) (*model.ReleaseRun, error) {
 	var run model.ReleaseRun
 	err := r.db.Where("application_id = ? AND status = ? AND deployed_environment = ?",
 		applicationID, model.ReleaseRunStatusSuccess, "prod").
@@ -71,7 +81,7 @@ func (r *ReleaseRunRepository) GetLastSuccessfulProdRun(applicationID string) (*
 }
 
 // List 分页列表，支持按 repo_url、branch、status 筛选
-func (r *ReleaseRunRepository) List(repoURL, branch, status string, page, pageSize int) ([]model.ReleaseRun, int64, error) {
+func (r *releaseRunRepository) List(repoURL, branch, status string, page, pageSize int) ([]model.ReleaseRun, int64, error) {
 	var list []model.ReleaseRun
 	q := r.db.Model(&model.ReleaseRun{})
 	if repoURL != "" {

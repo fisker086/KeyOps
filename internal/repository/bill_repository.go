@@ -14,7 +14,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// BreakdownResult 分解结果
 type BreakdownResult struct {
 	Breakdown   map[string]map[string]float64 `json:"breakdown"`
 	Totals      map[string]float64            `json:"totals"`
@@ -22,15 +21,51 @@ type BreakdownResult struct {
 	GroupBy     string                        `json:"group_by"`
 }
 
-type BillRepository struct {
+type BillRepository interface {
+	GetRecords(vendor, month, resourceCode, serviceCode string, page, pageSize int) (total int64, records []model.BillRecord, err error)
+	GetSummary(vendor, month string) (summary model.BillSummary, details []model.BillSummaryDetail, err error)
+	GetSummaryCount(month string) (map[string]interface{}, error)
+	GetSummaryTrend(vendor, year string) (map[string][]model.BillSummary, error)
+	GetSummaryTrendMonth(year string) ([]string, error)
+	GetSummaryByCloud(startDate, endDate time.Time) (map[string]decimal.Decimal, error)
+	CreateRecord(record *model.BillRecord) error
+	ReplaceBillingRecordsForAccount(cloudAccountID uint, cycle string, records []model.BillRecord) error
+	UpsertBillResources(resources []model.BillResource) error
+	RebuildSummary(vendor, cycle string) error
+	ListBillResources(vendor string, page, pageSize int) (int64, []model.BillResource, error)
+	GetRecordsByCloudAccount(cloudAccountID uint, month string) ([]model.BillRecord, error)
+	GetBreakdownByTags(vendor, month string) (map[string]map[string]decimal.Decimal, error)
+	GetBreakdownByAccounts(vendor, month string) (map[string]decimal.Decimal, error)
+	GetBreakdownByRegion(vendor, month string) (map[string]decimal.Decimal, error)
+	GetCostByService(month string) (map[string]float64, error)
+	GetCostByRegion(month string) (map[string]float64, error)
+	GetBreakdownByService(vendor, month string) (map[string]decimal.Decimal, error)
+	GetRegionExpenses(startDate, endDate time.Time) (map[string]interface{}, error)
+	GetTrafficExpenses(startDate, endDate time.Time, resourceID string) (map[string]interface{}, error)
+	GetCostByCloudAccount(cloudAccountID uint, month string) (float64, error)
+	GetCostByCloudAccountYear(cloudAccountID uint, year string) (float64, error)
+	GetResourceCountByCloudAccount(cloudAccountID uint) (int, error)
+	GetExpensesBreakdown(startDate, endDate time.Time, granularity, groupBy, vendor, serviceCode, keyword string) (*BreakdownResult, error)
+	GetResourceCountBreakdown(startDate, endDate time.Time, groupBy, vendor string) (*BreakdownResult, error)
+	GetTotalCostByMonth(month string) (float64, error)
+	GetTopResources(month string, limit int) ([]map[string]interface{}, error)
+	GetCostByVendor(month string) (map[string]VendorCost, error)
+	GetDailyCostTrend(startDate, endDate time.Time) ([]map[string]interface{}, error)
+	GetVMRecords(vendor, month string) ([]model.BillRecord, error)
+	GetVMRecordsByGroup(vendor, month, groupBy string) (map[string]float64, error)
+	GetIdleResources() ([]IdleResource, error)
+	GetLargeResources() ([]IdleResource, error)
+}
+
+type billRepository struct {
 	db *gorm.DB
 }
 
-func NewBillRepository(db *gorm.DB) *BillRepository {
-	return &BillRepository{db: db}
+func NewBillRepository(db *gorm.DB) BillRepository {
+	return &billRepository{db: db}
 }
 
-func (r *BillRepository) dateBucketExpr(column, granularity string) string {
+func (r *billRepository) dateBucketExpr(column, granularity string) string {
 	if r.db != nil && r.db.Dialector.Name() == "postgres" {
 		if granularity == "daily" {
 			return fmt.Sprintf("TO_CHAR(%s, 'YYYY-MM-DD')", column)
@@ -45,8 +80,7 @@ func (r *BillRepository) dateBucketExpr(column, granularity string) string {
 	return fmt.Sprintf("DATE_FORMAT(%s, '%s')", column, dateFormat)
 }
 
-// GetRecords 从本地数据库获取资源账单明细列表
-func (r *BillRepository) GetRecords(vendor, month, resourceCode, serviceCode string, page, pageSize int) (total int64, records []model.BillRecord, err error) {
+func (r *billRepository) GetRecords(vendor, month, resourceCode, serviceCode string, page, pageSize int) (total int64, records []model.BillRecord, err error) {
 	query := r.db.Model(&model.BillRecord{}).
 		Where("vendor = ? AND cycle = ?", vendor, month)
 
@@ -57,18 +91,15 @@ func (r *BillRepository) GetRecords(vendor, month, resourceCode, serviceCode str
 		query = query.Where("service_code = ?", serviceCode)
 	}
 
-	// 先查询总数
 	err = query.Count(&total).Error
 	if err != nil {
 		return
 	}
 
-	// 如果总数为0，直接返回空列表（不是错误）
 	if total == 0 {
 		return 0, []model.BillRecord{}, nil
 	}
 
-	// 分页查询
 	if pageSize > 0 && page > 0 {
 		offset := (page - 1) * pageSize
 		query = query.Offset(offset).Limit(pageSize)
@@ -78,8 +109,7 @@ func (r *BillRepository) GetRecords(vendor, month, resourceCode, serviceCode str
 	return
 }
 
-// GetSummary 获取月度账单汇总
-func (r *BillRepository) GetSummary(vendor, month string) (summary model.BillSummary, details []model.BillSummaryDetail, err error) {
+func (r *billRepository) GetSummary(vendor, month string) (summary model.BillSummary, details []model.BillSummaryDetail, err error) {
 	err = r.db.Model(&model.BillSummary{}).
 		Where("vendor = ? AND cycle = ?", vendor, month).
 		First(&summary).Error
@@ -100,8 +130,7 @@ func (r *BillRepository) GetSummary(vendor, month string) (summary model.BillSum
 	return summary, details, err
 }
 
-// GetSummaryCount 获取当月总费用，用于前端展示饼图
-func (r *BillRepository) GetSummaryCount(month string) (map[string]interface{}, error) {
+func (r *billRepository) GetSummaryCount(month string) (map[string]interface{}, error) {
 	var summaries []model.BillSummary
 	err := r.db.Model(&model.BillSummary{}).
 		Where("cycle = ?", month).
@@ -142,8 +171,7 @@ func (r *BillRepository) GetSummaryCount(month string) (map[string]interface{}, 
 	return result, nil
 }
 
-// GetSummaryTrend 获取月度账单折线图数据
-func (r *BillRepository) GetSummaryTrend(vendor, year string) (map[string][]model.BillSummary, error) {
+func (r *billRepository) GetSummaryTrend(vendor, year string) (map[string][]model.BillSummary, error) {
 	var summaries []model.BillSummary
 
 	query := r.db.Model(&model.BillSummary{})
@@ -159,7 +187,6 @@ func (r *BillRepository) GetSummaryTrend(vendor, year string) (map[string][]mode
 		return nil, err
 	}
 
-	// 按云厂商归类账单
 	result := make(map[string][]model.BillSummary)
 	for _, item := range summaries {
 		v := item.Vendor
@@ -178,15 +205,13 @@ func (r *BillRepository) GetSummaryTrend(vendor, year string) (map[string][]mode
 	return result, nil
 }
 
-// GetSummaryTrendMonth 查询月份列表，用于前端折线图x轴
-func (r *BillRepository) GetSummaryTrendMonth(year string) ([]string, error) {
+func (r *billRepository) GetSummaryTrendMonth(year string) ([]string, error) {
 	var monthList []string
 	query := r.db.Model(&model.BillSummary{}).Select("DISTINCT cycle")
 
 	if year != "" {
 		query = query.Where("cycle LIKE ?", year+"-%").Order("cycle ASC")
 	} else {
-		// 默认查询最近6个月，按降序排列
 		query = query.Order("cycle DESC").Limit(6)
 	}
 
@@ -195,9 +220,7 @@ func (r *BillRepository) GetSummaryTrendMonth(year string) ([]string, error) {
 		return nil, err
 	}
 
-	// 如果没有指定年份，需要反转顺序（因为查询时是降序，但前端可能需要升序）
 	if year == "" && len(monthList) > 0 {
-		// 反转数组，使其按时间升序排列
 		for i, j := 0, len(monthList)-1; i < j; i, j = i+1, j-1 {
 			monthList[i], monthList[j] = monthList[j], monthList[i]
 		}
@@ -206,53 +229,6 @@ func (r *BillRepository) GetSummaryTrendMonth(year string) ([]string, error) {
 	return monthList, nil
 }
 
-// GetPriceList 获取单价列表
-func (r *BillRepository) GetPriceList() ([]model.BillPrice, error) {
-	var prices []model.BillPrice
-	err := r.db.Model(&model.BillPrice{}).Find(&prices).Error
-	return prices, err
-}
-
-// CreatePrice 创建单价
-func (r *BillRepository) CreatePrice(price *model.BillPrice) error {
-	return r.db.Create(price).Error
-}
-
-// UpdatePrice 更新单价
-func (r *BillRepository) UpdatePrice(id string, price *model.BillPrice) error {
-	// 将 string ID 转换为 uint
-	idUint, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		return fmt.Errorf("无效的ID格式: %v", err)
-	}
-	return r.db.Model(&model.BillPrice{}).Where("id = ?", uint(idUint)).Updates(price).Error
-}
-
-// DeletePrice 删除单价
-func (r *BillRepository) DeletePrice(id string) error {
-	idUint, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		return fmt.Errorf("无效的ID格式: %v", err)
-	}
-	return r.db.Delete(&model.BillPrice{}, uint(idUint)).Error
-}
-
-// GetPriceByID 根据ID获取单价
-func (r *BillRepository) GetPriceByID(id string) (*model.BillPrice, error) {
-	// 将 string ID 转换为 uint
-	idUint, err := strconv.ParseUint(id, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("无效的ID格式: %v", err)
-	}
-	var price model.BillPrice
-	err = r.db.Where("id = ?", uint(idUint)).First(&price).Error
-	if err != nil {
-		return nil, err
-	}
-	return &price, nil
-}
-
-// billingCyclesBetween 将起止日期转为包含的账单月份 cycle（YYYY-MM），与 bill_records.cycle 对齐
 func billingCyclesBetween(startDate, endDate time.Time) []string {
 	if startDate.After(endDate) {
 		startDate, endDate = endDate, startDate
@@ -266,8 +242,7 @@ func billingCyclesBetween(startDate, endDate time.Time) []string {
 	return cycles
 }
 
-// GetSummaryByCloud 按云厂商汇总账单
-func (r *BillRepository) GetSummaryByCloud(startDate, endDate time.Time) (map[string]decimal.Decimal, error) {
+func (r *billRepository) GetSummaryByCloud(startDate, endDate time.Time) (map[string]decimal.Decimal, error) {
 	cycles := billingCyclesBetween(startDate, endDate)
 	if len(cycles) == 0 {
 		return map[string]decimal.Decimal{}, nil
@@ -296,13 +271,11 @@ func (r *BillRepository) GetSummaryByCloud(startDate, endDate time.Time) (map[st
 	return result, nil
 }
 
-// CreateRecord 创建账单记录
-func (r *BillRepository) CreateRecord(record *model.BillRecord) error {
+func (r *billRepository) CreateRecord(record *model.BillRecord) error {
 	return r.db.Create(record).Error
 }
 
-// ReplaceBillingRecordsForAccount replaces normalized bill_records for one account and cycle.
-func (r *BillRepository) ReplaceBillingRecordsForAccount(cloudAccountID uint, cycle string, records []model.BillRecord) error {
+func (r *billRepository) ReplaceBillingRecordsForAccount(cloudAccountID uint, cycle string, records []model.BillRecord) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("cloud_account_id = ? AND cycle = ?", cloudAccountID, cycle).Delete(&model.BillRecord{}).Error; err != nil {
 			return err
@@ -314,8 +287,7 @@ func (r *BillRepository) ReplaceBillingRecordsForAccount(cloudAccountID uint, cy
 	})
 }
 
-// UpsertBillResources upserts resources discovered from billing records.
-func (r *BillRepository) UpsertBillResources(resources []model.BillResource) error {
+func (r *billRepository) UpsertBillResources(resources []model.BillResource) error {
 	if len(resources) == 0 {
 		return nil
 	}
@@ -355,8 +327,7 @@ func (r *BillRepository) UpsertBillResources(resources []model.BillResource) err
 	})
 }
 
-// RebuildSummary rebuilds bill_summary and bill_summary_detail from bill_records.
-func (r *BillRepository) RebuildSummary(vendor, cycle string) error {
+func (r *billRepository) RebuildSummary(vendor, cycle string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var total decimal.Decimal
 		if err := tx.Model(&model.BillRecord{}).
@@ -425,8 +396,7 @@ func (r *BillRepository) RebuildSummary(vendor, cycle string) error {
 	})
 }
 
-// ListBillResources 云资源清单（来自同步或手工维护）
-func (r *BillRepository) ListBillResources(vendor string, page, pageSize int) (int64, []model.BillResource, error) {
+func (r *billRepository) ListBillResources(vendor string, page, pageSize int) (int64, []model.BillResource, error) {
 	var list []model.BillResource
 	query := r.db.Model(&model.BillResource{})
 	if vendor != "" {
@@ -447,8 +417,7 @@ func (r *BillRepository) ListBillResources(vendor string, page, pageSize int) (i
 	return total, list, err
 }
 
-// GetRecordsByCloudAccount 根据云账户获取记录
-func (r *BillRepository) GetRecordsByCloudAccount(cloudAccountID uint, month string) ([]model.BillRecord, error) {
+func (r *billRepository) GetRecordsByCloudAccount(cloudAccountID uint, month string) ([]model.BillRecord, error) {
 	var records []model.BillRecord
 	query := r.db.Where("cloud_account_id = ? OR extra LIKE ?", cloudAccountID, fmt.Sprintf("%%cloud_account_id:%d%%", cloudAccountID))
 	if month != "" {
@@ -458,8 +427,7 @@ func (r *BillRepository) GetRecordsByCloudAccount(cloudAccountID uint, month str
 	return records, err
 }
 
-// GetBreakdownByTags 按标签分解费用
-func (r *BillRepository) GetBreakdownByTags(vendor, month string) (map[string]map[string]decimal.Decimal, error) {
+func (r *billRepository) GetBreakdownByTags(vendor, month string) (map[string]map[string]decimal.Decimal, error) {
 	query := r.db.Model(&model.BillRecord{})
 	if vendor != "" {
 		query = query.Where("vendor = ?", vendor)
@@ -495,8 +463,7 @@ func (r *BillRepository) GetBreakdownByTags(vendor, month string) (map[string]ma
 	return tagAmounts, nil
 }
 
-// GetBreakdownByAccounts 按云账户分解费用
-func (r *BillRepository) GetBreakdownByAccounts(vendor, month string) (map[string]decimal.Decimal, error) {
+func (r *billRepository) GetBreakdownByAccounts(vendor, month string) (map[string]decimal.Decimal, error) {
 	query := r.db.Model(&model.BillRecord{})
 	if vendor != "" {
 		query = query.Where("vendor = ?", vendor)
@@ -523,8 +490,7 @@ func (r *BillRepository) GetBreakdownByAccounts(vendor, month string) (map[strin
 	return amounts, nil
 }
 
-// GetBreakdownByRegion 按区域分解费用
-func (r *BillRepository) GetBreakdownByRegion(vendor, month string) (map[string]decimal.Decimal, error) {
+func (r *billRepository) GetBreakdownByRegion(vendor, month string) (map[string]decimal.Decimal, error) {
 	query := r.db.Model(&model.BillRecord{})
 	if vendor != "" {
 		query = query.Where("vendor = ?", vendor)
@@ -551,8 +517,7 @@ func (r *BillRepository) GetBreakdownByRegion(vendor, month string) (map[string]
 	return amounts, nil
 }
 
-// GetCostByService 获取按服务的费用（Dashboard用，不限制vendor）
-func (r *BillRepository) GetCostByService(month string) (map[string]float64, error) {
+func (r *billRepository) GetCostByService(month string) (map[string]float64, error) {
 	var results []struct {
 		Key      string          `gorm:"column:key"`
 		Currency string          `gorm:"column:currency"`
@@ -578,8 +543,7 @@ func (r *BillRepository) GetCostByService(month string) (map[string]float64, err
 	return costByService, nil
 }
 
-// GetCostByRegion 获取按区域的费用（Dashboard用，不限制vendor）
-func (r *BillRepository) GetCostByRegion(month string) (map[string]float64, error) {
+func (r *billRepository) GetCostByRegion(month string) (map[string]float64, error) {
 	var results []struct {
 		Key      string          `gorm:"column:key"`
 		Currency string          `gorm:"column:currency"`
@@ -605,8 +569,7 @@ func (r *BillRepository) GetCostByRegion(month string) (map[string]float64, erro
 	return costByRegion, nil
 }
 
-// GetBreakdownByService 按服务分解费用
-func (r *BillRepository) GetBreakdownByService(vendor, month string) (map[string]decimal.Decimal, error) {
+func (r *billRepository) GetBreakdownByService(vendor, month string) (map[string]decimal.Decimal, error) {
 	query := r.db.Model(&model.BillRecord{})
 	if vendor != "" {
 		query = query.Where("vendor = ?", vendor)
@@ -633,8 +596,7 @@ func (r *BillRepository) GetBreakdownByService(vendor, month string) (map[string
 	return amounts, nil
 }
 
-// GetRegionExpenses 按区域聚合费用
-func (r *BillRepository) GetRegionExpenses(startDate, endDate time.Time) (map[string]interface{}, error) {
+func (r *billRepository) GetRegionExpenses(startDate, endDate time.Time) (map[string]interface{}, error) {
 	startStr := startDate.Format("2006-01")
 	endStr := endDate.Format("2006-01")
 
@@ -660,8 +622,7 @@ func (r *BillRepository) GetRegionExpenses(startDate, endDate time.Time) (map[st
 	return expenses, nil
 }
 
-// GetTrafficExpenses 按区域聚合费用（Traffic 目前复用 region 逻辑，后续可接 CUR 流量字段）
-func (r *BillRepository) GetTrafficExpenses(startDate, endDate time.Time, resourceID string) (map[string]interface{}, error) {
+func (r *billRepository) GetTrafficExpenses(startDate, endDate time.Time, resourceID string) (map[string]interface{}, error) {
 	startStr := startDate.Format("2006-01")
 	endStr := endDate.Format("2006-01")
 
@@ -691,8 +652,7 @@ func (r *BillRepository) GetTrafficExpenses(startDate, endDate time.Time, resour
 	return expenses, nil
 }
 
-// GetCostByCloudAccount 获取指定云账户在某月份的费用
-func (r *BillRepository) GetCostByCloudAccount(cloudAccountID uint, month string) (float64, error) {
+func (r *billRepository) GetCostByCloudAccount(cloudAccountID uint, month string) (float64, error) {
 	var total decimal.Decimal
 	err := r.db.Model(&model.BillRecord{}).
 		Where("cloud_account_id = ? OR extra LIKE ?", cloudAccountID, "%cloud_account_id:"+strconv.FormatUint(uint64(cloudAccountID), 10)+"%").
@@ -706,8 +666,7 @@ func (r *BillRepository) GetCostByCloudAccount(cloudAccountID uint, month string
 	return f, nil
 }
 
-// GetCostByCloudAccountYear 获取指定云账户在某一自然年（1–12 月）的账单费用合计
-func (r *BillRepository) GetCostByCloudAccountYear(cloudAccountID uint, year string) (float64, error) {
+func (r *billRepository) GetCostByCloudAccountYear(cloudAccountID uint, year string) (float64, error) {
 	var total decimal.Decimal
 	err := r.db.Model(&model.BillRecord{}).
 		Where("cloud_account_id = ? OR extra LIKE ?", cloudAccountID, "%cloud_account_id:"+strconv.FormatUint(uint64(cloudAccountID), 10)+"%").
@@ -721,8 +680,7 @@ func (r *BillRepository) GetCostByCloudAccountYear(cloudAccountID uint, year str
 	return f, nil
 }
 
-// GetResourceCountByCloudAccount 获取云账户的资源数
-func (r *BillRepository) GetResourceCountByCloudAccount(cloudAccountID uint) (int, error) {
+func (r *billRepository) GetResourceCountByCloudAccount(cloudAccountID uint) (int, error) {
 	var count int64
 	err := r.db.Model(&model.BillResource{}).
 		Where("cloud_account_id = ?", cloudAccountID).
@@ -730,9 +688,6 @@ func (r *BillRepository) GetResourceCountByCloudAccount(cloudAccountID uint) (in
 	return int(count), err
 }
 
-// billRecordExpenseGroupExpr returns SELECT and GROUP BY fragments for bill_records.
-// The table has service_type / service_code but no service_name; "service_name" maps to
-// COALESCE(service_type, service_code) for a display-friendly bucket.
 func billRecordExpenseGroupExpr(groupBy string) (selectExpr, groupByExpr string) {
 	switch groupBy {
 	case "service_code":
@@ -750,9 +705,7 @@ func billRecordExpenseGroupExpr(groupBy string) (selectExpr, groupByExpr string)
 	}
 }
 
-// GetExpensesBreakdown 获取费用分解数据
-// 使用 cycle 字段（YYYY-MM）进行日期过滤与分组，替代有问题的 date(created_at)
-func (r *BillRepository) GetExpensesBreakdown(startDate, endDate time.Time, granularity, groupBy, vendor, serviceCode, keyword string) (*BreakdownResult, error) {
+func (r *billRepository) GetExpensesBreakdown(startDate, endDate time.Time, granularity, groupBy, vendor, serviceCode, keyword string) (*BreakdownResult, error) {
 	startStr := startDate.Format("2006-01")
 	endStr := endDate.Format("2006-01")
 
@@ -775,8 +728,6 @@ func (r *BillRepository) GetExpensesBreakdown(startDate, endDate time.Time, gran
 		Amount        float64
 	}
 
-	// MySQL bill_records 只有 cycle（月粒度），不支持日粒度
-	// 日粒度由 service 层调用 MongoDB 实现
 	dateExpr := r.dateBucketExpr("cycle", "monthly")
 	selG, grpG := billRecordExpenseGroupExpr(groupBy)
 	selectSQL := fmt.Sprintf(
@@ -810,8 +761,6 @@ func (r *BillRepository) GetExpensesBreakdown(startDate, endDate time.Time, gran
 	}, nil
 }
 
-// resourceCountGroupExpr returns SELECT and GROUP BY fragments for bill_resources AS br.
-// bill_resources does not store service metadata, so service groupings use resource_type.
 func resourceCountGroupExpr(groupBy string) (selectAndAlias, groupByExpr string) {
 	switch groupBy {
 	case "service_code", "service_name", "resource_type":
@@ -832,8 +781,7 @@ func resourceCountGroupExpr(groupBy string) (selectAndAlias, groupByExpr string)
 	}
 }
 
-// GetResourceCountBreakdown 获取资源数量分解数据
-func (r *BillRepository) GetResourceCountBreakdown(startDate, endDate time.Time, groupBy, vendor string) (*BreakdownResult, error) {
+func (r *billRepository) GetResourceCountBreakdown(startDate, endDate time.Time, groupBy, vendor string) (*BreakdownResult, error) {
 	startStr := startDate.Format("2006-01-02")
 	endStr := endDate.Format("2006-01-02")
 
@@ -885,8 +833,7 @@ func (r *BillRepository) GetResourceCountBreakdown(startDate, endDate time.Time,
 	}, nil
 }
 
-// GetTotalCostByMonth 获取指定月份总费用（按货币分组）
-func (r *BillRepository) GetTotalCostByMonth(month string) (float64, error) {
+func (r *billRepository) GetTotalCostByMonth(month string) (float64, error) {
 	var results []struct {
 		Currency string          `gorm:"column:currency"`
 		Amount   decimal.Decimal `gorm:"column:amount"`
@@ -900,7 +847,6 @@ func (r *BillRepository) GetTotalCostByMonth(month string) (float64, error) {
 		return 0, err
 	}
 
-	// 统一转为 USD（CNY 按 7.2 汇率折算）
 	var totalUSD float64
 	for _, rec := range results {
 		amount, _ := rec.Amount.Float64()
@@ -913,8 +859,7 @@ func (r *BillRepository) GetTotalCostByMonth(month string) (float64, error) {
 	return totalUSD, nil
 }
 
-// GetTopResources 获取 Top 资源
-func (r *BillRepository) GetTopResources(month string, limit int) ([]map[string]interface{}, error) {
+func (r *billRepository) GetTopResources(month string, limit int) ([]map[string]interface{}, error) {
 	var results []struct {
 		InstanceID   string          `gorm:"column:instance_id"`
 		ResourceName string          `gorm:"column:resource_name"`
@@ -923,7 +868,6 @@ func (r *BillRepository) GetTopResources(month string, limit int) ([]map[string]
 		Currency     string          `gorm:"column:currency"`
 		Cost         decimal.Decimal `gorm:"column:cost"`
 	}
-	// Aggregates for display fields: same instance_id may have multiple detail rows; MAX is valid under ONLY_FULL_GROUP_BY.
 	err := r.db.Model(&model.BillRecord{}).
 		Where("cycle = ? AND instance_id IS NOT NULL AND instance_id != ''", month).
 		Select("instance_id, MAX(resource_name) as resource_name, MAX(service_code) as service_code, MAX(vendor) as vendor, MAX(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.currency')), 'USD')) as currency, SUM(consume_amount) as cost").
@@ -950,8 +894,7 @@ func (r *BillRepository) GetTopResources(month string, limit int) ([]map[string]
 	return resources, nil
 }
 
-// GetCostByVendor 获取按云厂商的费用（返回原始币种和金额）
-func (r *BillRepository) GetCostByVendor(month string) (map[string]VendorCost, error) {
+func (r *billRepository) GetCostByVendor(month string) (map[string]VendorCost, error) {
 	var results []struct {
 		Vendor   string          `gorm:"column:vendor"`
 		Currency string          `gorm:"column:currency"`
@@ -974,8 +917,7 @@ func (r *BillRepository) GetCostByVendor(month string) (map[string]VendorCost, e
 	return costByVendor, nil
 }
 
-// GetDailyCostTrend 获取费用趋势（按 cycle 月粒度）
-func (r *BillRepository) GetDailyCostTrend(startDate, endDate time.Time) ([]map[string]interface{}, error) {
+func (r *billRepository) GetDailyCostTrend(startDate, endDate time.Time) ([]map[string]interface{}, error) {
 	startStr := startDate.Format("2006-01")
 	endStr := endDate.Format("2006-01")
 
@@ -994,7 +936,6 @@ func (r *BillRepository) GetDailyCostTrend(startDate, endDate time.Time) ([]map[
 		return nil, err
 	}
 
-	// 按日期聚合，统一转为 USD
 	dateMap := make(map[string]float64)
 	for _, rec := range results {
 		cost, _ := rec.Cost.Float64()
@@ -1017,8 +958,7 @@ func (r *BillRepository) GetDailyCostTrend(startDate, endDate time.Time) ([]map[
 	return trend, nil
 }
 
-// GetVMRecords 获取虚拟机相关账单记录（EC2、ECS等计算实例）
-func (r *BillRepository) GetVMRecords(vendor, month string) ([]model.BillRecord, error) {
+func (r *billRepository) GetVMRecords(vendor, month string) ([]model.BillRecord, error) {
 	var records []model.BillRecord
 	vmKeywords := []string{"ec2", "ecs", "compute", "instance", "vm", "virtualmachine"}
 	query := r.db.Model(&model.BillRecord{}).
@@ -1037,8 +977,7 @@ func (r *BillRepository) GetVMRecords(vendor, month string) ([]model.BillRecord,
 	return records, err
 }
 
-// GetVMRecordsByGroup 按分组维度获取虚拟机费用
-func (r *BillRepository) GetVMRecordsByGroup(vendor, month, groupBy string) (map[string]float64, error) {
+func (r *billRepository) GetVMRecordsByGroup(vendor, month, groupBy string) (map[string]float64, error) {
 	var results []struct {
 		Group string
 		Cost  float64
@@ -1063,7 +1002,6 @@ func (r *BillRepository) GetVMRecordsByGroup(vendor, month, groupBy string) (map
 	return result, nil
 }
 
-// IdleResource 闲置资源
 type VendorCost struct {
 	Cost     float64
 	Currency string
@@ -1076,11 +1014,10 @@ type IdleResource struct {
 	Vendor       string  `json:"vendor"`
 	Region       string  `json:"region"`
 	Currency     string  `json:"currency"`
-	DaysInactive int     `json:"days_inactive"` // 连续多少天无费用
+	DaysInactive int     `json:"days_inactive"`
 }
 
-// GetIdleResources 获取闲置资源（最近账单月无消费、但历史曾有账单记录的资源）
-func (r *BillRepository) GetIdleResources() ([]IdleResource, error) {
+func (r *billRepository) GetIdleResources() ([]IdleResource, error) {
 	var results []struct {
 		ResourceID   string  `gorm:"column:resource_id"`
 		ResourceName string  `gorm:"column:resource_name"`
@@ -1089,7 +1026,6 @@ func (r *BillRepository) GetIdleResources() ([]IdleResource, error) {
 		Region       string  `gorm:"column:region"`
 		Currency     string  `gorm:"column:currency"`
 	}
-	// cycle 为 YYYY-MM，与账单月对齐
 	thresholdCycle := time.Now().AddDate(0, -1, 0).Format("2006-01")
 	err := r.db.Raw(`
 		SELECT br.resource_id, br.resource_name, 0.0 AS cost,
@@ -1110,14 +1046,13 @@ func (r *BillRepository) GetIdleResources() ([]IdleResource, error) {
 		return nil, err
 	}
 	resources := make([]IdleResource, len(results))
-	for i, r := range results {
-		resources[i] = IdleResource{ResourceID: r.ResourceID, ResourceName: r.ResourceName, Cost: r.Cost, Vendor: r.Vendor, Region: r.Region, Currency: r.Currency}
+	for i, row := range results {
+		resources[i] = IdleResource{ResourceID: row.ResourceID, ResourceName: row.ResourceName, Cost: row.Cost, Vendor: row.Vendor, Region: row.Region, Currency: row.Currency}
 	}
 	return resources, nil
 }
 
-// GetLargeResources 获取大规格资源（月均费用超过阈值的大户）
-func (r *BillRepository) GetLargeResources() ([]IdleResource, error) {
+func (r *billRepository) GetLargeResources() ([]IdleResource, error) {
 	var results []struct {
 		ResourceID   string  `gorm:"column:resource_id"`
 		ResourceName string  `gorm:"column:resource_name"`
@@ -1146,153 +1081,10 @@ func (r *BillRepository) GetLargeResources() ([]IdleResource, error) {
 		return nil, err
 	}
 	resources := make([]IdleResource, len(results))
-	for i, r := range results {
-		resources[i] = IdleResource{ResourceID: r.ResourceID, ResourceName: r.ResourceName, Cost: r.Cost, Vendor: r.Vendor, Region: r.Region, Currency: r.Currency}
+	for i, row := range results {
+		resources[i] = IdleResource{ResourceID: row.ResourceID, ResourceName: row.ResourceName, Cost: row.Cost, Vendor: row.Vendor, Region: row.Region, Currency: row.Currency}
 	}
 	return resources, nil
 }
 
-// ============ Budgets ============
-
-func (r *BillRepository) ListBudgets() ([]model.Budget, error) {
-	var budgets []model.Budget
-	err := r.db.Where("status = ?", "active").Find(&budgets).Error
-	return budgets, err
-}
-
-func (r *BillRepository) CreateBudget(budget *model.Budget) error {
-	return r.db.Create(budget).Error
-}
-
-func (r *BillRepository) GetBudgetByID(id uint) (*model.Budget, error) {
-	var budget model.Budget
-	err := r.db.First(&budget, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &budget, nil
-}
-
-func (r *BillRepository) UpdateBudget(budget *model.Budget) error {
-	return r.db.Save(budget).Error
-}
-
-func (r *BillRepository) DeleteBudget(id uint) error {
-	return r.db.Delete(&model.Budget{}, id).Error
-}
-
-// ============ Pools ============
-
-func (r *BillRepository) ListPools() ([]model.Pool, error) {
-	var pools []model.Pool
-	err := r.db.Where("status = ?", "active").Find(&pools).Error
-	return pools, err
-}
-
-func (r *BillRepository) CreatePool(pool *model.Pool) error {
-	return r.db.Create(pool).Error
-}
-
-func (r *BillRepository) GetPoolByID(id uint) (*model.Pool, error) {
-	var pool model.Pool
-	err := r.db.First(&pool, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &pool, nil
-}
-
-func (r *BillRepository) UpdatePool(pool *model.Pool) error {
-	return r.db.Save(pool).Error
-}
-
-func (r *BillRepository) DeletePool(id uint) error {
-	return r.db.Delete(&model.Pool{}, id).Error
-}
-
-// GetPoolCost 计算成本池在当前月的费用
-// members 为 JSON 字符串数组，包含 resource_id 或 tag:value 格式
-func (r *BillRepository) GetPoolCost(membersJSON string) (float64, error) {
-	if membersJSON == "" || membersJSON == "[]" {
-		return 0, nil
-	}
-	var members []string
-	if err := json.Unmarshal([]byte(membersJSON), &members); err != nil {
-		return 0, nil
-	}
-	if len(members) == 0 {
-		return 0, nil
-	}
-
-	currentMonth := time.Now().Format("2006-01")
-	var total float64
-
-	// Try matching members as resource IDs (instance_id)
-	var resourceIDs []string
-	var tagFilters []string
-	for _, m := range members {
-		if strings.Contains(m, ":") && strings.Count(m, ":") == 1 {
-			tagFilters = append(tagFilters, m)
-		} else {
-			resourceIDs = append(resourceIDs, m)
-		}
-	}
-
-	if len(resourceIDs) > 0 {
-		var costFromIDs float64
-		r.db.Model(&model.BillRecord{}).
-			Where("cycle = ? AND instance_id IN ?", currentMonth, resourceIDs).
-			Select("COALESCE(SUM(consume_amount), 0)").
-			Scan(&costFromIDs)
-		total += costFromIDs
-	}
-
-	// Handle tag-based members (format: "key:value")
-	for _, tf := range tagFilters {
-		parts := strings.SplitN(tf, ":", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		tagKey := strings.TrimSpace(parts[0])
-		tagVal := strings.TrimSpace(parts[1])
-		likePattern := fmt.Sprintf("%%\"%s\":\"%s\"%%", tagKey, tagVal)
-		var tagCost float64
-		r.db.Model(&model.BillRecord{}).
-			Where("cycle = ? AND tags LIKE ?", currentMonth, likePattern).
-			Select("COALESCE(SUM(consume_amount), 0)").
-			Scan(&tagCost)
-		total += tagCost
-	}
-
-	return total, nil
-}
-
-// ============ Policies ============
-
-func (r *BillRepository) ListPolicies() ([]model.Policy, error) {
-	var policies []model.Policy
-	err := r.db.Find(&policies).Error
-	return policies, err
-}
-
-func (r *BillRepository) CreatePolicy(policy *model.Policy) error {
-	return r.db.Create(policy).Error
-}
-
-func (r *BillRepository) GetPolicyByID(id uint) (*model.Policy, error) {
-	var policy model.Policy
-	err := r.db.First(&policy, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &policy, nil
-}
-
-func (r *BillRepository) UpdatePolicy(policy *model.Policy) error {
-	return r.db.Save(policy).Error
-}
-
-func (r *BillRepository) DeletePolicy(id uint) error {
-	return r.db.Delete(&model.Policy{}, id).Error
-}
 

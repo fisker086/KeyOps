@@ -10,16 +10,28 @@ import (
 	"gorm.io/gorm"
 )
 
-type SystemUserRepository struct {
+type SystemUserRepository interface {
+	Create(systemUser *model.SystemUser) error
+	Update(systemUser *model.SystemUser) error
+	Delete(id string) error
+	FindByID(id string) (*model.SystemUser, error)
+	FindAll() ([]model.SystemUser, error)
+	FindByStatus(status string) ([]model.SystemUser, error)
+	FindByProtocol(protocol string) ([]model.SystemUser, error)
+	GetAvailableSystemUsersForUser(userID, hostID string) ([]model.SystemUser, error)
+	CheckUserHasPermission(userID, hostID, systemUserID string) (bool, error)
+}
+
+type systemUserRepository struct {
 	db *gorm.DB
 }
 
-func NewSystemUserRepository(db *gorm.DB) *SystemUserRepository {
-	return &SystemUserRepository{db: db}
+func NewSystemUserRepository(db *gorm.DB) SystemUserRepository {
+	return &systemUserRepository{db: db}
 }
 
 // getJSONContainsQuery 根据数据库类型返回 JSON 包含查询语句
-func (r *SystemUserRepository) getJSONContainsQuery(column, value string) string {
+func (r *systemUserRepository) getJSONContainsQuery(column, value string) string {
 	if r.db.Dialector.Name() == "postgres" {
 		// PostgreSQL: 使用 JSONB @> 操作符
 		return fmt.Sprintf("%s::jsonb @> jsonb_build_array(%s)", column, value)
@@ -29,12 +41,12 @@ func (r *SystemUserRepository) getJSONContainsQuery(column, value string) string
 }
 
 // Create 创建系统用户
-func (r *SystemUserRepository) Create(systemUser *model.SystemUser) error {
+func (r *systemUserRepository) Create(systemUser *model.SystemUser) error {
 	return r.db.Create(systemUser).Error
 }
 
 // Update 更新系统用户
-func (r *SystemUserRepository) Update(systemUser *model.SystemUser) error {
+func (r *systemUserRepository) Update(systemUser *model.SystemUser) error {
 	// 使用 Updates 并排除 created_at 字段，避免零值覆盖
 	return r.db.Model(&model.SystemUser{}).
 		Where("id = ?", systemUser.ID).
@@ -43,12 +55,12 @@ func (r *SystemUserRepository) Update(systemUser *model.SystemUser) error {
 }
 
 // Delete 删除系统用户
-func (r *SystemUserRepository) Delete(id string) error {
+func (r *systemUserRepository) Delete(id string) error {
 	return r.db.Delete(&model.SystemUser{}, "id = ?", id).Error
 }
 
 // FindByID 根据ID查找系统用户
-func (r *SystemUserRepository) FindByID(id string) (*model.SystemUser, error) {
+func (r *systemUserRepository) FindByID(id string) (*model.SystemUser, error) {
 	var systemUser model.SystemUser
 	err := r.db.Where("id = ?", id).First(&systemUser).Error
 	if err != nil {
@@ -58,21 +70,21 @@ func (r *SystemUserRepository) FindByID(id string) (*model.SystemUser, error) {
 }
 
 // FindAll 查找所有系统用户
-func (r *SystemUserRepository) FindAll() ([]model.SystemUser, error) {
+func (r *systemUserRepository) FindAll() ([]model.SystemUser, error) {
 	var systemUsers []model.SystemUser
 	err := r.db.Order("priority DESC, created_at DESC").Find(&systemUsers).Error
 	return systemUsers, err
 }
 
 // FindByStatus 根据状态查找系统用户
-func (r *SystemUserRepository) FindByStatus(status string) ([]model.SystemUser, error) {
+func (r *systemUserRepository) FindByStatus(status string) ([]model.SystemUser, error) {
 	var systemUsers []model.SystemUser
 	err := r.db.Where("status = ?", status).Order("priority DESC, created_at DESC").Find(&systemUsers).Error
 	return systemUsers, err
 }
 
 // FindByProtocol 根据协议查找系统用户
-func (r *SystemUserRepository) FindByProtocol(protocol string) ([]model.SystemUser, error) {
+func (r *systemUserRepository) FindByProtocol(protocol string) ([]model.SystemUser, error) {
 	var systemUsers []model.SystemUser
 	err := r.db.Where("protocol = ? AND status = ?", protocol, "active").
 		Order("priority DESC, created_at DESC").
@@ -82,7 +94,7 @@ func (r *SystemUserRepository) FindByProtocol(protocol string) ([]model.SystemUs
 
 // GetAvailableSystemUsersForUser 获取用户可用的系统用户列表（通过用户组和主机）
 // GetAvailableSystemUsersForUser 获取用户可用的系统用户列表（新权限架构：多对多关系）
-func (r *SystemUserRepository) GetAvailableSystemUsersForUser(userID, hostID string) ([]model.SystemUser, error) {
+func (r *systemUserRepository) GetAvailableSystemUsersForUser(userID, hostID string) ([]model.SystemUser, error) {
 	var systemUsers []model.SystemUser
 
 	now := time.Now()
@@ -132,7 +144,7 @@ func (r *SystemUserRepository) GetAvailableSystemUsersForUser(userID, hostID str
 }
 
 // CheckUserHasPermission 检查用户是否有权限使用指定的系统用户访问主机（新权限架构：多对多关系）
-func (r *SystemUserRepository) CheckUserHasPermission(userID, hostID, systemUserID string) (bool, error) {
+func (r *systemUserRepository) CheckUserHasPermission(userID, hostID, systemUserID string) (bool, error) {
 	now := time.Now()
 
 	var count int64
@@ -173,16 +185,29 @@ func (r *SystemUserRepository) CheckUserHasPermission(userID, hostID, systemUser
 }
 
 // PermissionRuleRepository 授权规则仓储
-type PermissionRuleRepository struct {
+type PermissionRuleRepository interface {
+	Create(rule *model.PermissionRule) error
+	Update(rule *model.PermissionRule) error
+	CreateWithRelations(rule *model.PermissionRule, systemUserIDs, hostGroupIDs []string) error
+	UpdateWithRelations(rule *model.PermissionRule, systemUserIDs, hostGroupIDs []string) error
+	Delete(id string) error
+	FindByID(id string) (*model.PermissionRule, error)
+	FindAll() ([]model.PermissionRuleDetail, error)
+	FindByRole(roleID string) ([]model.PermissionRule, error)
+	FindByHostGroup(hostGroupID string) ([]model.PermissionRule, error)
+	ValidateHostInRule(ruleID, hostID string) (bool, error)
+}
+
+type permissionRuleRepository struct {
 	db *gorm.DB
 }
 
-func NewPermissionRuleRepository(db *gorm.DB) *PermissionRuleRepository {
-	return &PermissionRuleRepository{db: db}
+func NewPermissionRuleRepository(db *gorm.DB) PermissionRuleRepository {
+	return &permissionRuleRepository{db: db}
 }
 
 // Create 创建授权规则（支持多对多关系）
-func (r *PermissionRuleRepository) Create(rule *model.PermissionRule) error {
+func (r *permissionRuleRepository) Create(rule *model.PermissionRule) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 1. 创建授权规则
 		if err := tx.Create(rule).Error; err != nil {
@@ -216,7 +241,7 @@ func (r *PermissionRuleRepository) Create(rule *model.PermissionRule) error {
 }
 
 // Update 更新授权规则（支持多对多关系）
-func (r *PermissionRuleRepository) Update(rule *model.PermissionRule) error {
+func (r *permissionRuleRepository) Update(rule *model.PermissionRule) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 1. 更新授权规则基本信息
 		if err := tx.Model(&model.PermissionRule{}).
@@ -265,7 +290,7 @@ func (r *PermissionRuleRepository) Update(rule *model.PermissionRule) error {
 }
 
 // CreateWithRelations 创建授权规则（支持多个系统用户和主机组）
-func (r *PermissionRuleRepository) CreateWithRelations(rule *model.PermissionRule, systemUserIDs, hostGroupIDs []string) error {
+func (r *permissionRuleRepository) CreateWithRelations(rule *model.PermissionRule, systemUserIDs, hostGroupIDs []string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 1. 创建授权规则
 		if err := tx.Create(rule).Error; err != nil {
@@ -305,7 +330,7 @@ func (r *PermissionRuleRepository) CreateWithRelations(rule *model.PermissionRul
 }
 
 // UpdateWithRelations 更新授权规则（支持多个系统用户和主机组）
-func (r *PermissionRuleRepository) UpdateWithRelations(rule *model.PermissionRule, systemUserIDs, hostGroupIDs []string) error {
+func (r *permissionRuleRepository) UpdateWithRelations(rule *model.PermissionRule, systemUserIDs, hostGroupIDs []string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 1. 更新授权规则基本信息
 		if err := tx.Model(&model.PermissionRule{}).
@@ -360,12 +385,12 @@ func (r *PermissionRuleRepository) UpdateWithRelations(rule *model.PermissionRul
 }
 
 // Delete 删除授权规则
-func (r *PermissionRuleRepository) Delete(id string) error {
+func (r *permissionRuleRepository) Delete(id string) error {
 	return r.db.Delete(&model.PermissionRule{}, "id = ?", id).Error
 }
 
 // FindByID 根据ID查找授权规则
-func (r *PermissionRuleRepository) FindByID(id string) (*model.PermissionRule, error) {
+func (r *permissionRuleRepository) FindByID(id string) (*model.PermissionRule, error) {
 	var rule model.PermissionRule
 	err := r.db.Where("id = ?", id).First(&rule).Error
 	if err != nil {
@@ -375,7 +400,7 @@ func (r *PermissionRuleRepository) FindByID(id string) (*model.PermissionRule, e
 }
 
 // FindAll 查找所有授权规则（支持多对多关系）
-func (r *PermissionRuleRepository) FindAll() ([]model.PermissionRuleDetail, error) {
+func (r *permissionRuleRepository) FindAll() ([]model.PermissionRuleDetail, error) {
 	// 首先获取所有授权规则
 	var rules []model.PermissionRule
 	err := r.db.Order("priority DESC, created_at DESC").Find(&rules).Error
@@ -451,7 +476,7 @@ func (r *PermissionRuleRepository) FindAll() ([]model.PermissionRuleDetail, erro
 }
 
 // FindByRole 根据角色查找授权规则
-func (r *PermissionRuleRepository) FindByRole(roleID string) ([]model.PermissionRule, error) {
+func (r *permissionRuleRepository) FindByRole(roleID string) ([]model.PermissionRule, error) {
 	var rules []model.PermissionRule
 	err := r.db.Where("role_id = ?", roleID).
 		Order("priority DESC, created_at DESC").
@@ -460,7 +485,7 @@ func (r *PermissionRuleRepository) FindByRole(roleID string) ([]model.Permission
 }
 
 // FindByHostGroup 根据主机组查找授权规则
-func (r *PermissionRuleRepository) FindByHostGroup(hostGroupID string) ([]model.PermissionRule, error) {
+func (r *permissionRuleRepository) FindByHostGroup(hostGroupID string) ([]model.PermissionRule, error) {
 	var rules []model.PermissionRule
 	err := r.db.Where("host_group_id = ?", hostGroupID).
 		Order("priority DESC, created_at DESC").
@@ -469,7 +494,7 @@ func (r *PermissionRuleRepository) FindByHostGroup(hostGroupID string) ([]model.
 }
 
 // ValidateHostInRule 验证主机是否在授权规则范围内
-func (r *PermissionRuleRepository) ValidateHostInRule(ruleID, hostID string) (bool, error) {
+func (r *permissionRuleRepository) ValidateHostInRule(ruleID, hostID string) (bool, error) {
 	var rule model.PermissionRule
 	err := r.db.Where("id = ?", ruleID).First(&rule).Error
 	if err != nil {

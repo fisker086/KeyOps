@@ -5,16 +5,36 @@ import (
 	"gorm.io/gorm"
 )
 
-type MenuRepository struct {
+type MenuRepository interface {
+	Create(menu *model.Menu) error
+	Update(menu *model.Menu) error
+	Delete(id string) error
+	FindByID(id string) (*model.Menu, error)
+	FindAll() ([]model.Menu, error)
+	FindByParentID(parentID string) ([]model.Menu, error)
+	BuildMenuTree(menus []model.Menu) []model.Menu
+	GetMenusByUserGroupID(userGroupID string) ([]model.Menu, error)
+	GetMenusByUserID(userID string) ([]model.Menu, error)
+	GetMenusByRole(role string) ([]model.Menu, error)
+	AddMenuPermission(userGroupID, menuID, createdBy string) error
+	RemoveMenuPermission(userGroupID, menuID string) error
+	RemoveAllMenuPermissions(userGroupID string) error
+	GetMenuPermissionsByUserGroupID(userGroupID string) ([]string, error)
+	HasMenuPermissions(roleID string) (bool, error)
+	BatchAddMenuPermissions(userGroupID string, menuIDs []string, createdBy string) error
+	BatchUpdateSortOrder(updates map[string]int) error
+}
+
+type menuRepository struct {
 	db *gorm.DB
 }
 
-func NewMenuRepository(db *gorm.DB) *MenuRepository {
-	return &MenuRepository{db: db}
+func NewMenuRepository(db *gorm.DB) MenuRepository {
+	return &menuRepository{db: db}
 }
 
 // Create 创建菜单
-func (r *MenuRepository) Create(menu *model.Menu) error {
+func (r *menuRepository) Create(menu *model.Menu) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 如果设置此菜单为默认菜单，需要先将其他菜单的 defaultMenu 设置为 false
 		if menu.Meta.DefaultMenu {
@@ -29,7 +49,7 @@ func (r *MenuRepository) Create(menu *model.Menu) error {
 }
 
 // Update 更新菜单
-func (r *MenuRepository) Update(menu *model.Menu) error {
+func (r *menuRepository) Update(menu *model.Menu) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 如果设置此菜单为默认菜单，需要先将其他菜单的 defaultMenu 设置为 false
 		if menu.Meta.DefaultMenu {
@@ -47,7 +67,7 @@ func (r *MenuRepository) Update(menu *model.Menu) error {
 }
 
 // Delete 删除菜单
-func (r *MenuRepository) Delete(id string) error {
+func (r *menuRepository) Delete(id string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 删除菜单权限关联
 		if err := tx.Delete(&model.MenuPermission{}, "menu_id = ?", id).Error; err != nil {
@@ -59,7 +79,7 @@ func (r *MenuRepository) Delete(id string) error {
 }
 
 // FindByID 根据ID查找菜单
-func (r *MenuRepository) FindByID(id string) (*model.Menu, error) {
+func (r *menuRepository) FindByID(id string) (*model.Menu, error) {
 	var menu model.Menu
 	err := r.db.Where("id = ?", id).First(&menu).Error
 	if err != nil {
@@ -69,21 +89,21 @@ func (r *MenuRepository) FindByID(id string) (*model.Menu, error) {
 }
 
 // FindAll 查找所有菜单
-func (r *MenuRepository) FindAll() ([]model.Menu, error) {
+func (r *menuRepository) FindAll() ([]model.Menu, error) {
 	var menus []model.Menu
 	err := r.db.Order("sort ASC, created_at ASC").Find(&menus).Error
 	return menus, err
 }
 
 // FindByParentID 根据父菜单ID查找子菜单
-func (r *MenuRepository) FindByParentID(parentID string) ([]model.Menu, error) {
+func (r *menuRepository) FindByParentID(parentID string) ([]model.Menu, error) {
 	var menus []model.Menu
 	err := r.db.Where("parent_id = ?", parentID).Order("sort ASC").Find(&menus).Error
 	return menus, err
 }
 
 // deepCopyMenu 递归复制菜单及其所有子菜单
-func (r *MenuRepository) deepCopyMenu(menu model.Menu) model.Menu {
+func (r *menuRepository) deepCopyMenu(menu model.Menu) model.Menu {
 	menuCopy := menu
 	// 确保 Children 字段被正确复制
 	if len(menu.Children) > 0 {
@@ -100,7 +120,7 @@ func (r *MenuRepository) deepCopyMenu(menu model.Menu) model.Menu {
 }
 
 // BuildMenuTree 构建菜单树
-func (r *MenuRepository) BuildMenuTree(menus []model.Menu) []model.Menu {
+func (r *menuRepository) BuildMenuTree(menus []model.Menu) []model.Menu {
 	if len(menus) == 0 {
 		return []model.Menu{}
 	}
@@ -189,7 +209,7 @@ func (r *MenuRepository) BuildMenuTree(menus []model.Menu) []model.Menu {
 }
 
 // sortMenuChildren 递归排序菜单及其子菜单
-func (r *MenuRepository) sortMenuChildren(menu *model.Menu) {
+func (r *menuRepository) sortMenuChildren(menu *model.Menu) {
 	if len(menu.Children) > 0 {
 		// 对子菜单按sort排序
 		for i := 0; i < len(menu.Children)-1; i++ {
@@ -207,7 +227,7 @@ func (r *MenuRepository) sortMenuChildren(menu *model.Menu) {
 }
 
 // GetMenusByUserGroupID 获取用户组有权限的菜单
-func (r *MenuRepository) GetMenusByUserGroupID(userGroupID string) ([]model.Menu, error) {
+func (r *menuRepository) GetMenusByUserGroupID(userGroupID string) ([]model.Menu, error) {
 	var menus []model.Menu
 	err := r.db.Table("menus").
 		Select("menus.*").
@@ -220,7 +240,7 @@ func (r *MenuRepository) GetMenusByUserGroupID(userGroupID string) ([]model.Menu
 
 // GetMenusByUserID 获取用户有权限的菜单（通过用户组）
 // 如果用户有子菜单的权限，也会自动包含父菜单（即使父菜单没有直接权限）
-func (r *MenuRepository) GetMenusByUserID(userID string) ([]model.Menu, error) {
+func (r *menuRepository) GetMenusByUserID(userID string) ([]model.Menu, error) {
 	var menus []model.Menu
 	// 先获取有权限的菜单
 	err := r.db.Table("menus").
@@ -286,7 +306,7 @@ func (r *MenuRepository) GetMenusByUserID(userID string) ([]model.Menu, error) {
 
 // GetMenusByRole 获取角色有权限的菜单（通过role）
 // 如果用户有子菜单的权限，也会自动包含父菜单（即使父菜单没有直接权限）
-func (r *MenuRepository) GetMenusByRole(role string) ([]model.Menu, error) {
+func (r *menuRepository) GetMenusByRole(role string) ([]model.Menu, error) {
 	var menus []model.Menu
 	roleID := "role:" + role
 	
@@ -352,7 +372,7 @@ func (r *MenuRepository) GetMenusByRole(role string) ([]model.Menu, error) {
 }
 
 // AddMenuPermission 添加菜单权限
-func (r *MenuRepository) AddMenuPermission(userGroupID, menuID, createdBy string) error {
+func (r *menuRepository) AddMenuPermission(userGroupID, menuID, createdBy string) error {
 	permission := &model.MenuPermission{
 		RoleID:    userGroupID,
 		MenuID:    menuID,
@@ -362,17 +382,17 @@ func (r *MenuRepository) AddMenuPermission(userGroupID, menuID, createdBy string
 }
 
 // RemoveMenuPermission 移除菜单权限
-func (r *MenuRepository) RemoveMenuPermission(userGroupID, menuID string) error {
+func (r *menuRepository) RemoveMenuPermission(userGroupID, menuID string) error {
 	return r.db.Delete(&model.MenuPermission{}, "role_id = ? AND menu_id = ?", userGroupID, menuID).Error
 }
 
 // RemoveAllMenuPermissions 移除用户组的所有菜单权限
-func (r *MenuRepository) RemoveAllMenuPermissions(userGroupID string) error {
+func (r *menuRepository) RemoveAllMenuPermissions(userGroupID string) error {
 	return r.db.Delete(&model.MenuPermission{}, "role_id = ?", userGroupID).Error
 }
 
 // GetMenuPermissionsByUserGroupID 获取用户组的菜单权限列表（排除特殊标记）
-func (r *MenuRepository) GetMenuPermissionsByUserGroupID(userGroupID string) ([]string, error) {
+func (r *menuRepository) GetMenuPermissionsByUserGroupID(userGroupID string) ([]string, error) {
 	var menuIDs []string
 	err := r.db.Table("menu_permissions").
 		Select("menu_id").
@@ -382,7 +402,7 @@ func (r *MenuRepository) GetMenuPermissionsByUserGroupID(userGroupID string) ([]
 }
 
 // HasMenuPermissions 检查角色是否有菜单权限配置记录
-func (r *MenuRepository) HasMenuPermissions(roleID string) (bool, error) {
+func (r *menuRepository) HasMenuPermissions(roleID string) (bool, error) {
 	var count int64
 	err := r.db.Model(&model.MenuPermission{}).
 		Where("role_id = ?", roleID).
@@ -393,7 +413,7 @@ func (r *MenuRepository) HasMenuPermissions(roleID string) (bool, error) {
 // BatchAddMenuPermissions 批量添加菜单权限
 // 如果 menuIDs 为空，会插入一个特殊标记记录（menu_id = '__empty__'），表示用户已经配置过权限（即使为空）
 // 这样可以区分"从未配置过权限"和"配置过但清空了权限"
-func (r *MenuRepository) BatchAddMenuPermissions(userGroupID string, menuIDs []string, createdBy string) error {
+func (r *menuRepository) BatchAddMenuPermissions(userGroupID string, menuIDs []string, createdBy string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 先删除所有现有权限（包括特殊标记）
 		if err := tx.Delete(&model.MenuPermission{}, "role_id = ?", userGroupID).Error; err != nil {
@@ -431,7 +451,7 @@ func (r *MenuRepository) BatchAddMenuPermissions(userGroupID string, menuIDs []s
 
 // BatchUpdateSortOrder 批量更新菜单排序
 // updates: map[menuID]sortOrder
-func (r *MenuRepository) BatchUpdateSortOrder(updates map[string]int) error {
+func (r *menuRepository) BatchUpdateSortOrder(updates map[string]int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for menuID, sortOrder := range updates {
 			if err := tx.Model(&model.Menu{}).

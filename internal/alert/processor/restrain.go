@@ -10,14 +10,14 @@ import (
 
 // RestrainProcessor 抑制处理器
 type RestrainProcessor struct {
-	restrainRepo *repository.AlertRestrainRepository
-	eventRepo    *repository.AlertEventRepository
+	restrainRepo repository.AlertRestrainRepository
+	eventRepo    repository.AlertEventRepository
 }
 
 // NewRestrainProcessor 创建抑制处理器
 func NewRestrainProcessor(
-	restrainRepo *repository.AlertRestrainRepository,
-	eventRepo *repository.AlertEventRepository,
+	restrainRepo repository.AlertRestrainRepository,
+	eventRepo repository.AlertEventRepository,
 ) *RestrainProcessor {
 	return &RestrainProcessor{
 		restrainRepo: restrainRepo,

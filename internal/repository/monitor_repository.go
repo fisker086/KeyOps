@@ -5,31 +5,41 @@ import (
 	"gorm.io/gorm"
 )
 
-type MonitorRepository struct {
+type MonitorRepository interface {
+	Create(monitor *model.Monitor) error
+	Update(monitor *model.Monitor) error
+	Delete(id uint) error
+	FindByID(id uint) (*model.Monitor, error)
+	FindByName(name string) (*model.Monitor, error)
+	List(name string, page, pageSize int) (total int64, monitors []model.Monitor, err error)
+	Count(name string) (int64, error)
+}
+
+type monitorRepository struct {
 	db *gorm.DB
 }
 
-func NewMonitorRepository(db *gorm.DB) *MonitorRepository {
-	return &MonitorRepository{db: db}
+func NewMonitorRepository(db *gorm.DB) MonitorRepository {
+	return &monitorRepository{db: db}
 }
 
 // Create 创建监控查询语句
-func (r *MonitorRepository) Create(monitor *model.Monitor) error {
+func (r *monitorRepository) Create(monitor *model.Monitor) error {
 	return r.db.Create(monitor).Error
 }
 
 // Update 更新监控查询语句
-func (r *MonitorRepository) Update(monitor *model.Monitor) error {
+func (r *monitorRepository) Update(monitor *model.Monitor) error {
 	return r.db.Save(monitor).Error
 }
 
 // Delete 删除监控查询语句
-func (r *MonitorRepository) Delete(id uint) error {
+func (r *monitorRepository) Delete(id uint) error {
 	return r.db.Delete(&model.Monitor{}, "id = ?", id).Error
 }
 
 // FindByID 根据ID查找
-func (r *MonitorRepository) FindByID(id uint) (*model.Monitor, error) {
+func (r *monitorRepository) FindByID(id uint) (*model.Monitor, error) {
 	var monitor model.Monitor
 	err := r.db.Where("id = ?", id).First(&monitor).Error
 	if err != nil {
@@ -39,7 +49,7 @@ func (r *MonitorRepository) FindByID(id uint) (*model.Monitor, error) {
 }
 
 // FindByName 根据名称查找
-func (r *MonitorRepository) FindByName(name string) (*model.Monitor, error) {
+func (r *monitorRepository) FindByName(name string) (*model.Monitor, error) {
 	var monitor model.Monitor
 	err := r.db.Where("name = ?", name).First(&monitor).Error
 	if err != nil {
@@ -49,7 +59,7 @@ func (r *MonitorRepository) FindByName(name string) (*model.Monitor, error) {
 }
 
 // List 获取监控列表（支持分页和搜索）
-func (r *MonitorRepository) List(name string, page, pageSize int) (total int64, monitors []model.Monitor, err error) {
+func (r *monitorRepository) List(name string, page, pageSize int) (total int64, monitors []model.Monitor, err error) {
 	query := r.db.Model(&model.Monitor{})
 
 	// 名称搜索（模糊匹配）
@@ -82,7 +92,7 @@ func (r *MonitorRepository) List(name string, page, pageSize int) (total int64, 
 }
 
 // Count 统计总数（用于分页）
-func (r *MonitorRepository) Count(name string) (int64, error) {
+func (r *monitorRepository) Count(name string) (int64, error) {
 	var count int64
 	query := r.db.Model(&model.Monitor{})
 
@@ -93,4 +103,3 @@ func (r *MonitorRepository) Count(name string) (int64, error) {
 	err := query.Count(&count).Error
 	return count, err
 }
-

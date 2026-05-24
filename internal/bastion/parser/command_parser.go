@@ -611,9 +611,9 @@ func looksLikeOutput(line string) bool {
 		return true
 	}
 
-	// 包含 @ 和以 : 结尾的行（提示符片段或 whoami 输出）
-	if strings.Contains(line, "@") && strings.HasSuffix(line, ":") {
-		return true
+	// user@host: 是 prompt 前缀，不应视为命令输出
+	if isClassicShellPrompt(line) {
+		return false
 	}
 
 	// 常见的命令输出前缀
@@ -740,11 +740,87 @@ func stripANSISimple(s string) string {
 	return result.String()
 }
 
+// isPromptIdentifier 检查字符串是否像 prompt 中的用户名/主机名
+func isPromptIdentifier(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// isClassicShellPrompt 识别 user@host[:path][~$#] 格式的经典 shell 提示符
+// Docker 等场景下提示符可能只有 root@container: 或 root@host:~，不带 $/#
+func isClassicShellPrompt(line string) bool {
+	line = strings.TrimSpace(line)
+	if strings.Contains(line, " ") {
+		return false
+	}
+
+	atIdx := strings.Index(line, "@")
+	if atIdx <= 0 {
+		return false
+	}
+
+	user := line[:atIdx]
+	hostPart := line[atIdx+1:]
+	if !isPromptIdentifier(user) || hostPart == "" {
+		return false
+	}
+
+	colonIdx := strings.Index(hostPart, ":")
+	if colonIdx >= 0 {
+		host := hostPart[:colonIdx]
+		if !isPromptIdentifier(host) {
+			return false
+		}
+		afterColon := hostPart[colonIdx+1:]
+		if afterColon == "" || afterColon == "$" || afterColon == "#" {
+			return true
+		}
+		// 允许 ~、$、# 或路径（如 /root、/home/admin#）
+		pathPart := strings.TrimRight(afterColon, "$#")
+		if pathPart == "~" {
+			return true
+		}
+		if strings.HasPrefix(pathPart, "/") || strings.HasPrefix(pathPart, "~") {
+			for _, r := range pathPart {
+				if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+					(r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' || r == '/' || r == '~' {
+					continue
+				}
+				return false
+			}
+			return true
+		}
+		return false
+	}
+
+	if strings.HasSuffix(hostPart, "~") {
+		return isPromptIdentifier(hostPart[:len(hostPart)-1])
+	}
+
+	return isPromptIdentifier(hostPart)
+}
+
 // isPromptPattern 检查是否是提示符模式（通用方法）
 // 不依赖特定格式，而是识别 prompt 的共同特征
 func isPromptPattern(line string) bool {
+	line = strings.TrimSpace(line)
+
+	// user@host 经典格式（含 Docker 容器提示符）
+	if isClassicShellPrompt(line) {
+		return true
+	}
+
 	// 必须包含提示符标记
-	hasMarker := strings.HasSuffix(line, "$") || 
+	hasMarker := strings.HasSuffix(line, "$") ||
 		strings.HasSuffix(line, "#") ||
 		strings.HasSuffix(line, "]$") ||
 		strings.HasSuffix(line, "]#") ||

@@ -883,7 +883,7 @@ func (s *K8sService) RollbackStatefulSet(clusterID string, clusterName string, n
 		updateReq.Header.Set("Authorization", "Bearer "+cluster.Token)
 	} else if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" {
 		clusterService := NewK8sClusterService(s.clusterRepo)
-		authInfo, err := clusterService.parseKubeconfigAuth(cluster.Kubeconfig)
+		authInfo, err := clusterService.getClusterAuth(cluster)
 		if err != nil {
 			return fmt.Errorf("解析Kubeconfig失败: %v", err)
 		}

@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -287,7 +288,7 @@ func (n *FeishuNotifier) sendRequest(message map[string]interface{}) error {
 		if len(respBody) > 0 {
 			errorMsg += fmt.Sprintf(", response: %s", string(respBody))
 		}
-		return fmt.Errorf(errorMsg)
+		return errors.New(errorMsg)
 	}
 
 	// 检查响应体中的错误码（飞书即使返回 200，也可能在响应体中包含错误）

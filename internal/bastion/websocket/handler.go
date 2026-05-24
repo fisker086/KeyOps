@@ -31,7 +31,7 @@ var upgrader = websocket.Upgrader{
 
 // Handler WebSocket 处理器
 type Handler struct {
-	hostRepo       *repository.HostRepository
+	hostRepo       repository.HostRepository
 	storage        storage.Storage
 	proxyID        string
 	sessionManager *SessionManager
@@ -47,7 +47,7 @@ type TokenInfo struct {
 }
 
 // NewHandler 创建新的 WebSocket 处理器
-func NewHandler(hostRepo *repository.HostRepository, st storage.Storage, proxyID string, sm *SessionManager, blMgr *blacklist.Manager, apiClient *apiclient.ApiClient) *Handler {
+func NewHandler(hostRepo repository.HostRepository, st storage.Storage, proxyID string, sm *SessionManager, blMgr *blacklist.Manager, apiClient *apiclient.ApiClient) *Handler {
 	return &Handler{
 		hostRepo:       hostRepo,
 		storage:        st,

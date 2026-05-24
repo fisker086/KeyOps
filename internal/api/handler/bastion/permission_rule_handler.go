@@ -10,10 +10,10 @@ import (
 )
 
 type PermissionRuleHandler struct {
-	repo *repository.PermissionRuleRepository
+	repo repository.PermissionRuleRepository
 }
 
-func NewPermissionRuleHandler(repo *repository.PermissionRuleRepository) *PermissionRuleHandler {
+func NewPermissionRuleHandler(repo repository.PermissionRuleRepository) *PermissionRuleHandler {
 	return &PermissionRuleHandler{repo: repo}
 }
 

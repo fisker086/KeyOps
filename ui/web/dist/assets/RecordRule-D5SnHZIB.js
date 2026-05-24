@@ -1,1 +1,0 @@
-import{u as e,j as r,B as n,ah as s,ai as a,T as t}from"./index-BCBoo1Na.js";function d(){const{t:o}=e();return r.jsx(n,{sx:{p:3},children:r.jsx(s,{children:r.jsxs(a,{children:[r.jsx(t,{variant:"h5",gutterBottom:!0,children:o("menu.monitorRecordRule")}),r.jsx(t,{variant:"body2",color:"text.secondary",children:o("monitor.recordRule.description")})]})})})}export{d as default};

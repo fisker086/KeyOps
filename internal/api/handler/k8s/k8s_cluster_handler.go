@@ -13,10 +13,10 @@ import (
 type K8sClusterHandler struct {
 	clusterService    *k8sService.K8sClusterService
 	permissionService *k8sService.K8sPermissionService
-	roleRepo          *repository.RoleRepository
+	roleRepo          repository.RoleRepository
 }
 
-func NewK8sClusterHandler(clusterService *k8sService.K8sClusterService, permissionService *k8sService.K8sPermissionService, roleRepo *repository.RoleRepository) *K8sClusterHandler {
+func NewK8sClusterHandler(clusterService *k8sService.K8sClusterService, permissionService *k8sService.K8sPermissionService, roleRepo repository.RoleRepository) *K8sClusterHandler {
 	return &K8sClusterHandler{
 		clusterService:    clusterService,
 		permissionService: permissionService,
@@ -324,21 +324,21 @@ func (h *K8sClusterHandler) UpdateCluster(c *gin.Context) {
 		return
 	}
 
-	// 更新字段
+	// 更新字段（kubeconfig/token 优先；更新 kubeconfig 时不应被表单里的旧 apiServer 覆盖）
 	if req.Description != "" {
 		cluster.Description = req.Description
-	}
-	if req.APIServer != "" {
-		cluster.APIServer = req.APIServer
-	}
-	if req.Token != "" {
-		cluster.Token = req.Token
 	}
 	if req.Kubeconfig != "" {
 		cluster.Kubeconfig = req.Kubeconfig
 	}
+	if req.Token != "" {
+		cluster.Token = req.Token
+	}
 	if req.AuthType != "" {
 		cluster.AuthType = req.AuthType
+	}
+	if req.APIServer != "" && req.Kubeconfig == "" {
+		cluster.APIServer = req.APIServer
 	}
 	if req.Version != "" {
 		cluster.Version = req.Version
@@ -356,12 +356,13 @@ func (h *K8sClusterHandler) UpdateCluster(c *gin.Context) {
 		cluster.DefaultNamespace = req.DefaultNamespace
 	}
 
-	if err := h.clusterService.UpdateCluster(cluster); err != nil {
+	updated, err := h.clusterService.UpdateCluster(cluster)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Success(cluster))
+	c.JSON(http.StatusOK, model.Success(updated))
 }
 
 // DeleteCluster 删除集群

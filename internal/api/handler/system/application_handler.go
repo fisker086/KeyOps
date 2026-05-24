@@ -12,10 +12,10 @@ import (
 )
 
 type ApplicationHandler struct {
-	repo *repository.ApplicationRepository
+	repo repository.ApplicationRepository
 }
 
-func NewApplicationHandler(repo *repository.ApplicationRepository) *ApplicationHandler {
+func NewApplicationHandler(repo repository.ApplicationRepository) *ApplicationHandler {
 	return &ApplicationHandler{repo: repo}
 }
 

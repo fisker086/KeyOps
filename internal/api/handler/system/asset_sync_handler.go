@@ -12,11 +12,11 @@ import (
 )
 
 type AssetSyncHandler struct {
-	repo    *repository.AssetSyncRepository
+	repo    repository.AssetSyncRepository
 	service *systemService.AssetSyncService
 }
 
-func NewAssetSyncHandler(repo *repository.AssetSyncRepository, svc *systemService.AssetSyncService) *AssetSyncHandler {
+func NewAssetSyncHandler(repo repository.AssetSyncRepository, svc *systemService.AssetSyncService) *AssetSyncHandler {
 	return &AssetSyncHandler{
 		repo:    repo,
 		service: svc,

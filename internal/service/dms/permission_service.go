@@ -13,13 +13,13 @@ import (
 )
 
 type PermissionService struct {
-	permissionRepo *repository.DBPermissionRepository
-	instanceRepo   *repository.DBInstanceRepository
+	permissionRepo repository.DBPermissionRepository
+	instanceRepo   repository.DBInstanceRepository
 }
 
 func NewPermissionService(
-	permissionRepo *repository.DBPermissionRepository,
-	instanceRepo *repository.DBInstanceRepository,
+	permissionRepo repository.DBPermissionRepository,
+	instanceRepo repository.DBInstanceRepository,
 ) *PermissionService {
 	return &PermissionService{
 		permissionRepo: permissionRepo,

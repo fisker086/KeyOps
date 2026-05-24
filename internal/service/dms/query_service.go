@@ -13,15 +13,15 @@ import (
 )
 
 type QueryService struct {
-	instanceRepo   *repository.DBInstanceRepository
-	queryLogRepo   *repository.QueryLogRepository
+	instanceRepo   repository.DBInstanceRepository
+	queryLogRepo   repository.QueryLogRepository
 	permissionSvc  *PermissionService
 	crypto         *crypto.Crypto
 }
 
 func NewQueryService(
-	instanceRepo *repository.DBInstanceRepository,
-	queryLogRepo *repository.QueryLogRepository,
+	instanceRepo repository.DBInstanceRepository,
+	queryLogRepo repository.QueryLogRepository,
 	permissionSvc *PermissionService,
 	crypto *crypto.Crypto,
 ) *QueryService {

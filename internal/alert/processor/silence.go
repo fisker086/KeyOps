@@ -10,11 +10,11 @@ import (
 
 // SilenceProcessor 静默处理器
 type SilenceProcessor struct {
-	silenceRepo *repository.AlertSilenceRepository
+	silenceRepo repository.AlertSilenceRepository
 }
 
 // NewSilenceProcessor 创建静默处理器
-func NewSilenceProcessor(silenceRepo *repository.AlertSilenceRepository) *SilenceProcessor {
+func NewSilenceProcessor(silenceRepo repository.AlertSilenceRepository) *SilenceProcessor {
 	return &SilenceProcessor{silenceRepo: silenceRepo}
 }
 

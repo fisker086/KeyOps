@@ -122,14 +122,12 @@ type ExpensesMapHandler = billHandler.ExpensesMapHandler
 type CloudAccountHandler = billHandler.CloudAccountHandler
 type ResourcesHandler = billHandler.ResourcesHandler
 type BillDashboardHandler = billHandler.DashboardHandler
-type FinOpsHandler = billHandler.FinOpsHandler
 
 var NewBillHandler = billHandler.NewBillHandler
 var NewExpensesMapHandler = billHandler.NewExpensesMapHandler
 var NewCloudAccountHandler = billHandler.NewCloudAccountHandler
 var NewResourcesHandler = billHandler.NewResourcesHandler
 var NewBillDashboardHandler = billHandler.NewDashboardHandler
-var NewFinOpsHandler = billHandler.NewFinOpsHandler
 
 // Permission handlers
 type PermissionHandler = permissionHandler.PermissionHandler

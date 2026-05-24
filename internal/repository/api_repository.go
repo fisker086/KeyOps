@@ -5,34 +5,41 @@ import (
 	"gorm.io/gorm"
 )
 
-type APIRepository struct {
+type APIRepository interface {
+	Create(api *model.API) error
+	Update(api *model.API) error
+	Delete(id uint) error
+	FindByID(id uint) (*model.API, error)
+	FindAll() ([]model.API, error)
+	FindByGroup(group string) ([]model.API, error)
+	FindByPathAndMethod(path, method string) (*model.API, error)
+	GetGroups() ([]string, error)
+}
+
+type apiRepository struct {
 	db *gorm.DB
 }
 
-func NewAPIRepository(db *gorm.DB) *APIRepository {
-	return &APIRepository{db: db}
+func NewAPIRepository(db *gorm.DB) APIRepository {
+	return &apiRepository{db: db}
 }
 
-// Create 创建API
-func (r *APIRepository) Create(api *model.API) error {
+func (r *apiRepository) Create(api *model.API) error {
 	return r.db.Create(api).Error
 }
 
-// Update 更新API
-func (r *APIRepository) Update(api *model.API) error {
+func (r *apiRepository) Update(api *model.API) error {
 	return r.db.Model(&model.API{}).
 		Where("id = ?", api.ID).
 		Omit("created_at").
 		Updates(api).Error
 }
 
-// Delete 删除API
-func (r *APIRepository) Delete(id uint) error {
+func (r *apiRepository) Delete(id uint) error {
 	return r.db.Delete(&model.API{}, "id = ?", id).Error
 }
 
-// FindByID 根据ID查找API
-func (r *APIRepository) FindByID(id uint) (*model.API, error) {
+func (r *apiRepository) FindByID(id uint) (*model.API, error) {
 	var api model.API
 	err := r.db.Where("id = ?", id).First(&api).Error
 	if err != nil {
@@ -41,10 +48,8 @@ func (r *APIRepository) FindByID(id uint) (*model.API, error) {
 	return &api, nil
 }
 
-// FindAll 查找所有API
-func (r *APIRepository) FindAll() ([]model.API, error) {
+func (r *apiRepository) FindAll() ([]model.API, error) {
 	var apis []model.API
-	// 根据数据库类型使用正确的引号
 	groupColumn := "`group`"
 	if r.db.Dialector.Name() == "postgres" {
 		groupColumn = "\"group\""
@@ -53,10 +58,8 @@ func (r *APIRepository) FindAll() ([]model.API, error) {
 	return apis, err
 }
 
-// FindByGroup 根据分组查找API
-func (r *APIRepository) FindByGroup(group string) ([]model.API, error) {
+func (r *apiRepository) FindByGroup(group string) ([]model.API, error) {
 	var apis []model.API
-	// 根据数据库类型使用正确的引号
 	groupColumn := "`group`"
 	if r.db.Dialector.Name() == "postgres" {
 		groupColumn = "\"group\""
@@ -65,8 +68,7 @@ func (r *APIRepository) FindByGroup(group string) ([]model.API, error) {
 	return apis, err
 }
 
-// FindByPathAndMethod 根据路径和方法查找API
-func (r *APIRepository) FindByPathAndMethod(path, method string) (*model.API, error) {
+func (r *apiRepository) FindByPathAndMethod(path, method string) (*model.API, error) {
 	var api model.API
 	err := r.db.Where("path = ? AND method = ?", path, method).First(&api).Error
 	if err != nil {
@@ -75,10 +77,8 @@ func (r *APIRepository) FindByPathAndMethod(path, method string) (*model.API, er
 	return &api, nil
 }
 
-// GetGroups 获取所有API分组
-func (r *APIRepository) GetGroups() ([]string, error) {
+func (r *apiRepository) GetGroups() ([]string, error) {
 	var groups []string
-	// 根据数据库类型使用正确的引号
 	groupColumn := "`group`"
 	if r.db.Dialector.Name() == "postgres" {
 		groupColumn = "\"group\""
@@ -89,4 +89,3 @@ func (r *APIRepository) GetGroups() ([]string, error) {
 		Pluck(groupColumn, &groups).Error
 	return groups, err
 }
-

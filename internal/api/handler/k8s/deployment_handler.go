@@ -15,10 +15,10 @@ import (
 type DeploymentHandler struct {
 	deploymentService  *k8sService.DeploymentService
 	permissionService  *k8sService.K8sPermissionService
-	roleRepo           *repository.RoleRepository
+	roleRepo           repository.RoleRepository
 }
 
-func NewDeploymentHandler(deploymentService *k8sService.DeploymentService, permissionService *k8sService.K8sPermissionService, roleRepo *repository.RoleRepository) *DeploymentHandler {
+func NewDeploymentHandler(deploymentService *k8sService.DeploymentService, permissionService *k8sService.K8sPermissionService, roleRepo repository.RoleRepository) *DeploymentHandler {
 	return &DeploymentHandler{
 		deploymentService: deploymentService,
 		permissionService: permissionService,

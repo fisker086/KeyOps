@@ -1,4 +1,4 @@
-package auth
+package bastion
 
 import (
 	"fmt"

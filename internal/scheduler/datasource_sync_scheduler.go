@@ -15,7 +15,7 @@ var ErrDatasourceNotFound = errors.New("datasource not found")
 
 // DatasourceSyncScheduler 数据源同步调度器
 type DatasourceSyncScheduler struct {
-	ruleSourceRepo *repository.AlertRuleSourceRepository
+	ruleSourceRepo repository.AlertRuleSourceRepository
 	alertService   DatasourceSyncService // 同步服务接口
 	tasks          map[uint]*syncTask     // 数据源ID -> 定时任务
 	tasksMu        sync.RWMutex          // 保护 tasks 的并发访问
@@ -40,7 +40,7 @@ type syncTask struct {
 
 // NewDatasourceSyncScheduler 创建数据源同步调度器
 func NewDatasourceSyncScheduler(
-	ruleSourceRepo *repository.AlertRuleSourceRepository,
+	ruleSourceRepo repository.AlertRuleSourceRepository,
 	alertService DatasourceSyncService,
 ) *DatasourceSyncScheduler {
 	return &DatasourceSyncScheduler{

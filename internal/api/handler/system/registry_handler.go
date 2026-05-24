@@ -11,11 +11,11 @@ import (
 )
 
 type RegistryHandler struct {
-	appRepo *repository.ApplicationRepository
+	appRepo repository.ApplicationRepository
 	svc     *registryService.Service
 }
 
-func NewRegistryHandler(appRepo *repository.ApplicationRepository, svc *registryService.Service) *RegistryHandler {
+func NewRegistryHandler(appRepo repository.ApplicationRepository, svc *registryService.Service) *RegistryHandler {
 	return &RegistryHandler{appRepo: appRepo, svc: svc}
 }
 

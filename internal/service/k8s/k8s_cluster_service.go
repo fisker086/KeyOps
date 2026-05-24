@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fisker086/keyops/internal/model"
@@ -20,12 +21,70 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// clusterAuthCache 按 clusterID + updatedAt 缓存 kubeconfig 解析结果。
+// 同一请求内多次 createK8sHTTPClient 可复用；集群更新后 updatedAt 变化自动失效，不会读到旧凭证。
+var clusterAuthCache sync.Map
+
+func clusterAuthCacheKey(cluster *model.K8sCluster) string {
+	return cluster.ID + "\x1f" + cluster.UpdatedAt.UTC().Format(time.RFC3339Nano)
+}
+
+func storeClusterAuthCache(cluster *model.K8sCluster, auth *KubeconfigAuthInfo) {
+	key := clusterAuthCacheKey(cluster)
+	clusterAuthCache.Store(key, auth)
+	// 清理同一集群的旧版本缓存，避免 map 无限增长
+	prefix := cluster.ID + "\x1f"
+	clusterAuthCache.Range(func(k, _ any) bool {
+		if ks, ok := k.(string); ok && strings.HasPrefix(ks, prefix) && ks != key {
+			clusterAuthCache.Delete(k)
+		}
+		return true
+	})
+}
+
+// getClusterAuth 解析 kubeconfig 认证信息（带版本化缓存），并同步 cluster.APIServer。
+// token 认证时返回 (nil, nil)。
+func (s *K8sClusterService) getClusterAuth(cluster *model.K8sCluster) (*KubeconfigAuthInfo, error) {
+	if cluster == nil {
+		return nil, fmt.Errorf("集群配置为空")
+	}
+	if cluster.AuthType != "kubeconfig" || cluster.Kubeconfig == "" {
+		if cluster.APIServer == "" {
+			return nil, fmt.Errorf("API Server 地址为空")
+		}
+		return nil, nil
+	}
+
+	key := clusterAuthCacheKey(cluster)
+	if cached, ok := clusterAuthCache.Load(key); ok {
+		auth := cached.(*KubeconfigAuthInfo)
+		if auth.APIServer != "" {
+			cluster.APIServer = auth.APIServer
+		}
+		return auth, nil
+	}
+
+	authInfo, err := s.parseKubeconfigAuth(cluster.Kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	if authInfo.APIServer != "" {
+		cluster.APIServer = authInfo.APIServer
+	}
+	if cluster.APIServer == "" {
+		return nil, fmt.Errorf("kubeconfig 中未找到 API Server 地址，请检查 clusters[].cluster.server")
+	}
+
+	storeClusterAuthCache(cluster, authInfo)
+	return authInfo, nil
+}
+
 type K8sClusterService struct {
-	clusterRepo *repository.K8sClusterRepository
+	clusterRepo repository.K8sClusterRepository
 	k8sService  *K8sService
 }
 
-func NewK8sClusterService(clusterRepo *repository.K8sClusterRepository) *K8sClusterService {
+func NewK8sClusterService(clusterRepo repository.K8sClusterRepository) *K8sClusterService {
 	return &K8sClusterService{
 		clusterRepo: clusterRepo,
 		k8sService:  NewK8sService(clusterRepo),
@@ -52,24 +111,17 @@ func (s *K8sClusterService) testClusterConnection(cluster *model.K8sCluster) (st
 		httpReq.Header.Set("Authorization", "Bearer "+cluster.Token)
 		tlsConfig = &tls.Config{InsecureSkipVerify: true}
 	} else if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" {
-		// Kubeconfig 认证
-		authInfo, err := s.parseKubeconfigAuth(cluster.Kubeconfig)
+		authInfo, err := s.getClusterAuth(cluster)
 		if err != nil {
 			return "", fmt.Errorf("解析Kubeconfig失败: %v", err)
 		}
 
-		// 如果 kubeconfig 中有 API Server 地址，使用它（优先使用用户提供的）
-		if cluster.APIServer == "" && authInfo.APIServer != "" {
-			cluster.APIServer = authInfo.APIServer
-			// 更新请求 URL
-			versionURL = cluster.APIServer + "/version"
-			httpReq, err = http.NewRequest("GET", versionURL, nil)
-			if err != nil {
-				return "", fmt.Errorf("创建请求失败: %v", err)
-			}
+		versionURL = strings.TrimSuffix(cluster.APIServer, "/") + "/version"
+		httpReq, err = http.NewRequest("GET", versionURL, nil)
+		if err != nil {
+			return "", fmt.Errorf("创建请求失败: %v", err)
 		}
 
-		// 设置认证头或证书
 		if authInfo.Token != "" {
 			httpReq.Header.Set("Authorization", "Bearer "+authInfo.Token)
 			tlsConfig = &tls.Config{InsecureSkipVerify: true}
@@ -200,6 +252,10 @@ func (s *K8sClusterService) parseKubeconfigAuth(kubeconfigContent string) (*Kube
 				ClientCertificateData string `yaml:"client-certificate-data"`
 				ClientKey             string `yaml:"client-key"`
 				ClientKeyData         string `yaml:"client-key-data"`
+				Exec                  *struct {
+					Command string   `yaml:"command"`
+					Args    []string `yaml:"args"`
+				} `yaml:"exec"`
 			} `yaml:"user"`
 		} `yaml:"users"`
 		Contexts []struct {
@@ -262,11 +318,13 @@ func (s *K8sClusterService) parseKubeconfigAuth(kubeconfigContent string) (*Kube
 			// 提取 token
 			if user.User.Token != "" {
 				token := user.User.Token
-				// 尝试 base64 解码（如果失败则使用原值）
-				if decoded, err := base64.StdEncoding.DecodeString(token); err == nil {
-					decodedStr := strings.TrimSpace(string(decoded))
-					if decodedStr != "" {
-						token = decodedStr
+				// 仅对非 JWT 形态尝试标准 base64 解码，避免破坏 kubeconfig 中的 Bearer JWT
+				if !strings.Contains(token, ".") {
+					if decoded, err := base64.StdEncoding.DecodeString(token); err == nil {
+						decodedStr := strings.TrimSpace(string(decoded))
+						if decodedStr != "" {
+							token = decodedStr
+						}
 					}
 				}
 				authInfo.Token = token
@@ -288,7 +346,7 @@ func (s *K8sClusterService) parseKubeconfigAuth(kubeconfigContent string) (*Kube
 				// 这里简化处理，假设是绝对路径或相对于当前目录
 				data, err := os.ReadFile(certPath)
 				if err != nil {
-					return nil, fmt.Errorf("读取client-certificate文件失败: %v", err)
+					return nil, fmt.Errorf("读取client-certificate文件失败(%s): %v；请将证书以 client-certificate-data 内联到 kubeconfig", certPath, err)
 				}
 				certData = data
 			}
@@ -307,7 +365,7 @@ func (s *K8sClusterService) parseKubeconfigAuth(kubeconfigContent string) (*Kube
 				keyPath := user.User.ClientKey
 				data, err := os.ReadFile(keyPath)
 				if err != nil {
-					return nil, fmt.Errorf("读取client-key文件失败: %v", err)
+					return nil, fmt.Errorf("读取client-key文件失败(%s): %v；请将私钥以 client-key-data 内联到 kubeconfig", keyPath, err)
 				}
 				keyData = data
 			}
@@ -316,6 +374,10 @@ func (s *K8sClusterService) parseKubeconfigAuth(kubeconfigContent string) (*Kube
 			if len(certData) > 0 && len(keyData) > 0 {
 				authInfo.ClientCert = string(certData)
 				authInfo.ClientKey = string(keyData)
+			}
+
+			if user.User.Exec != nil && user.User.Exec.Command != "" {
+				return nil, fmt.Errorf("kubeconfig 使用了 exec 认证(%s)，当前不支持；请改用 token 或 client-certificate-data/client-key-data", user.User.Exec.Command)
 			}
 
 			// 如果至少有一种认证方式，返回
@@ -341,14 +403,9 @@ func (s *K8sClusterService) CreateCluster(cluster *model.K8sCluster) error {
 
 	// 如果使用 kubeconfig 且未提供 API Server，从 kubeconfig 中提取
 	if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" && cluster.APIServer == "" {
-		authInfo, err := s.parseKubeconfigAuth(cluster.Kubeconfig)
-		if err != nil {
-			return fmt.Errorf("解析Kubeconfig失败: %v", err)
+		if err := s.SyncClusterEndpointFromKubeconfig(cluster); err != nil {
+			return err
 		}
-		if authInfo.APIServer == "" {
-			return fmt.Errorf("Kubeconfig中未找到API Server地址，请手动填写API Server")
-		}
-		cluster.APIServer = authInfo.APIServer
 	}
 
 	// 验证 API Server 是否已设置
@@ -405,19 +462,59 @@ func (s *K8sClusterService) CreateCluster(cluster *model.K8sCluster) error {
 	return nil
 }
 
-// UpdateCluster 更新集群
-func (s *K8sClusterService) UpdateCluster(cluster *model.K8sCluster) error {
-	return s.clusterRepo.Update(cluster)
+// SyncClusterEndpointFromKubeconfig 从 kubeconfig 解析并同步 API Server（kubeconfig 内 server 优先于库中旧值）。
+func (s *K8sClusterService) SyncClusterEndpointFromKubeconfig(cluster *model.K8sCluster) error {
+	_, err := s.getClusterAuth(cluster)
+	return err
+}
+
+// UpdateCluster 更新集群（同步 kubeconfig 中的 API Server，验证连接，落库后重新加载）
+func (s *K8sClusterService) UpdateCluster(cluster *model.K8sCluster) (*model.K8sCluster, error) {
+	if err := s.SyncClusterEndpointFromKubeconfig(cluster); err != nil {
+		return nil, err
+	}
+	if cluster.APIServer == "" {
+		return nil, fmt.Errorf("API Server地址不能为空")
+	}
+
+	version, err := s.testClusterConnection(cluster)
+	if err != nil {
+		return nil, fmt.Errorf("连接集群失败: %w", err)
+	}
+	cluster.Version = version
+	now := time.Now()
+	cluster.LastCheckedAt = &now
+
+	if err := s.clusterRepo.Update(cluster); err != nil {
+		return nil, err
+	}
+
+	return s.loadClusterFresh(cluster.ID)
+}
+
+// loadClusterFresh 从数据库重新加载集群并解析有效 API Server（供响应展示与后续请求使用）
+func (s *K8sClusterService) loadClusterFresh(id string) (*model.K8sCluster, error) {
+	cluster, err := s.clusterRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if cluster == nil {
+		return nil, fmt.Errorf("集群不存在")
+	}
+	if err := s.SyncClusterEndpointFromKubeconfig(cluster); err != nil {
+		return nil, err
+	}
+	return cluster, nil
+}
+
+// GetCluster 获取集群（每次从数据库读取，并解析 kubeconfig 中的有效 API Server）
+func (s *K8sClusterService) GetCluster(id string) (*model.K8sCluster, error) {
+	return s.loadClusterFresh(id)
 }
 
 // DeleteCluster 删除集群
 func (s *K8sClusterService) DeleteCluster(id string) error {
 	return s.clusterRepo.Delete(id)
-}
-
-// GetCluster 获取集群
-func (s *K8sClusterService) GetCluster(id string) (*model.K8sCluster, error) {
-	return s.clusterRepo.FindByID(id)
 }
 
 // GetClusterByName 根据名称获取集群

@@ -11,15 +11,15 @@ import (
 )
 
 type PermissionHandler struct {
-	menuRepo *repository.MenuRepository
-	apiRepo  *repository.APIRepository
-	roleRepo *repository.RoleRepository
+	menuRepo repository.MenuRepository
+	apiRepo  repository.APIRepository
+	roleRepo repository.RoleRepository
 }
 
 func NewPermissionHandler(
-	menuRepo *repository.MenuRepository,
-	apiRepo *repository.APIRepository,
-	roleRepo *repository.RoleRepository,
+	menuRepo repository.MenuRepository,
+	apiRepo repository.APIRepository,
+	roleRepo repository.RoleRepository,
 ) *PermissionHandler {
 	return &PermissionHandler{
 		menuRepo: menuRepo,

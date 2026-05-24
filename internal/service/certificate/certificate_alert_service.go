@@ -14,18 +14,18 @@ import (
 
 // CertificateAlertService 证书告警服务
 type CertificateAlertService struct {
-	certRepo            *repository.DomainCertificateRepository
-	templateRepo        *repository.AlertTemplateRepository
-	channelRepo         *repository.AlertChannelRepository
+	certRepo            repository.DomainCertificateRepository
+	templateRepo        repository.AlertTemplateRepository
+	channelRepo         repository.AlertChannelRepository
 	alertNotifier       *notification.AlertNotifier
 	db                  *gorm.DB
 }
 
 // NewCertificateAlertService 创建证书告警服务
 func NewCertificateAlertService(
-	certRepo *repository.DomainCertificateRepository,
-	templateRepo *repository.AlertTemplateRepository,
-	channelRepo *repository.AlertChannelRepository,
+	certRepo repository.DomainCertificateRepository,
+	templateRepo repository.AlertTemplateRepository,
+	channelRepo repository.AlertChannelRepository,
 	alertNotifier *notification.AlertNotifier,
 	db *gorm.DB,
 ) *CertificateAlertService {

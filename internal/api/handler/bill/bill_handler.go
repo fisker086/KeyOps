@@ -222,94 +222,7 @@ func (h *BillHandler) GetVM(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Success(result))
 }
 
-// GetPriceList 获取单价列表
-// @Summary 获取单价列表
-// @Description 获取单价管理列表
-// @Tags bill
-// @Accept json
-// @Produce json
-// @Success 200 {object} model.Response
-// @Router /api/bill/price [get]
-func (h *BillHandler) GetPriceList(c *gin.Context) {
-	result, err := h.service.GetPriceList()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
-		return
-	}
 
-	c.JSON(http.StatusOK, model.Success(result))
-}
-
-// CreatePrice 创建单价
-// @Summary 创建单价
-// @Description 创建单价配置
-// @Tags bill
-// @Accept json
-// @Produce json
-// @Param price body model.BillPrice true "单价信息"
-// @Success 200 {object} model.Response
-// @Router /api/bill/price [post]
-func (h *BillHandler) CreatePrice(c *gin.Context) {
-	var price model.BillPrice
-	if err := c.ShouldBindJSON(&price); err != nil {
-		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
-		return
-	}
-
-	result, err := h.service.CreatePrice(&price)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, model.Success(result))
-}
-
-// UpdatePrice 更新单价
-// @Summary 更新单价
-// @Description 更新单价配置
-// @Tags bill
-// @Accept json
-// @Produce json
-// @Param id path string true "单价ID"
-// @Param price body model.BillPrice true "单价信息"
-// @Success 200 {object} model.Response
-// @Router /api/bill/price/:id [put]
-func (h *BillHandler) UpdatePrice(c *gin.Context) {
-	id := c.Param("id")
-	var price model.BillPrice
-	if err := c.ShouldBindJSON(&price); err != nil {
-		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
-		return
-	}
-
-	result, err := h.service.UpdatePrice(id, &price)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, model.Success(result))
-}
-
-// DeletePrice 删除单价
-// @Summary 删除单价
-// @Description 删除单价配置
-// @Tags bill
-// @Accept json
-// @Produce json
-// @Param id path string true "单价ID"
-// @Success 200 {object} model.Response
-// @Router /api/bill/price/:id [delete]
-func (h *BillHandler) DeletePrice(c *gin.Context) {
-	id := c.Param("id")
-	if err := h.service.DeletePrice(id); err != nil {
-		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, model.Success(gin.H{"deleted": true}))
-}
 
 // GetResource 获取我的资源列表
 // @Summary 获取我的资源列表
@@ -530,23 +443,4 @@ func (h *BillHandler) TriggerSync(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Success(gin.H{"async": true, "message": "sync triggered successfully"}))
 }
 
-// CheckBudgetAlerts 手动检查预算告警
-// @Summary 手动检查预算告警
-// @Description 手动检查所有预算的告警状态
-// @Tags bill
-// @Accept json
-// @Produce json
-// @Success 200 {object} model.Response
-// @Router /api/bill/check-budget-alerts [get]
-func (h *BillHandler) CheckBudgetAlerts(c *gin.Context) {
-	alerts, err := h.service.CheckBudgetAlerts()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
-		return
-	}
 
-	c.JSON(http.StatusOK, model.Success(gin.H{
-		"alerts": alerts,
-		"count":  len(alerts),
-	}))
-}

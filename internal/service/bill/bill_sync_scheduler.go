@@ -33,20 +33,6 @@ func (s *SyncScheduler) Start() {
 	s.cron.Start()
 	log.Println("[BillSync] Scheduler started (per-account cron only)")
 
-	// 每小时检查预算告警
-	go func() {
-		ticker := time.NewTicker(1 * time.Hour)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				s.checkBudgetAlerts()
-			case <-s.stopCh:
-				return
-			}
-		}
-	}()
 }
 
 func (s *SyncScheduler) registerAccountCronJobs() {
@@ -107,20 +93,4 @@ func (s *SyncScheduler) Reload() {
 	s.Start()
 }
 
-// checkBudgetAlerts 检查预算告警
-func (s *SyncScheduler) checkBudgetAlerts() {
-	alerts, err := s.service.CheckBudgetAlerts()
-	if err != nil {
-		log.Printf("[BudgetAlert] Failed to check budget alerts: %v", err)
-		return
-	}
 
-	if len(alerts) > 0 {
-		log.Printf("[BudgetAlert] Found %d budget alerts", len(alerts))
-		for _, alert := range alerts {
-			log.Printf("[BudgetAlert] Budget '%s' (ID: %v) exceeded threshold: %.2f%% (threshold: %.2f%%)",
-				alert["budget_name"], alert["budget_id"], alert["usage_percent"], alert["threshold"])
-			// TODO: 发送告警通知（邮件/Slack/Webhook）
-		}
-	}
-}

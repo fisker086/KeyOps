@@ -15,11 +15,11 @@ import (
 // DatabaseAuditor 统一的数据库审计器（SQL + 可选堡垒机 Mongo）
 type DatabaseAuditor struct {
 	db      *gorm.DB
-	session *repository.SessionRepository
+	session repository.SessionRepository
 }
 
 // NewDatabaseAuditor 创建数据库审计器；session 可为 nil（仅 SQL）。
-func NewDatabaseAuditor(db *gorm.DB, session *repository.SessionRepository) Auditor {
+func NewDatabaseAuditor(db *gorm.DB, session repository.SessionRepository) Auditor {
 	return &DatabaseAuditor{db: db, session: session}
 }
 

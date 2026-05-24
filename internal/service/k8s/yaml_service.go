@@ -281,7 +281,7 @@ func (s *K8sService) UpdateResourceYaml(clusterID string, clusterName string, na
 		tlsConfig = &tls.Config{InsecureSkipVerify: true}
 	} else if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" {
 		clusterService := NewK8sClusterService(s.clusterRepo)
-		authInfo, err := clusterService.parseKubeconfigAuth(cluster.Kubeconfig)
+		authInfo, err := clusterService.getClusterAuth(cluster)
 		if err != nil {
 			return fmt.Errorf("解析Kubeconfig失败: %v", err)
 		}
@@ -388,7 +388,7 @@ func (s *K8sService) DryRunResourceYaml(clusterID string, clusterName string, na
 		tlsConfig = &tls.Config{InsecureSkipVerify: true}
 	} else if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" {
 		clusterService := NewK8sClusterService(s.clusterRepo)
-		authInfo, err := clusterService.parseKubeconfigAuth(cluster.Kubeconfig)
+		authInfo, err := clusterService.getClusterAuth(cluster)
 		if err != nil {
 			return "", fmt.Errorf("解析Kubeconfig失败: %v", err)
 		}

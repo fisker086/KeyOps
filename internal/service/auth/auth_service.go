@@ -49,9 +49,9 @@ const (
 )
 
 type AuthService struct {
-	repo             *repository.UserRepository
-	settingRepo      *repository.SettingRepository
-	refreshTokenRepo *repository.RefreshTokenRepository
+	repo             repository.UserRepository
+	settingRepo      repository.SettingRepository
+	refreshTokenRepo repository.RefreshTokenRepository
 	TwoFactorSvc     *twofactor.TwoFactorService
 	jwtSecret        []byte
 	aesKey           []byte
@@ -63,7 +63,7 @@ type AuthService struct {
 // adminWhitelistRaw: 管理员白名单
 // AES-256加密密钥会自动从此密钥提取前32字节用于加密SSH私钥等敏感数据
 // 认证方式覆盖见 pkg/config.SecurityAuthMethodOverride()（AUTH_METHOD / security.auth_method）
-func NewAuthService(repo *repository.UserRepository, settingRepo *repository.SettingRepository, refreshTokenRepo *repository.RefreshTokenRepository, jwtSecret string, adminWhitelistRaw string) *AuthService {
+func NewAuthService(repo repository.UserRepository, settingRepo repository.SettingRepository, refreshTokenRepo repository.RefreshTokenRepository, jwtSecret string, adminWhitelistRaw string) *AuthService {
 	// 处理JWT密钥
 	jwtKey := []byte(jwtSecret)
 	if len(jwtKey) == 0 {

@@ -17,12 +17,12 @@ import (
 )
 
 type JenkinsService struct {
-	jenkinsRepo    *repository.JenkinsRepository
-	deploymentRepo *repository.DeploymentRepository
+	jenkinsRepo    repository.JenkinsRepository
+	deploymentRepo repository.DeploymentRepository
 	crypto         *crypto.Crypto
 }
 
-func NewJenkinsService(jenkinsRepo *repository.JenkinsRepository, deploymentRepo *repository.DeploymentRepository, cryptoService *crypto.Crypto) *JenkinsService {
+func NewJenkinsService(jenkinsRepo repository.JenkinsRepository, deploymentRepo repository.DeploymentRepository, cryptoService *crypto.Crypto) *JenkinsService {
 	return &JenkinsService{
 		jenkinsRepo:    jenkinsRepo,
 		deploymentRepo: deploymentRepo,

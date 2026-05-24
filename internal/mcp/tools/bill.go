@@ -10,8 +10,8 @@ import (
 )
 
 type BillToolContext struct {
-	BillRepo    *repository.BillRepository
-	CloudAccRepo *repository.CloudAccountRepository
+	BillRepo    repository.BillRepository
+	CloudAccRepo repository.CloudAccountRepository
 }
 
 func RegisterBillTools(registry *mcp.Registry, ctx *BillToolContext) {

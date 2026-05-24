@@ -14,17 +14,18 @@ import (
 
 // K8sService K8s 服务
 type K8sService struct {
-	clusterRepo *repository.K8sClusterRepository
+	clusterRepo repository.K8sClusterRepository
 }
 
 // NewK8sService 创建 K8s 服务
-func NewK8sService(clusterRepo *repository.K8sClusterRepository) *K8sService {
+func NewK8sService(clusterRepo repository.K8sClusterRepository) *K8sService {
 	return &K8sService{
 		clusterRepo: clusterRepo,
 	}
 }
 
-// GetClusterConfig 根据 cluster_id 或 cluster_name 获取集群配置
+// GetClusterConfig 根据 cluster_id 或 cluster_name 获取集群配置。
+// 无内存缓存：每次从数据库读取最新记录；kubeconfig 解析结果按 updatedAt 版本化缓存，更新后立即失效。
 func (s *K8sService) GetClusterConfig(clusterID string, clusterName string) (*model.K8sCluster, error) {
 	var cluster *model.K8sCluster
 	var err error
@@ -49,6 +50,11 @@ func (s *K8sService) GetClusterConfig(clusterID string, clusterName string) (*mo
 		return nil, fmt.Errorf("集群 %s 状态为 %s，无法使用", cluster.Name, cluster.Status)
 	}
 
+	clusterService := NewK8sClusterService(s.clusterRepo)
+	if err := clusterService.SyncClusterEndpointFromKubeconfig(cluster); err != nil {
+		return nil, err
+	}
+
 	return cluster, nil
 }
 
@@ -68,14 +74,12 @@ func (s *K8sService) createK8sHTTPClient(cluster *model.K8sCluster, url string) 
 		httpReq.Header.Set("Authorization", "Bearer "+cluster.Token)
 		tlsConfig = &tls.Config{InsecureSkipVerify: true}
 	} else if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" {
-		// Kubeconfig 认证
 		clusterService := NewK8sClusterService(s.clusterRepo)
-		authInfo, err := clusterService.parseKubeconfigAuth(cluster.Kubeconfig)
+		authInfo, err := clusterService.getClusterAuth(cluster)
 		if err != nil {
 			return nil, nil, fmt.Errorf("解析Kubeconfig失败: %v", err)
 		}
 
-		// 设置认证头或证书
 		if authInfo.Token != "" {
 			httpReq.Header.Set("Authorization", "Bearer "+authInfo.Token)
 			tlsConfig = &tls.Config{InsecureSkipVerify: true}

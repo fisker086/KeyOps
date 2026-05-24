@@ -8,21 +8,30 @@ import (
 	"gorm.io/gorm"
 )
 
-type CloudAccountRepository struct {
+type CloudAccountRepository interface {
+	GetByID(id uint) (*model.CloudAccount, error)
+	List(cloudType string) ([]model.CloudAccount, error)
+	Create(acc *model.CloudAccount) error
+	Update(acc *model.CloudAccount) error
+	Delete(id uint) error
+	UpdateLastImport(id uint) error
+}
+
+type cloudAccountRepository struct {
 	db *gorm.DB
 }
 
-func NewCloudAccountRepository(db *gorm.DB) *CloudAccountRepository {
-	return &CloudAccountRepository{db: db}
+func NewCloudAccountRepository(db *gorm.DB) CloudAccountRepository {
+	return &cloudAccountRepository{db: db}
 }
 
-func (r *CloudAccountRepository) GetByID(id uint) (*model.CloudAccount, error) {
+func (r *cloudAccountRepository) GetByID(id uint) (*model.CloudAccount, error) {
 	var acc model.CloudAccount
 	err := r.db.First(&acc, id).Error
 	return &acc, err
 }
 
-func (r *CloudAccountRepository) List(cloudType string) ([]model.CloudAccount, error) {
+func (r *cloudAccountRepository) List(cloudType string) ([]model.CloudAccount, error) {
 	var list []model.CloudAccount
 	q := r.db
 	if cloudType != "" {
@@ -32,7 +41,7 @@ func (r *CloudAccountRepository) List(cloudType string) ([]model.CloudAccount, e
 	return list, err
 }
 
-func (r *CloudAccountRepository) Create(acc *model.CloudAccount) error {
+func (r *cloudAccountRepository) Create(acc *model.CloudAccount) error {
 	log.Printf("[CloudAccountRepo] creating account: name=%s, cloudType=%s, id=%d", acc.Name, acc.CloudType, acc.ID)
 	err := r.db.Create(acc).Error
 	if err != nil {
@@ -43,7 +52,7 @@ func (r *CloudAccountRepository) Create(acc *model.CloudAccount) error {
 	return err
 }
 
-func (r *CloudAccountRepository) Update(acc *model.CloudAccount) error {
+func (r *cloudAccountRepository) Update(acc *model.CloudAccount) error {
 	log.Printf("[CloudAccountRepo] updating account: id=%d, status=%s", acc.ID, acc.Status)
 	err := r.db.Save(acc).Error
 	if err != nil {
@@ -52,7 +61,7 @@ func (r *CloudAccountRepository) Update(acc *model.CloudAccount) error {
 	return err
 }
 
-func (r *CloudAccountRepository) Delete(id uint) error {
+func (r *cloudAccountRepository) Delete(id uint) error {
 	log.Printf("[CloudAccountRepo] deleting account: id=%d", id)
 	err := r.db.Delete(&model.CloudAccount{}, id).Error
 	if err != nil {
@@ -63,7 +72,7 @@ func (r *CloudAccountRepository) Delete(id uint) error {
 	return err
 }
 
-func (r *CloudAccountRepository) UpdateLastImport(id uint) error {
+func (r *cloudAccountRepository) UpdateLastImport(id uint) error {
 	now := time.Now().UTC()
 	return r.db.Model(&model.CloudAccount{}).Where("id = ?", id).Update("last_import_at", &now).Error
 }

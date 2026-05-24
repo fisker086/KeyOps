@@ -23,21 +23,21 @@ import (
 
 // AlertService 告警服务
 type AlertService struct {
-	ruleGroupRepo       *repository.AlertRuleGroupRepository
-	ruleSourceRepo      *repository.AlertRuleSourceRepository
-	ruleRepo            *repository.AlertRuleRepository
-	eventRepo           *repository.AlertEventRepository
-	logRepo             *repository.AlertLogRepository
-	strategyRepo        *repository.AlertStrategyRepository
-	levelRepo           *repository.AlertLevelRepository
-	aggregationRepo     *repository.AlertAggregationRepository
-	silenceRepo         *repository.AlertSilenceRepository
-	restrainRepo        *repository.AlertRestrainRepository
-	templateRepo        *repository.AlertTemplateRepository
-	channelRepo         *repository.AlertChannelRepository
-	channelTemplateRepo *repository.ChannelTemplateRepository
-	alertGroupRepo      *repository.AlertGroupRepository
-	strategyLogRepo     *repository.StrategyLogRepository
+	ruleGroupRepo       repository.AlertRuleGroupRepository
+	ruleSourceRepo      repository.AlertRuleSourceRepository
+	ruleRepo            repository.AlertRuleRepository
+	eventRepo           repository.AlertEventRepository
+	logRepo             repository.AlertLogRepository
+	strategyRepo        repository.AlertStrategyRepository
+	levelRepo           repository.AlertLevelRepository
+	aggregationRepo     repository.AlertAggregationRepository
+	silenceRepo         repository.AlertSilenceRepository
+	restrainRepo        repository.AlertRestrainRepository
+	templateRepo        repository.AlertTemplateRepository
+	channelRepo         repository.AlertChannelRepository
+	channelTemplateRepo repository.ChannelTemplateRepository
+	alertGroupRepo      repository.AlertGroupRepository
+	strategyLogRepo     repository.StrategyLogRepository
 
 	// 业务逻辑处理器
 	silenceProcessor     *alertprocessor.SilenceProcessor
@@ -54,21 +54,21 @@ type AlertService struct {
 }
 
 func NewAlertService(
-	ruleGroupRepo *repository.AlertRuleGroupRepository,
-	ruleSourceRepo *repository.AlertRuleSourceRepository,
-	ruleRepo *repository.AlertRuleRepository,
-	eventRepo *repository.AlertEventRepository,
-	logRepo *repository.AlertLogRepository,
-	strategyRepo *repository.AlertStrategyRepository,
-	levelRepo *repository.AlertLevelRepository,
-	aggregationRepo *repository.AlertAggregationRepository,
-	silenceRepo *repository.AlertSilenceRepository,
-	restrainRepo *repository.AlertRestrainRepository,
-	templateRepo *repository.AlertTemplateRepository,
-	channelRepo *repository.AlertChannelRepository,
-	channelTemplateRepo *repository.ChannelTemplateRepository,
-	alertGroupRepo *repository.AlertGroupRepository,
-	strategyLogRepo *repository.StrategyLogRepository,
+	ruleGroupRepo repository.AlertRuleGroupRepository,
+	ruleSourceRepo repository.AlertRuleSourceRepository,
+	ruleRepo repository.AlertRuleRepository,
+	eventRepo repository.AlertEventRepository,
+	logRepo repository.AlertLogRepository,
+	strategyRepo repository.AlertStrategyRepository,
+	levelRepo repository.AlertLevelRepository,
+	aggregationRepo repository.AlertAggregationRepository,
+	silenceRepo repository.AlertSilenceRepository,
+	restrainRepo repository.AlertRestrainRepository,
+	templateRepo repository.AlertTemplateRepository,
+	channelRepo repository.AlertChannelRepository,
+	channelTemplateRepo repository.ChannelTemplateRepository,
+	alertGroupRepo repository.AlertGroupRepository,
+	strategyLogRepo repository.StrategyLogRepository,
 	ruleDir string, // 规则文件目录，如 "/etc/prometheus/rules" 或从配置读取
 ) *AlertService {
 	service := &AlertService{

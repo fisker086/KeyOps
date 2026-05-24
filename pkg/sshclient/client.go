@@ -3,6 +3,7 @@ package sshclient
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -126,7 +127,7 @@ func NewSSHClient(cfg SSHConfig) (*SSHClient, error) {
 		Timeout:         cfg.Timeout,
 	}
 
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	addr := net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port))
 
 	// 记录认证方法详情（不记录敏感信息）
 	authMethodNames := make([]string, 0)
@@ -197,7 +198,7 @@ func TestConnection(cfg SSHConfig) error {
 
 // GetHostKey 获取主机指纹
 func GetHostKey(host string, port int) (string, error) {
-	addr := fmt.Sprintf("%s:%d", host, port)
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
 	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 	if err != nil {
 		return "", err

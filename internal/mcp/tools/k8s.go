@@ -17,7 +17,7 @@ import (
 )
 
 type K8sToolContext struct {
-	ClusterRepo *repository.K8sClusterRepository
+	ClusterRepo repository.K8sClusterRepository
 }
 
 func createClientset(cluster *model.K8sCluster) (kubernetes.Interface, error) {
@@ -142,7 +142,7 @@ type clusterResolver interface {
 	FindByName(name string) (*model.K8sCluster, error)
 }
 
-func resolveCluster(args map[string]any, repo *repository.K8sClusterRepository) (*model.K8sCluster, error) {
+func resolveCluster(args map[string]any, repo repository.K8sClusterRepository) (*model.K8sCluster, error) {
 	clusterID, _ := args["cluster_id"].(string)
 	clusterName, _ := args["cluster_name"].(string)
 

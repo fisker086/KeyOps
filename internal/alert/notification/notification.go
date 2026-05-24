@@ -14,23 +14,23 @@ import (
 
 // AlertNotifier 告警通知器
 type AlertNotifier struct {
-	strategyLogRepo     *repository.StrategyLogRepository
-	templateRepo        *repository.AlertTemplateRepository
-	channelRepo         *repository.AlertChannelRepository
-	channelTemplateRepo *repository.ChannelTemplateRepository
-	alertGroupRepo      *repository.AlertGroupRepository
-	ruleSourceRepo      *repository.AlertRuleSourceRepository
+	strategyLogRepo     repository.StrategyLogRepository
+	templateRepo        repository.AlertTemplateRepository
+	channelRepo         repository.AlertChannelRepository
+	channelTemplateRepo repository.ChannelTemplateRepository
+	alertGroupRepo      repository.AlertGroupRepository
+	ruleSourceRepo      repository.AlertRuleSourceRepository
 	frontendURL         string // 前端URL，用于构建详情链接
 }
 
 // NewAlertNotifier 创建告警通知器
 func NewAlertNotifier(
-	strategyLogRepo *repository.StrategyLogRepository,
-	templateRepo *repository.AlertTemplateRepository,
-	channelRepo *repository.AlertChannelRepository,
-	channelTemplateRepo *repository.ChannelTemplateRepository,
-	alertGroupRepo *repository.AlertGroupRepository,
-	ruleSourceRepo *repository.AlertRuleSourceRepository,
+	strategyLogRepo repository.StrategyLogRepository,
+	templateRepo repository.AlertTemplateRepository,
+	channelRepo repository.AlertChannelRepository,
+	channelTemplateRepo repository.ChannelTemplateRepository,
+	alertGroupRepo repository.AlertGroupRepository,
+	ruleSourceRepo repository.AlertRuleSourceRepository,
 	frontendURL string,
 ) *AlertNotifier {
 	return &AlertNotifier{

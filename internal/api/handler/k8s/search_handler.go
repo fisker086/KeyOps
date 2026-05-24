@@ -15,14 +15,14 @@ type SearchHandler struct {
 	clusterService    *k8sService.K8sClusterService
 	k8sService        *k8sService.K8sService
 	permissionService *k8sService.K8sPermissionService
-	roleRepo          *repository.RoleRepository
+	roleRepo          repository.RoleRepository
 }
 
 func NewSearchHandler(
 	clusterService *k8sService.K8sClusterService,
 	k8sService *k8sService.K8sService,
 	permissionService *k8sService.K8sPermissionService,
-	roleRepo *repository.RoleRepository,
+	roleRepo repository.RoleRepository,
 ) *SearchHandler {
 	return &SearchHandler{
 		clusterService:    clusterService,

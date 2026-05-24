@@ -12,7 +12,7 @@ import (
 
 // PermissionMiddleware Casbin权限中间件
 // 检查用户是否有权限访问指定的API路径
-func PermissionMiddleware(userRepo *repository.UserRepository, roleRepo *repository.RoleRepository) gin.HandlerFunc {
+func PermissionMiddleware(userRepo repository.UserRepository, roleRepo repository.RoleRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 获取用户ID
 		userID, exists := c.Get("userID")
@@ -75,7 +75,7 @@ func PermissionMiddleware(userRepo *repository.UserRepository, roleRepo *reposit
 // OptionalPermissionMiddleware 可选的权限中间件
 // 如果权限系统未启用或用户没有配置权限，则允许访问
 // 主要用于渐进式迁移
-func OptionalPermissionMiddleware(userRepo *repository.UserRepository, roleRepo *repository.RoleRepository) gin.HandlerFunc {
+func OptionalPermissionMiddleware(userRepo repository.UserRepository, roleRepo repository.RoleRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 获取用户ID
 		userID, exists := c.Get("userID")

@@ -16,7 +16,39 @@ import (
 )
 
 // SessionRepository 支持双引擎：MySQL / MongoDB（logins / recordings / commands 三集合）
-type SessionRepository struct {
+type SessionRepository interface {
+	UsesMongo() bool
+	GetDB() *gorm.DB
+	CreateLoginRecord(record *model.LoginRecord) error
+	UpdateLogoutTime(id string) error
+	CalculateDuration(id string) error
+	FindLoginRecords(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error)
+	FindLoginRecordsByUser(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error)
+	GetRecentLogins(limit int) ([]model.LoginRecord, error)
+	CountRecentLogins(hours int) (int64, error)
+	CreateSessionRecording(recording *model.SessionRecording) error
+	CreateCommandRecord(record *model.CommandRecord) error
+	FindSessionHistories(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error)
+	GetRecentLoginsByUser(limit int, userID string) ([]model.LoginRecord, error)
+	CountRecentLoginsByUser(hours int, userID string) (int64, error)
+	CountTodayLoginsByUser(userID string) (int64, error)
+	UpdateSessionRecording(sessionID string, recording []byte) error
+	FindSessionRecordingBySessionID(sessionID string) (*model.SessionRecording, error)
+	UpdateSessionRecordingFields(sessionID string, fields map[string]interface{}) error
+	UpdateLoginBySessionID(sessionID string, fields map[string]interface{}) error
+	UpdateLoginStatusBySessionID(sessionID, status string) error
+	IncrementSessionCommandCount(sessionID string) error
+	IncrementSessionCommandCountBy(sessionID string, delta int) error
+	FindSessionRecordings(page, pageSize int, search string) ([]model.SessionRecording, int64, error)
+	FindCommandRecords(page, pageSize int, search, hostFilter string) ([]model.CommandRecord, int64, error)
+	FindCommandsBySession(sessionID string) ([]model.CommandRecord, error)
+	CountCommandsBySessions(sessionIDs []string) (map[string]int, error)
+	UpsertLoginRecord(rec *model.LoginRecord) error
+	UpsertSessionRecording(rec *model.SessionRecording) error
+	CreateCommandRecordBatch(records []model.CommandRecord) error
+}
+
+type sessionRepository struct {
 	useMongo        bool
 	db              *gorm.DB
 	mongoLogins     *mongo.Collection
@@ -25,9 +57,9 @@ type SessionRepository struct {
 }
 
 // NewSessionRepository 创建仓库；logins/recordings/commands 全为 nil 时使用 MySQL。
-func NewSessionRepository(db *gorm.DB, logins, recordings, commands *mongo.Collection) *SessionRepository {
+func NewSessionRepository(db *gorm.DB, logins, recordings, commands *mongo.Collection) SessionRepository {
 	use := logins != nil && recordings != nil && commands != nil
-	return &SessionRepository{
+	return &sessionRepository{
 		useMongo:        use,
 		db:              db,
 		mongoLogins:     logins,
@@ -37,17 +69,17 @@ func NewSessionRepository(db *gorm.DB, logins, recordings, commands *mongo.Colle
 }
 
 // UsesMongo 是否使用 Mongo 存储堡垒机会话相关数据
-func (r *SessionRepository) UsesMongo() bool {
+func (r *sessionRepository) UsesMongo() bool {
 	return r.useMongo
 }
 
 // GetDB 返回数据库实例（用于 Service 层主机等仍走 SQL 的查询）
-func (r *SessionRepository) GetDB() *gorm.DB {
+func (r *sessionRepository) GetDB() *gorm.DB {
 	return r.db
 }
 
 // CreateLoginRecord 创建登录记录（双引擎）
-func (r *SessionRepository) CreateLoginRecord(record *model.LoginRecord) error {
+func (r *sessionRepository) CreateLoginRecord(record *model.LoginRecord) error {
 	if r.useMongo {
 		doc := loginRecordToBSON(record)
 		_, err := r.mongoLogins.InsertOne(context.Background(), doc)
@@ -77,7 +109,7 @@ func loginRecordToBSON(record *model.LoginRecord) bson.M {
 }
 
 // UpdateLogoutTime 更新登出时间（双引擎）
-func (r *SessionRepository) UpdateLogoutTime(id string) error {
+func (r *sessionRepository) UpdateLogoutTime(id string) error {
 	if r.useMongo {
 		now := time.Now()
 		_, err := r.mongoLogins.UpdateMany(
@@ -95,7 +127,7 @@ func (r *SessionRepository) UpdateLogoutTime(id string) error {
 }
 
 // CalculateDuration 计算会话时长（双引擎）
-func (r *SessionRepository) CalculateDuration(id string) error {
+func (r *sessionRepository) CalculateDuration(id string) error {
 	if r.useMongo {
 		ctx := context.Background()
 		var lr model.LoginRecord
@@ -123,7 +155,7 @@ func (r *SessionRepository) CalculateDuration(id string) error {
 }
 
 // FindLoginRecords 查询登录记录（双引擎）
-func (r *SessionRepository) FindLoginRecords(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
+func (r *sessionRepository) FindLoginRecords(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
 	if r.useMongo {
 		return r.findLoginRecordsMongo(page, pageSize, hostID)
 	}
@@ -147,7 +179,7 @@ func (r *SessionRepository) FindLoginRecords(page, pageSize int, hostID string) 
 	return records, total, err
 }
 
-func (r *SessionRepository) findLoginRecordsMongo(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
+func (r *sessionRepository) findLoginRecordsMongo(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
 	ctx := context.Background()
 	filter := bson.M{"host_id": bson.M{"$exists": true, "$ne": ""}}
 	if hostID != "" {
@@ -179,7 +211,7 @@ func (r *SessionRepository) findLoginRecordsMongo(page, pageSize int, hostID str
 }
 
 // FindLoginRecordsByUser 查询登录记录（支持按用户过滤，双引擎）
-func (r *SessionRepository) FindLoginRecordsByUser(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error) {
+func (r *sessionRepository) FindLoginRecordsByUser(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error) {
 	if r.useMongo {
 		return r.findLoginRecordsByUserMongo(page, pageSize, hostID, userID)
 	}
@@ -223,7 +255,7 @@ func (r *SessionRepository) FindLoginRecordsByUser(page, pageSize int, hostID, u
 	return results, total, err
 }
 
-func (r *SessionRepository) findLoginRecordsByUserMongo(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error) {
+func (r *sessionRepository) findLoginRecordsByUserMongo(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error) {
 	ctx := context.Background()
 	match := bson.M{"host_id": bson.M{"$exists": true, "$ne": ""}}
 	if hostID != "" {
@@ -278,7 +310,7 @@ func (r *SessionRepository) findLoginRecordsByUserMongo(page, pageSize int, host
 }
 
 // GetRecentLogins 获取最近登录记录（双引擎）
-func (r *SessionRepository) GetRecentLogins(limit int) ([]model.LoginRecord, error) {
+func (r *sessionRepository) GetRecentLogins(limit int) ([]model.LoginRecord, error) {
 	if r.useMongo {
 		return r.getRecentLoginsMongo(limit)
 	}
@@ -290,7 +322,7 @@ func (r *SessionRepository) GetRecentLogins(limit int) ([]model.LoginRecord, err
 	return records, err
 }
 
-func (r *SessionRepository) getRecentLoginsMongo(limit int) ([]model.LoginRecord, error) {
+func (r *sessionRepository) getRecentLoginsMongo(limit int) ([]model.LoginRecord, error) {
 	ctx := context.Background()
 	opts := options.Find().
 		SetSort(bson.D{{Key: "login_time", Value: -1}}).
@@ -310,7 +342,7 @@ func (r *SessionRepository) getRecentLoginsMongo(limit int) ([]model.LoginRecord
 }
 
 // CountRecentLogins 统计最近登录次数（双引擎）
-func (r *SessionRepository) CountRecentLogins(hours int) (int64, error) {
+func (r *sessionRepository) CountRecentLogins(hours int) (int64, error) {
 	if r.useMongo {
 		return r.countRecentLoginsMongo(hours)
 	}
@@ -322,7 +354,7 @@ func (r *SessionRepository) CountRecentLogins(hours int) (int64, error) {
 	return count, err
 }
 
-func (r *SessionRepository) countRecentLoginsMongo(hours int) (int64, error) {
+func (r *sessionRepository) countRecentLoginsMongo(hours int) (int64, error) {
 	ctx := context.Background()
 	cutoff := time.Now().Add(-time.Duration(hours) * time.Hour)
 	filter := bson.M{
@@ -332,7 +364,7 @@ func (r *SessionRepository) countRecentLoginsMongo(hours int) (int64, error) {
 }
 
 // CreateSessionRecording 创建会话录制（双引擎）
-func (r *SessionRepository) CreateSessionRecording(recording *model.SessionRecording) error {
+func (r *sessionRepository) CreateSessionRecording(recording *model.SessionRecording) error {
 	if r.useMongo {
 		doc := sessionRecordingToBSON(recording)
 		_, err := r.mongoRecordings.InsertOne(context.Background(), doc)
@@ -366,7 +398,7 @@ func sessionRecordingToBSON(recording *model.SessionRecording) bson.M {
 }
 
 // CreateCommandRecord 创建命令记录（双引擎）
-func (r *SessionRepository) CreateCommandRecord(record *model.CommandRecord) error {
+func (r *sessionRepository) CreateCommandRecord(record *model.CommandRecord) error {
 	if r.useMongo {
 		doc := bson.M{
 			"proxy_id":    record.ProxyID,
@@ -397,7 +429,7 @@ func (r *SessionRepository) CreateCommandRecord(record *model.CommandRecord) err
 }
 
 // FindSessionHistories 查询会话历史
-func (r *SessionRepository) FindSessionHistories(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
+func (r *sessionRepository) FindSessionHistories(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		filter := bson.M{}
@@ -440,7 +472,7 @@ func (r *SessionRepository) FindSessionHistories(page, pageSize int, hostID stri
 }
 
 // GetRecentLoginsByUser 获取用户最近登录记录
-func (r *SessionRepository) GetRecentLoginsByUser(limit int, userID string) ([]model.LoginRecord, error) {
+func (r *sessionRepository) GetRecentLoginsByUser(limit int, userID string) ([]model.LoginRecord, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		filter := bson.M{"user_id": userID}
@@ -463,7 +495,7 @@ func (r *SessionRepository) GetRecentLoginsByUser(limit int, userID string) ([]m
 }
 
 // CountRecentLoginsByUser 统计用户最近登录次数
-func (r *SessionRepository) CountRecentLoginsByUser(hours int, userID string) (int64, error) {
+func (r *sessionRepository) CountRecentLoginsByUser(hours int, userID string) (int64, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		since := time.Now().Add(-time.Duration(hours) * time.Hour)
@@ -478,7 +510,7 @@ func (r *SessionRepository) CountRecentLoginsByUser(hours int, userID string) (i
 }
 
 // CountTodayLoginsByUser 统计用户今日登录次数
-func (r *SessionRepository) CountTodayLoginsByUser(userID string) (int64, error) {
+func (r *sessionRepository) CountTodayLoginsByUser(userID string) (int64, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		today := time.Now().Truncate(24 * time.Hour)
@@ -494,7 +526,7 @@ func (r *SessionRepository) CountTodayLoginsByUser(userID string) (int64, error)
 }
 
 // UpdateSessionRecording 更新会话录制内容（兼容：payload 为 JSON 字节写入 recording 字段）
-func (r *SessionRepository) UpdateSessionRecording(sessionID string, recording []byte) error {
+func (r *sessionRepository) UpdateSessionRecording(sessionID string, recording []byte) error {
 	if r.useMongo {
 		ctx := context.Background()
 		_, err := r.mongoRecordings.UpdateOne(
@@ -509,7 +541,7 @@ func (r *SessionRepository) UpdateSessionRecording(sessionID string, recording [
 }
 
 // FindSessionRecordingBySessionID 按 session_id 查询一条录制
-func (r *SessionRepository) FindSessionRecordingBySessionID(sessionID string) (*model.SessionRecording, error) {
+func (r *sessionRepository) FindSessionRecordingBySessionID(sessionID string) (*model.SessionRecording, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		var rec model.SessionRecording
@@ -527,7 +559,7 @@ func (r *SessionRepository) FindSessionRecordingBySessionID(sessionID string) (*
 }
 
 // UpdateSessionRecordingFields 按 session_id 更新多个字段（map 值为 SQL 侧支持的类型）
-func (r *SessionRepository) UpdateSessionRecordingFields(sessionID string, fields map[string]interface{}) error {
+func (r *sessionRepository) UpdateSessionRecordingFields(sessionID string, fields map[string]interface{}) error {
 	if r.useMongo {
 		ctx := context.Background()
 		set := bson.M{}
@@ -542,7 +574,7 @@ func (r *SessionRepository) UpdateSessionRecordingFields(sessionID string, field
 }
 
 // UpdateLoginBySessionID 按 session_id 更新登录记录
-func (r *SessionRepository) UpdateLoginBySessionID(sessionID string, fields map[string]interface{}) error {
+func (r *sessionRepository) UpdateLoginBySessionID(sessionID string, fields map[string]interface{}) error {
 	if r.useMongo {
 		ctx := context.Background()
 		set := bson.M{}
@@ -556,7 +588,7 @@ func (r *SessionRepository) UpdateLoginBySessionID(sessionID string, fields map[
 }
 
 // UpdateLoginStatusBySessionID 仅更新登录状态（双引擎）
-func (r *SessionRepository) UpdateLoginStatusBySessionID(sessionID, status string) error {
+func (r *sessionRepository) UpdateLoginStatusBySessionID(sessionID, status string) error {
 	if r.useMongo {
 		ctx := context.Background()
 		_, err := r.mongoLogins.UpdateOne(ctx, bson.M{"session_id": sessionID}, bson.M{"$set": bson.M{"status": status}})
@@ -566,12 +598,12 @@ func (r *SessionRepository) UpdateLoginStatusBySessionID(sessionID, status strin
 }
 
 // IncrementSessionCommandCount 会话命令计数 +1
-func (r *SessionRepository) IncrementSessionCommandCount(sessionID string) error {
+func (r *sessionRepository) IncrementSessionCommandCount(sessionID string) error {
 	return r.IncrementSessionCommandCountBy(sessionID, 1)
 }
 
 // IncrementSessionCommandCountBy 会话命令计数 +delta
-func (r *SessionRepository) IncrementSessionCommandCountBy(sessionID string, delta int) error {
+func (r *sessionRepository) IncrementSessionCommandCountBy(sessionID string, delta int) error {
 	if delta == 0 {
 		return nil
 	}
@@ -586,7 +618,7 @@ func (r *SessionRepository) IncrementSessionCommandCountBy(sessionID string, del
 }
 
 // FindSessionRecordings 分页查询会话录制列表
-func (r *SessionRepository) FindSessionRecordings(page, pageSize int, search string) ([]model.SessionRecording, int64, error) {
+func (r *sessionRepository) FindSessionRecordings(page, pageSize int, search string) ([]model.SessionRecording, int64, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		filter := bson.M{}
@@ -650,7 +682,7 @@ func escapeRegex(s string) string {
 }
 
 // FindCommandRecords 分页查询命令记录
-func (r *SessionRepository) FindCommandRecords(page, pageSize int, search, hostFilter string) ([]model.CommandRecord, int64, error) {
+func (r *sessionRepository) FindCommandRecords(page, pageSize int, search, hostFilter string) ([]model.CommandRecord, int64, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		filter := bson.M{}
@@ -759,7 +791,7 @@ func commandRecordFromBSON(m bson.M) model.CommandRecord {
 }
 
 // FindCommandsBySession 查询某会话全部命令
-func (r *SessionRepository) FindCommandsBySession(sessionID string) ([]model.CommandRecord, error) {
+func (r *sessionRepository) FindCommandsBySession(sessionID string) ([]model.CommandRecord, error) {
 	if r.useMongo {
 		ctx := context.Background()
 		cur, err := r.mongoCommands.Find(ctx, bson.M{"session_id": sessionID}, options.Find().SetSort(bson.D{{Key: "executed_at", Value: 1}}))
@@ -783,7 +815,7 @@ func (r *SessionRepository) FindCommandsBySession(sessionID string) ([]model.Com
 }
 
 // CountCommandsBySessions 统计多个 session_id 的命令条数
-func (r *SessionRepository) CountCommandsBySessions(sessionIDs []string) (map[string]int, error) {
+func (r *sessionRepository) CountCommandsBySessions(sessionIDs []string) (map[string]int, error) {
 	out := make(map[string]int)
 	if len(sessionIDs) == 0 {
 		return out, nil
@@ -830,7 +862,7 @@ func (r *SessionRepository) CountCommandsBySessions(sessionIDs []string) (map[st
 }
 
 // UpsertLoginRecord 按 session_id upsert 登录记录（Proxy 上报）
-func (r *SessionRepository) UpsertLoginRecord(rec *model.LoginRecord) error {
+func (r *sessionRepository) UpsertLoginRecord(rec *model.LoginRecord) error {
 	if !r.useMongo {
 		var cur model.LoginRecord
 		err := r.db.Where("session_id = ?", rec.SessionID).First(&cur).Error
@@ -861,7 +893,7 @@ func (r *SessionRepository) UpsertLoginRecord(rec *model.LoginRecord) error {
 }
 
 // UpsertSessionRecording 按 session_id upsert 会话录制（Proxy 上报）
-func (r *SessionRepository) UpsertSessionRecording(rec *model.SessionRecording) error {
+func (r *sessionRepository) UpsertSessionRecording(rec *model.SessionRecording) error {
 	if !r.useMongo {
 		var cur model.SessionRecording
 		err := r.db.Where("session_id = ?", rec.SessionID).First(&cur).Error
@@ -899,7 +931,7 @@ func (r *SessionRepository) UpsertSessionRecording(rec *model.SessionRecording) 
 }
 
 // CreateCommandRecordBatch 批量插入命令（Mongo）；MySQL 走 GORM CreateInBatches
-func (r *SessionRepository) CreateCommandRecordBatch(records []model.CommandRecord) error {
+func (r *sessionRepository) CreateCommandRecordBatch(records []model.CommandRecord) error {
 	if len(records) == 0 {
 		return nil
 	}

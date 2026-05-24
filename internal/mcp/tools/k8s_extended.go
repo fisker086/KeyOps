@@ -26,7 +26,7 @@ import (
 )
 
 type K8sExtendedToolContext struct {
-	ClusterRepo *repository.K8sClusterRepository
+	ClusterRepo repository.K8sClusterRepository
 }
 
 func RegisterK8sExtendedTools(registry *mcp.Registry, ctx *K8sExtendedToolContext) {

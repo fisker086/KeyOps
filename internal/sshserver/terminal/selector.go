@@ -11,14 +11,14 @@ import (
 
 // HostSelector 主机选择器
 type HostSelector struct {
-	hostRepo       *repository.HostRepository
-	groupRepo      *repository.HostGroupRepository
-	userRepo       *repository.UserRepository
-	systemUserRepo *repository.SystemUserRepository // 新增：系统用户仓库（用于新权限架构）
+	hostRepo       repository.HostRepository
+	groupRepo      repository.HostGroupRepository
+	userRepo       repository.UserRepository
+	systemUserRepo repository.SystemUserRepository // 新增：系统用户仓库（用于新权限架构）
 }
 
 // NewHostSelector 创建主机选择器
-func NewHostSelector(hostRepo *repository.HostRepository) types.HostSelector {
+func NewHostSelector(hostRepo repository.HostRepository) types.HostSelector {
 	return &HostSelector{
 		hostRepo:  hostRepo,
 		groupRepo: nil, // 兼容性：可选
@@ -27,7 +27,7 @@ func NewHostSelector(hostRepo *repository.HostRepository) types.HostSelector {
 }
 
 // NewHostSelectorWithGroup 创建带分组支持的主机选择器
-func NewHostSelectorWithGroup(hostRepo *repository.HostRepository, groupRepo *repository.HostGroupRepository) types.HostSelector {
+func NewHostSelectorWithGroup(hostRepo repository.HostRepository, groupRepo repository.HostGroupRepository) types.HostSelector {
 	return &HostSelector{
 		hostRepo:  hostRepo,
 		groupRepo: groupRepo,
@@ -36,7 +36,7 @@ func NewHostSelectorWithGroup(hostRepo *repository.HostRepository, groupRepo *re
 }
 
 // NewHostSelectorWithPermissions 创建带权限控制的主机选择器
-func NewHostSelectorWithPermissions(hostRepo *repository.HostRepository, groupRepo *repository.HostGroupRepository, userRepo *repository.UserRepository) types.HostSelector {
+func NewHostSelectorWithPermissions(hostRepo repository.HostRepository, groupRepo repository.HostGroupRepository, userRepo repository.UserRepository) types.HostSelector {
 	return &HostSelector{
 		hostRepo:       hostRepo,
 		groupRepo:      groupRepo,
@@ -46,7 +46,7 @@ func NewHostSelectorWithPermissions(hostRepo *repository.HostRepository, groupRe
 }
 
 // NewHostSelectorV2 创建使用新权限架构的主机选择器
-func NewHostSelectorV2(hostRepo *repository.HostRepository, groupRepo *repository.HostGroupRepository, userRepo *repository.UserRepository, systemUserRepo *repository.SystemUserRepository) types.HostSelector {
+func NewHostSelectorV2(hostRepo repository.HostRepository, groupRepo repository.HostGroupRepository, userRepo repository.UserRepository, systemUserRepo repository.SystemUserRepository) types.HostSelector {
 	return &HostSelector{
 		hostRepo:       hostRepo,
 		groupRepo:      groupRepo,

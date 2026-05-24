@@ -59,7 +59,7 @@ type Handlers struct {
 	CloudAccount     *handler.CloudAccountHandler
 	Resources        *handler.ResourcesHandler
 	BillDashboard    *handler.BillDashboardHandler
-	FinOps           *handler.FinOpsHandler
+
 	Monitor          *handler.MonitorHandler
 	Organization     *handler.OrganizationHandler
 	Application          *handler.ApplicationHandler
@@ -167,7 +167,7 @@ func InitializeHandlers(
 	cloudAccountHandler := handler.NewCloudAccountHandler(services.Bill)
 	resourcesHandler := handler.NewResourcesHandler(services.Bill)
 	billDashboardHandler := handler.NewBillDashboardHandler(services.Bill)
-	finOpsHandler := handler.NewFinOpsHandler(services.Bill)
+
 	monitorHandler := handler.NewMonitorHandler(services.Monitor)
 	organizationHandler := handler.NewOrganizationHandler(repos.Organization)
 	applicationHandler := handler.NewApplicationHandler(repos.Application)
@@ -276,7 +276,7 @@ func InitializeHandlers(
 		CloudAccount:     cloudAccountHandler,
 		Resources:        resourcesHandler,
 		BillDashboard:   billDashboardHandler,
-		FinOps:          finOpsHandler,
+
 		Monitor:          monitorHandler,
 		Organization:     organizationHandler,
 		Application:          applicationHandler,

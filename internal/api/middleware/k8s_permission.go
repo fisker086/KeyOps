@@ -17,7 +17,7 @@ import (
 // K8sPermissionMiddleware K8s资源权限中间件
 // 检查用户是否有权限访问指定的K8s资源
 // 使用统一的 Casbin 权限系统，权限存储在 casbin_rule 表中
-func K8sPermissionMiddleware(permissionService *k8sService.K8sPermissionService, roleRepo *repository.RoleRepository) gin.HandlerFunc {
+func K8sPermissionMiddleware(permissionService *k8sService.K8sPermissionService, roleRepo repository.RoleRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// WebSocket 请求跳过权限中间件，由 handler 自己处理权限验证
 		if strings.Contains(c.Request.URL.Path, "/ws/") {
@@ -159,7 +159,7 @@ func K8sPermissionMiddleware(permissionService *k8sService.K8sPermissionService,
 		// 优先级1: 检查用户直接权限
 		hasPermission, err := permissionService.CheckPermission(userIDStr, clusterID, namespace, resourceType, resourceName, action)
 		if err != nil {
-			logger.Errorf("用户权限检查失败: %v", err)
+			logger.Errorf("[K8sPerm] 用户权限检查失败: user=%s cluster=%s err=%v", userIDStr, clusterID, err)
 			c.JSON(http.StatusInternalServerError, model.Error(500, "权限检查失败"))
 			c.Abort()
 			return
@@ -170,7 +170,7 @@ func K8sPermissionMiddleware(permissionService *k8sService.K8sPermissionService,
 			for _, role := range roles {
 				hasPermission, err = permissionService.CheckPermission(role.ID, clusterID, namespace, resourceType, resourceName, action)
 				if err != nil {
-					logger.Warnf("角色权限检查失败: %v", err)
+					logger.Warnf("[K8sPerm] 角色权限检查失败: role=%s err=%v", role.ID, err)
 					continue
 				}
 				if hasPermission {
@@ -179,8 +179,8 @@ func K8sPermissionMiddleware(permissionService *k8sService.K8sPermissionService,
 			}
 		}
 
-		// 管理员也按权限管理控制，不特殊对待
 		if !hasPermission {
+			logger.Warnf("[K8sPerm] 权限拒绝: user=%s cluster=%s path=%s", userIDStr, clusterID, c.Request.URL.Path)
 			c.JSON(http.StatusForbidden, model.Error(403, "没有访问该资源的权限"))
 			c.Abort()
 			return

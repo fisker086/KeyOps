@@ -15,11 +15,11 @@ import (
 // ProxyHandler Proxy处理器
 type ProxyHandler struct {
 	db          *gorm.DB
-	sessionRepo *repository.SessionRepository
+	sessionRepo repository.SessionRepository
 }
 
 // NewProxyHandler 创建Proxy处理器（sessionRepo 用于堡垒机 Mongo 双引擎）
-func NewProxyHandler(db *gorm.DB, sessionRepo *repository.SessionRepository) *ProxyHandler {
+func NewProxyHandler(db *gorm.DB, sessionRepo repository.SessionRepository) *ProxyHandler {
 	return &ProxyHandler{db: db, sessionRepo: sessionRepo}
 }
 

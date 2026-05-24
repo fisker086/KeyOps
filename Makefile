@@ -2,9 +2,7 @@
 
 # 变量定义
 BINARY_API=bin/api-server
-BINARY_AGENT=bin/proxy-agent
 CMD_API=cmd/api-server/main.go
-CMD_AGENT=cmd/proxy-agent/main.go
 GOBIN=$(shell go env GOPATH)/bin
 
 # 默认目标
@@ -20,12 +18,7 @@ build-api: bin
 	@go build -o $(BINARY_API) $(CMD_API)
 	@echo "✅ API Server built: $(BINARY_API)"
 
-build-agent: bin
-	@echo "🔨 Building Proxy Agent..."
-	@go build -o $(BINARY_AGENT) $(CMD_AGENT)
-	@echo "✅ Proxy Agent built: $(BINARY_AGENT)"
-
-build: build-api build-agent
+build: build-api
 	@echo "✅ All services built"
 
 # ==================== 运行 ====================
@@ -161,7 +154,6 @@ help:
 	@echo "🔨 编译:"
 	@echo "  make build         - 编译所有服务"
 	@echo "  make build-api     - 编译 API Server"
-	@echo "  make build-agent   - 编译 Proxy Agent"
 	@echo ""
 	@echo "🚀 运行:"
 	@echo "  make run-api       - 运行 API Server"

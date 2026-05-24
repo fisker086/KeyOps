@@ -8,13 +8,36 @@ import (
 )
 
 // HostGroupRepository 主机分组仓库
-type HostGroupRepository struct {
+type HostGroupRepository interface {
+	Create(group *model.HostGroup) error
+	FindByID(id string) (*model.HostGroup, error)
+	FindByName(name string) (*model.HostGroup, error)
+	FindAll() ([]model.HostGroup, error)
+	FindAllWithStats() ([]model.HostGroup, error)
+	Update(group *model.HostGroup) error
+	Delete(id string) error
+	AddHostToGroup(groupID, hostID, addedBy string) error
+	RemoveHostFromGroup(groupID, hostID string) error
+	AddHostsToGroup(groupID string, hostIDs []string, addedBy string) error
+	RemoveHostsFromGroup(groupID string, hostIDs []string) error
+	GetHostsByGroupID(groupID string) ([]model.Host, error)
+	GetHostsByGroupIDWithPagination(groupID string, page, pageSize int) ([]model.Host, int64, error)
+	GetGroupsByHostID(hostID string) ([]model.HostGroup, error)
+	IsHostInGroup(groupID, hostID string) (bool, error)
+	GetGroupStatistics(groupID string) (*model.HostGroupStatistics, error)
+	SearchHostsInGroup(groupID, keyword string) ([]model.Host, error)
+	GetDB() *gorm.DB
+	BatchUpdateSortOrder(updates map[string]int) error
+	MoveHostsBetweenGroups(fromGroupID, toGroupID string, hostIDs []string, movedBy string) error
+}
+
+type hostGroupRepository struct {
 	db *gorm.DB
 }
 
 // NewHostGroupRepository 创建主机分组仓库
-func NewHostGroupRepository(db *gorm.DB) *HostGroupRepository {
-	return &HostGroupRepository{db: db}
+func NewHostGroupRepository(db *gorm.DB) HostGroupRepository {
+	return &hostGroupRepository{db: db}
 }
 
 // ============================================================================
@@ -22,12 +45,12 @@ func NewHostGroupRepository(db *gorm.DB) *HostGroupRepository {
 // ============================================================================
 
 // Create 创建分组
-func (r *HostGroupRepository) Create(group *model.HostGroup) error {
+func (r *hostGroupRepository) Create(group *model.HostGroup) error {
 	return r.db.Create(group).Error
 }
 
 // FindByID 根据ID查询分组
-func (r *HostGroupRepository) FindByID(id string) (*model.HostGroup, error) {
+func (r *hostGroupRepository) FindByID(id string) (*model.HostGroup, error) {
 	var group model.HostGroup
 	err := r.db.Where("id = ?", id).First(&group).Error
 	if err != nil {
@@ -37,7 +60,7 @@ func (r *HostGroupRepository) FindByID(id string) (*model.HostGroup, error) {
 }
 
 // FindByName 根据名称查询分组
-func (r *HostGroupRepository) FindByName(name string) (*model.HostGroup, error) {
+func (r *hostGroupRepository) FindByName(name string) (*model.HostGroup, error) {
 	var group model.HostGroup
 	err := r.db.Where("name = ?", name).First(&group).Error
 	if err != nil {
@@ -47,14 +70,14 @@ func (r *HostGroupRepository) FindByName(name string) (*model.HostGroup, error) 
 }
 
 // FindAll 查询所有分组
-func (r *HostGroupRepository) FindAll() ([]model.HostGroup, error) {
+func (r *hostGroupRepository) FindAll() ([]model.HostGroup, error) {
 	var groups []model.HostGroup
 	err := r.db.Order("sort_order ASC, name ASC").Find(&groups).Error
 	return groups, err
 }
 
 // FindAllWithStats 查询所有分组并带统计信息
-func (r *HostGroupRepository) FindAllWithStats() ([]model.HostGroup, error) {
+func (r *hostGroupRepository) FindAllWithStats() ([]model.HostGroup, error) {
 	var groups []model.HostGroup
 
 	// 查询所有分组
@@ -83,12 +106,12 @@ func (r *HostGroupRepository) FindAllWithStats() ([]model.HostGroup, error) {
 }
 
 // Update 更新分组
-func (r *HostGroupRepository) Update(group *model.HostGroup) error {
+func (r *hostGroupRepository) Update(group *model.HostGroup) error {
 	return r.db.Save(group).Error
 }
 
 // Delete 删除分组
-func (r *HostGroupRepository) Delete(id string) error {
+func (r *hostGroupRepository) Delete(id string) error {
 	return r.db.Where("id = ?", id).Delete(&model.HostGroup{}).Error
 }
 
@@ -97,7 +120,7 @@ func (r *HostGroupRepository) Delete(id string) error {
 // ============================================================================
 
 // AddHostToGroup 添加主机到分组
-func (r *HostGroupRepository) AddHostToGroup(groupID, hostID, addedBy string) error {
+func (r *hostGroupRepository) AddHostToGroup(groupID, hostID, addedBy string) error {
 	member := &model.HostGroupMember{
 		GroupID: groupID,
 		HostID:  hostID,
@@ -107,13 +130,13 @@ func (r *HostGroupRepository) AddHostToGroup(groupID, hostID, addedBy string) er
 }
 
 // RemoveHostFromGroup 从分组移除主机
-func (r *HostGroupRepository) RemoveHostFromGroup(groupID, hostID string) error {
+func (r *hostGroupRepository) RemoveHostFromGroup(groupID, hostID string) error {
 	return r.db.Where("group_id = ? AND host_id = ?", groupID, hostID).
 		Delete(&model.HostGroupMember{}).Error
 }
 
 // AddHostsToGroup 批量添加主机到分组
-func (r *HostGroupRepository) AddHostsToGroup(groupID string, hostIDs []string, addedBy string) error {
+func (r *hostGroupRepository) AddHostsToGroup(groupID string, hostIDs []string, addedBy string) error {
 	// 检查哪些主机已经在分组中
 	var existingMembers []model.HostGroupMember
 	if err := r.db.Where("group_id = ? AND host_id IN ?", groupID, hostIDs).
@@ -148,13 +171,13 @@ func (r *HostGroupRepository) AddHostsToGroup(groupID string, hostIDs []string, 
 }
 
 // RemoveHostsFromGroup 批量从分组移除主机
-func (r *HostGroupRepository) RemoveHostsFromGroup(groupID string, hostIDs []string) error {
+func (r *hostGroupRepository) RemoveHostsFromGroup(groupID string, hostIDs []string) error {
 	return r.db.Where("group_id = ? AND host_id IN ?", groupID, hostIDs).
 		Delete(&model.HostGroupMember{}).Error
 }
 
 // GetHostsByGroupID 获取分组中的所有主机
-func (r *HostGroupRepository) GetHostsByGroupID(groupID string) ([]model.Host, error) {
+func (r *hostGroupRepository) GetHostsByGroupID(groupID string) ([]model.Host, error) {
 	var hosts []model.Host
 
 	err := r.db.Table("hosts").
@@ -167,7 +190,7 @@ func (r *HostGroupRepository) GetHostsByGroupID(groupID string) ([]model.Host, e
 }
 
 // GetHostsByGroupIDWithPagination 分页获取分组中的主机
-func (r *HostGroupRepository) GetHostsByGroupIDWithPagination(groupID string, page, pageSize int) ([]model.Host, int64, error) {
+func (r *hostGroupRepository) GetHostsByGroupIDWithPagination(groupID string, page, pageSize int) ([]model.Host, int64, error) {
 	var hosts []model.Host
 	var total int64
 
@@ -188,7 +211,7 @@ func (r *HostGroupRepository) GetHostsByGroupIDWithPagination(groupID string, pa
 }
 
 // GetGroupsByHostID 获取主机所属的所有分组
-func (r *HostGroupRepository) GetGroupsByHostID(hostID string) ([]model.HostGroup, error) {
+func (r *hostGroupRepository) GetGroupsByHostID(hostID string) ([]model.HostGroup, error) {
 	var groups []model.HostGroup
 
 	err := r.db.Table("host_groups").
@@ -201,7 +224,7 @@ func (r *HostGroupRepository) GetGroupsByHostID(hostID string) ([]model.HostGrou
 }
 
 // IsHostInGroup 检查主机是否在分组中
-func (r *HostGroupRepository) IsHostInGroup(groupID, hostID string) (bool, error) {
+func (r *hostGroupRepository) IsHostInGroup(groupID, hostID string) (bool, error) {
 	var count int64
 	err := r.db.Model(&model.HostGroupMember{}).
 		Where("group_id = ? AND host_id = ?", groupID, hostID).
@@ -210,7 +233,7 @@ func (r *HostGroupRepository) IsHostInGroup(groupID, hostID string) (bool, error
 }
 
 // GetGroupStatistics 获取分组统计信息
-func (r *HostGroupRepository) GetGroupStatistics(groupID string) (*model.HostGroupStatistics, error) {
+func (r *hostGroupRepository) GetGroupStatistics(groupID string) (*model.HostGroupStatistics, error) {
 	var stats model.HostGroupStatistics
 
 	// 获取分组名称
@@ -241,7 +264,7 @@ func (r *HostGroupRepository) GetGroupStatistics(groupID string) (*model.HostGro
 }
 
 // SearchHostsInGroup 在分组中搜索主机
-func (r *HostGroupRepository) SearchHostsInGroup(groupID, keyword string) ([]model.Host, error) {
+func (r *hostGroupRepository) SearchHostsInGroup(groupID, keyword string) ([]model.Host, error) {
 	var hosts []model.Host
 
 	query := r.db.Table("hosts").
@@ -258,7 +281,7 @@ func (r *HostGroupRepository) SearchHostsInGroup(groupID, keyword string) ([]mod
 }
 
 // GetDB 获取数据库连接（供其他需要的地方使用）
-func (r *HostGroupRepository) GetDB() *gorm.DB {
+func (r *hostGroupRepository) GetDB() *gorm.DB {
 	return r.db
 }
 
@@ -267,7 +290,7 @@ func (r *HostGroupRepository) GetDB() *gorm.DB {
 // ============================================================================
 
 // BatchUpdateSortOrder 批量更新分组排序
-func (r *HostGroupRepository) BatchUpdateSortOrder(updates map[string]int) error {
+func (r *hostGroupRepository) BatchUpdateSortOrder(updates map[string]int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for groupID, sortOrder := range updates {
 			if err := tx.Model(&model.HostGroup{}).
@@ -281,7 +304,7 @@ func (r *HostGroupRepository) BatchUpdateSortOrder(updates map[string]int) error
 }
 
 // MoveHostsBetweenGroups 在分组间移动主机
-func (r *HostGroupRepository) MoveHostsBetweenGroups(fromGroupID, toGroupID string, hostIDs []string, movedBy string) error {
+func (r *hostGroupRepository) MoveHostsBetweenGroups(fromGroupID, toGroupID string, hostIDs []string, movedBy string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 从原分组移除
 		if err := tx.Where("group_id = ? AND host_id IN ?", fromGroupID, hostIDs).

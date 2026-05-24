@@ -1,4 +1,4 @@
-package auth
+package bastion
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 )
 
 type HostService struct {
-	repo *repository.HostRepository
+	repo repository.HostRepository
 }
 
-func NewHostService(repo *repository.HostRepository) *HostService {
+func NewHostService(repo repository.HostRepository) *HostService {
 	return &HostService{repo: repo}
 }
 

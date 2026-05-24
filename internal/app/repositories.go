@@ -11,62 +11,62 @@ import (
 
 // Repositories 包含所有 Repository 实例
 type Repositories struct {
-	ApiKey           *repository.ApiKeyRepository
-	RefreshToken     *repository.RefreshTokenRepository
-	Host             *repository.HostRepository
-	Session          *repository.SessionRepository
-	User             *repository.UserRepository
-	Setting          *repository.SettingRepository
-	Proxy            *repository.ProxyRepository
-	Role             *repository.RoleRepository
-	SystemUser       *repository.SystemUserRepository
-	HostGroup        *repository.HostGroupRepository
-	PermissionRule   *repository.PermissionRuleRepository
-	Menu             *repository.MenuRepository
-	API              *repository.APIRepository
-	AssetSync        *repository.AssetSyncRepository
-	K8sCluster       *repository.K8sClusterRepository
-	Deployment       *repository.DeploymentRepository
-	Bill             *repository.BillRepository
-	CloudAccount     *repository.CloudAccountRepository  // 新增：云账户仓库
-	Monitor          *repository.MonitorRepository
-	Organization     *repository.OrganizationRepository
-	Application          *repository.ApplicationRepository
-	AppDeployBinding     *repository.ApplicationDeployBindingRepository
-	Jenkins              *repository.JenkinsRepository
-	AlertRuleGroup       *repository.AlertRuleGroupRepository
-	AlertRuleSource  *repository.AlertRuleSourceRepository
-	AlertRule        *repository.AlertRuleRepository
-	AlertEvent       *repository.AlertEventRepository
-	AlertLog         *repository.AlertLogRepository
-	AlertStrategy    *repository.AlertStrategyRepository
-	AlertLevel       *repository.AlertLevelRepository
-	AlertAggregation *repository.AlertAggregationRepository
-	AlertSilence     *repository.AlertSilenceRepository
-	AlertRestrain    *repository.AlertRestrainRepository
-	AlertTemplate    *repository.AlertTemplateRepository
-	AlertChannel     *repository.AlertChannelRepository
-	AlertGroup       *repository.AlertGroupRepository
-	ChannelTemplate  *repository.ChannelTemplateRepository
-	StrategyLog      *repository.StrategyLogRepository
-	OnCallSchedule   *repository.OnCallScheduleRepository
-	OnCallShift      *repository.OnCallShiftRepository
-	OnCallAssignment *repository.OnCallAssignmentRepository
-	DBInstance            *repository.DBInstanceRepository
-	QueryLog              *repository.QueryLogRepository
-	DBPermission          *repository.DBPermissionRepository
-	DomainCertificate     *repository.DomainCertificateRepository
-	SSLCertificate        *repository.SSLCertificateRepository
-	HostedCertificate     *repository.HostedCertificateRepository
-	ReleaseRun            *repository.ReleaseRunRepository
-	ReleasePipelineDef    *repository.ReleasePipelineDefinitionRepository
-	BuildMaster           *repository.BuildMasterRepository
+	ApiKey           repository.ApiKeyRepository
+	RefreshToken     repository.RefreshTokenRepository
+	Host             repository.HostRepository
+	Session          repository.SessionRepository
+	User             repository.UserRepository
+	Setting          repository.SettingRepository
+	Proxy            repository.ProxyRepository
+	Role             repository.RoleRepository
+	SystemUser       repository.SystemUserRepository
+	HostGroup        repository.HostGroupRepository
+	PermissionRule   repository.PermissionRuleRepository
+	Menu             repository.MenuRepository
+	API              repository.APIRepository
+	AssetSync        repository.AssetSyncRepository
+	K8sCluster       repository.K8sClusterRepository
+	Deployment       repository.DeploymentRepository
+	Bill             repository.BillRepository
+	CloudAccount     repository.CloudAccountRepository
+	Monitor          repository.MonitorRepository
+	Organization     repository.OrganizationRepository
+	Application          repository.ApplicationRepository
+	AppDeployBinding     repository.ApplicationDeployBindingRepository
+	Jenkins              repository.JenkinsRepository
+	AlertRuleGroup       repository.AlertRuleGroupRepository
+	AlertRuleSource  repository.AlertRuleSourceRepository
+	AlertRule        repository.AlertRuleRepository
+	AlertEvent       repository.AlertEventRepository
+	AlertLog         repository.AlertLogRepository
+	AlertStrategy    repository.AlertStrategyRepository
+	AlertLevel       repository.AlertLevelRepository
+	AlertAggregation repository.AlertAggregationRepository
+	AlertSilence     repository.AlertSilenceRepository
+	AlertRestrain    repository.AlertRestrainRepository
+	AlertTemplate    repository.AlertTemplateRepository
+	AlertChannel     repository.AlertChannelRepository
+	AlertGroup       repository.AlertGroupRepository
+	ChannelTemplate  repository.ChannelTemplateRepository
+	StrategyLog      repository.StrategyLogRepository
+	OnCallSchedule   repository.OnCallScheduleRepository
+	OnCallShift      repository.OnCallShiftRepository
+	OnCallAssignment repository.OnCallAssignmentRepository
+	DBInstance            repository.DBInstanceRepository
+	QueryLog              repository.QueryLogRepository
+	DBPermission          repository.DBPermissionRepository
+	DomainCertificate     repository.DomainCertificateRepository
+	SSLCertificate        repository.SSLCertificateRepository
+	HostedCertificate     repository.HostedCertificateRepository
+	ReleaseRun            repository.ReleaseRunRepository
+	ReleasePipelineDef    repository.ReleasePipelineDefinitionRepository
+	BuildMaster           repository.BuildMasterRepository
 }
 
 // InitializeRepositories 初始化所有 Repository（根据配置选择存储引擎）
 func InitializeRepositories(cfg *config.Config, bastionMongo *mongo.Client) *Repositories {
 	cfg.BastionStorage.SetDefaults()
-	var sessionRepo *repository.SessionRepository
+	var sessionRepo repository.SessionRepository
 	if cfg.BastionStorage.GetEngine() == "mongodb" && bastionMongo != nil {
 		dbName := cfg.BastionStorage.MongoDB.Database
 		logins := cfg.BastionStorage.MongoDB.CollectionLogins
