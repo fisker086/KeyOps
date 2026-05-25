@@ -43,11 +43,8 @@ var (
 // Bastion services
 type HostService = bastionService.HostService
 type SessionService = bastionService.SessionService
-type SessionToken = bastionService.SessionToken
-
 var NewHostService = bastionService.NewHostService
 var NewSessionService = bastionService.NewSessionService
-var ValidateSessionToken = bastionService.ValidateSessionToken
 
 // K8s services
 type K8sService = k8sService.K8sService

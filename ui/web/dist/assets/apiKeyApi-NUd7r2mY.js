@@ -1,1 +1,0 @@
-import{U as t}from"./index-CynIT_al.js";const i={list:async()=>(await t.get("/api/api-keys")).data.data,create:async a=>(await t.post("/api/api-keys",a)).data.data,revoke:async a=>{await t.delete(`/api/api-keys/${a}`)},listTools:async()=>(await t.get("/api/mcp/tools")).data.data};export{i as a};

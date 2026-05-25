@@ -2,7 +2,9 @@ package system
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +18,7 @@ import (
 	pkgconfig "github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/distributed"
 	pkgredis "github.com/fisker086/keyops/pkg/redis"
+	"github.com/go-ldap/ldap/v3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -360,8 +363,58 @@ func (h *SettingHandler) TestLDAPConnection(c *gin.Context) {
 		return
 	}
 
-	// TODO: 实现真实的 LDAP 连接测试
-	// 这里先返回成功，实际应该使用 go-ldap 库测试连接
+	timeout := request.Timeout
+	if timeout <= 0 {
+		timeout = 5
+	}
+
+	server := strings.TrimSpace(request.Server)
+	if !strings.HasPrefix(server, "ldap://") && !strings.HasPrefix(server, "ldaps://") {
+		scheme := "ldap://"
+		if request.EnableSSL {
+			scheme = "ldaps://"
+		}
+		server = scheme + server
+	}
+
+	dialer := &net.Dialer{Timeout: time.Duration(timeout) * time.Second}
+	conn, err := ldap.DialURL(server, ldap.DialWithDialer(dialer))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "LDAP连接失败: "+err.Error()))
+		return
+	}
+	defer conn.Close()
+
+	conn.SetTimeout(time.Duration(timeout) * time.Second)
+
+	if request.EnableTLS && !strings.HasPrefix(server, "ldaps://") {
+		if err := conn.StartTLS(&tls.Config{InsecureSkipVerify: true}); err != nil { // #nosec G402
+			c.JSON(http.StatusBadRequest, model.Error(400, "LDAP StartTLS 失败: "+err.Error()))
+			return
+		}
+	}
+
+	if err := conn.Bind(request.BindDN, request.BindPassword); err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "LDAP绑定失败: "+err.Error()))
+		return
+	}
+
+	// 执行一次最小查询验证 baseDN 可用。
+	searchReq := ldap.NewSearchRequest(
+		request.BaseDN,
+		ldap.ScopeBaseObject,
+		ldap.NeverDerefAliases,
+		1,
+		3,
+		false,
+		"(objectClass=*)",
+		[]string{"dn"},
+		nil,
+	)
+	if _, err := conn.Search(searchReq); err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "LDAP查询失败: "+err.Error()))
+		return
+	}
 
 	c.JSON(http.StatusOK, model.Response{
 		Code:    0,
@@ -389,8 +442,54 @@ func (h *SettingHandler) TestSSOConnection(c *gin.Context) {
 		return
 	}
 
-	// TODO: 实现真实的 SSO 配置测试
-	// 这里先返回成功，实际应该测试 OAuth2/OIDC 端点的可用性
+	if _, err := url.ParseRequestURI(request.AuthURL); err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "AuthURL 无效: "+err.Error()))
+		return
+	}
+	if _, err := url.ParseRequestURI(request.TokenURL); err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "TokenURL 无效: "+err.Error()))
+		return
+	}
+	if request.UserInfoURL != "" {
+		if _, err := url.ParseRequestURI(request.UserInfoURL); err != nil {
+			c.JSON(http.StatusBadRequest, model.Error(400, "UserInfoURL 无效: "+err.Error()))
+			return
+		}
+	}
+
+	client := &http.Client{Timeout: 8 * time.Second}
+	checkEndpoint := func(method string, endpoint string) error {
+		req, err := http.NewRequest(method, endpoint, nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("User-Agent", "keyops-sso-validator/1.0")
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 500 {
+			return fmt.Errorf("endpoint 返回状态码 %d", resp.StatusCode)
+		}
+		return nil
+	}
+
+	// 授权端点通常支持 GET；token 端点通常要求 POST（未带参数可能返回 400，视为可达）。
+	if err := checkEndpoint(http.MethodGet, request.AuthURL); err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "AuthURL 不可用: "+err.Error()))
+		return
+	}
+	if err := checkEndpoint(http.MethodPost, request.TokenURL); err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "TokenURL 不可用: "+err.Error()))
+		return
+	}
+	if request.UserInfoURL != "" {
+		if err := checkEndpoint(http.MethodGet, request.UserInfoURL); err != nil {
+			c.JSON(http.StatusBadRequest, model.Error(400, "UserInfoURL 不可用: "+err.Error()))
+			return
+		}
+	}
 
 	c.JSON(http.StatusOK, model.Response{
 		Code:    0,

@@ -193,12 +193,20 @@ func registerOps(
 		ticketDrafts.DELETE("/:id", ticketDraftHandler.DeleteDraft)
 	}
 
-	authenticated.GET("/workflow", workflowHandler.GetWorkflow)
-	authenticated.POST("/workflow", workflowHandler.CreateWorkflow)
-	authenticated.PUT("/workflow", workflowHandler.UpdateWorkflow)
-	authenticated.GET("/workflow_draft", workflowHandler.ListDrafts)
-	authenticated.POST("/workflow_draft", workflowHandler.SaveDraft)
-	authenticated.PUT("/workflow_draft", workflowHandler.SaveDraft)
-	authenticated.DELETE("/workflow_draft", workflowHandler.DeleteDraft)
+	workflow := authenticated.Group("/workflow")
+	{
+		workflow.GET("", workflowHandler.GetWorkflow)
+		workflow.POST("", workflowHandler.CreateWorkflow)
+		workflow.PUT("", workflowHandler.UpdateWorkflow)
+	}
+
+	workflowDraft := authenticated.Group("/workflow_draft")
+	{
+		workflowDraft.GET("", workflowHandler.ListDrafts)
+		workflowDraft.POST("", workflowHandler.SaveDraft)
+		workflowDraft.PUT("", workflowHandler.SaveDraft)
+		workflowDraft.DELETE("", workflowHandler.DeleteDraft)
+	}
+
 	authenticated.GET("/workflow_step_notify", workflowHandler.ListStepNotify)
 }

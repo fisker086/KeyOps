@@ -23,26 +23,13 @@ func Setup(d Deps) *gin.Engine {
 	r.GET("/ws/connect", h.Connection.HandleConnection)
 
 	api := r.Group("/api")
-	registerPublic(api, h.Auth, h.Setting, h.Release, h.Proxy, h.Blacklist, h.Session)
+	registerPublic(api, h.Auth, h.Setting, h.Release)
 
 	authenticated := api.Group("")
 	authenticated.Use(middleware.AuthMiddleware(s.Auth))
 	{
-		registerCore(
-			authenticated,
-			h.ApiKey,
-			h.Host,
-			h.Dashboard,
-			h.Session,
-			h.Proxy,
-			h.Auth,
-			h.Blacklist,
-			h.Setting,
-			h.Routing,
-			h.HostGroup,
-			h.File,
-			h.TwoFactor,
-		)
+		registerAuthCore(authenticated, h.ApiKey, h.Auth, h.Setting, h.TwoFactor)
+		registerBastionCore(authenticated, h.Host, h.Dashboard, h.Session, h.Blacklist, h.Routing, h.HostGroup, h.File)
 		registerOps(
 			authenticated,
 			h.Approval,
@@ -85,7 +72,9 @@ func Setup(d Deps) *gin.Engine {
 		registerBill(authenticated, h.Bill, h.ExpensesMap, h.CloudAccount, h.Resources, h.BillDashboard)
 	}
 
-	registerInfra(r, api, authenticated, d)
+	registerMCP(r, api, authenticated, d)
+	registerCallbacks(api, d)
+	registerInfra(r, api, d)
 
 	return r
 }

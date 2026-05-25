@@ -9,12 +9,11 @@ import (
 	"github.com/fisker086/keyops/internal/aiassistant/tools/k8s"
 	"github.com/fisker086/keyops/internal/api/handler"
 	"github.com/fisker086/keyops/internal/approval"
+	"github.com/fisker086/keyops/internal/audit"
 	"github.com/fisker086/keyops/internal/mcp"
 	mcpTools "github.com/fisker086/keyops/internal/mcp/tools"
-	"github.com/fisker086/keyops/internal/audit"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/notification"
-	"github.com/fisker086/keyops/internal/routing"
 	"github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/database"
 	"github.com/fisker086/keyops/pkg/logger"
@@ -28,7 +27,6 @@ type Handlers struct {
 	Host             *handler.HostHandler
 	Dashboard        *handler.DashboardHandler
 	Session          *handler.SessionHandler
-	Proxy            *handler.ProxyHandler
 	Auth             *handler.AuthHandler
 	Blacklist        *handler.BlacklistHandler
 	Setting          *handler.SettingHandler
@@ -54,7 +52,7 @@ type Handlers struct {
 	K8sPermission    *handler.K8sPermissionHandler
 	K8sSearch        *handler.K8sSearchHandler
 	Deployment       *handler.DeploymentHandler
-	Bill             *handler.BillHandler  // 合并后的账单处理器
+	Bill             *handler.BillHandler // 合并后的账单处理器
 	ExpensesMap      *handler.ExpensesMapHandler
 	CloudAccount     *handler.CloudAccountHandler
 	Resources        *handler.ResourcesHandler
@@ -62,11 +60,11 @@ type Handlers struct {
 
 	Monitor          *handler.MonitorHandler
 	Organization     *handler.OrganizationHandler
-	Application          *handler.ApplicationHandler
-	AppDeployBinding     *handler.AppDeployBindingHandler
-	Registry             *handler.RegistryHandler
-	Jenkins              *handler.JenkinsHandler
-	Audit                *handler.AuditHandler
+	Application      *handler.ApplicationHandler
+	AppDeployBinding *handler.AppDeployBindingHandler
+	Registry         *handler.RegistryHandler
+	Jenkins          *handler.JenkinsHandler
+	Audit            *handler.AuditHandler
 	Alert            *handler.AlertHandler
 	OnCall           *handler.OnCallHandler
 	DMSInstance      *handler.DMSInstanceHandler
@@ -90,13 +88,6 @@ func InitializeHandlers(
 	st := audit.NewWebShellStorageAdapter(unifiedAuditor)
 	logger.Infof("WebShell Storage Adapter created")
 
-	// Initialize connection router
-	connectionRouter := routing.NewConnectionRouter(
-		repos.Host,
-		repos.Proxy,
-		repos.Setting,
-	)
-
 	// Initialize approval factory
 	approvalFactory := approval.NewFactory()
 	loadApprovalProviders(database.DB, approvalFactory)
@@ -117,7 +108,7 @@ func InitializeHandlers(
 		K8sClusterRepo: repos.K8sCluster,
 	})
 	mcpTools.RegisterBillTools(mcpServer.Registry(), &mcpTools.BillToolContext{
-		BillRepo:    repos.Bill,
+		BillRepo:     repos.Bill,
 		CloudAccRepo: repos.CloudAccount,
 	})
 	mcpHandler := mcp.NewHandler(mcpServer)
@@ -126,13 +117,11 @@ func InitializeHandlers(
 	hostHandler := handler.NewHostHandler(services.Host)
 	dashboardHandler := handler.NewDashboardHandler(services.Host, services.Session)
 	sessionHandler := handler.NewSessionHandler(services.Session)
-	proxyHandler := handler.NewProxyHandler(database.DB, repos.Session)
 	authHandler := handler.NewAuthHandler(services.Auth, repos.Setting, repos.Role)
 	blacklistHandler := handler.NewBlacklistHandler(database.DB)
 	settingHandler := handler.NewSettingHandler(repos.Setting, notificationMgr)
-	routingHandler := handler.NewRoutingHandler(connectionRouter, repos.Setting, repos.Host, repos.Proxy)
+	routingHandler := handler.NewRoutingHandler(repos.Host)
 	connectionHandler := handler.NewConnectionHandler(
-		connectionRouter,
 		repos.Host,
 		services.Auth,
 		st,
@@ -162,7 +151,7 @@ func InitializeHandlers(
 	k8sPermissionHandler := handler.NewK8sPermissionHandler(services.K8sPermission, services.K8sCluster, repos.Role)
 	k8sSearchHandler := handler.NewK8sSearchHandler(services.K8sCluster, services.K8s, services.K8sPermission, repos.Role)
 	deploymentHandler := handler.NewDeploymentHandler(services.Deployment, services.K8sPermission, repos.Role)
-	billHandler := handler.NewBillHandler(services.Bill)  // 合并后的账单处理器
+	billHandler := handler.NewBillHandler(services.Bill) // 合并后的账单处理器
 	expensesMapHandler := handler.NewExpensesMapHandler(services.Bill)
 	cloudAccountHandler := handler.NewCloudAccountHandler(services.Bill)
 	resourcesHandler := handler.NewResourcesHandler(services.Bill)
@@ -240,12 +229,11 @@ func InitializeHandlers(
 	}
 
 	return &Handlers{
-		Mcp:             mcpHandler,
-		ApiKey:          handler.NewApiKeyHandler(services.ApiKey),
-		Host:            hostHandler,
+		Mcp:              mcpHandler,
+		ApiKey:           handler.NewApiKeyHandler(services.ApiKey),
+		Host:             hostHandler,
 		Dashboard:        dashboardHandler,
 		Session:          sessionHandler,
-		Proxy:            proxyHandler,
 		Auth:             authHandler,
 		Blacklist:        blacklistHandler,
 		Setting:          settingHandler,
@@ -271,19 +259,19 @@ func InitializeHandlers(
 		K8sPermission:    k8sPermissionHandler,
 		K8sSearch:        k8sSearchHandler,
 		Deployment:       deploymentHandler,
-		Bill:             billHandler,  // 合并后的账单处理器
+		Bill:             billHandler, // 合并后的账单处理器
 		ExpensesMap:      expensesMapHandler,
 		CloudAccount:     cloudAccountHandler,
 		Resources:        resourcesHandler,
-		BillDashboard:   billDashboardHandler,
+		BillDashboard:    billDashboardHandler,
 
 		Monitor:          monitorHandler,
 		Organization:     organizationHandler,
-		Application:          applicationHandler,
-		AppDeployBinding:     appDeployBindingHandler,
-		Registry:             registryHandler,
-		Jenkins:              jenkinsHandler,
-		Audit:                auditHandler,
+		Application:      applicationHandler,
+		AppDeployBinding: appDeployBindingHandler,
+		Registry:         registryHandler,
+		Jenkins:          jenkinsHandler,
+		Audit:            auditHandler,
 		Alert:            alertHandler,
 		OnCall:           onCallHandler,
 		DMSInstance:      dmsInstanceHandler,

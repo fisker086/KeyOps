@@ -1,1 +1,0 @@
-import{r as a}from"./index-CynIT_al.js";import{a as t}from"./CategoricalChart-CBX8nJBi.js";import{a as o}from"./CartesianChart-DFm32Gkv.js";var i=["axis"],m=a.forwardRef((r,e)=>a.createElement(o,{chartName:"LineChart",defaultTooltipEventType:"axis",validateTooltipEventTypes:i,tooltipPayloadSearcher:t,categoricalChartProps:r,ref:e}));export{m as L};

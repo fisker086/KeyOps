@@ -39,27 +39,6 @@ func NewSessionHandler(service SessionService) *SessionHandler {
 	return &SessionHandler{service: service}
 }
 
-// ValidateToken 验证会话令牌（供 Proxy 调用）
-func (h *SessionHandler) ValidateToken(c *gin.Context) {
-	token := c.Query("token")
-	if token == "" {
-		c.JSON(http.StatusBadRequest, model.Error(400, "Missing token"))
-		return
-	}
-
-	tokenInfo, err := bastionService.ValidateSessionToken(token)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, model.Error(401, err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, model.Success(gin.H{
-		"hostId":   tokenInfo.HostID,
-		"userId":   tokenInfo.UserID,
-		"username": tokenInfo.Username,
-	}))
-}
-
 func (h *SessionHandler) CreateSession(c *gin.Context) {
 	var req struct {
 		HostID string `json:"hostId" binding:"required"`
@@ -207,26 +186,11 @@ func (h *SessionHandler) GetSessionRecording(c *gin.Context) {
 			src = playbackURL + "?format=mp4" // 播放 MP4 文件
 			logger.Infof("[Session] Session %s: MP4 file available, ready to play", recording.SessionID)
 		} else if hasGuac {
-			// 只有 .guac 文件，触发异步转换
-			converter := bastionService.GetRecordingConverter()
-			if !converter.IsConverting(guacPath) {
-				logger.Infof("[Session] Triggering conversion for session %s: %s", recording.SessionID, guacPath)
-				converter.ConvertGuacToMP4Async(guacPath)
-			}
-			
-			// 再次检查 MP4 是否已生成（可能在转换过程中完成了）
-			if _, err := os.Stat(mp4Path); err == nil {
-				recordingType = "mp4"
-				status = "ready"
-				src = playbackURL + "?format=mp4"
-				logger.Infof("[Session] Session %s: MP4 file now available after conversion", recording.SessionID)
-			} else {
-				// 转换中或未开始
-				recordingType = "mp4" // 前端期望 MP4 格式
-				status = "converting"
-				src = "" // 转换中时不提供播放 URL
-				logger.Infof("[Session] Session %s: Only .guac file available, MP4 conversion in progress", recording.SessionID)
-			}
+			// 只有 .guac 文件，直接使用 Guacamole 原生回放
+			recordingType = "guacamole"
+			status = "ready"
+			src = playbackURL + "?format=guac"
+			logger.Infof("[Session] Session %s: Using Guacamole native playback for .guac file", recording.SessionID)
 		} else {
 			// 没有文件，提示文件不存在
 			recordingType = "mp4"

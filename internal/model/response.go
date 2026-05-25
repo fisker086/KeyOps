@@ -107,8 +107,6 @@ type HostsResponse struct {
 
 type SessionResponse struct {
 	SessionID string `json:"sessionId"`
-	WSUrl     string `json:"wsUrl"`
-	Token     string `json:"token"` // 临时令牌，用于 Proxy 验证
 }
 
 type TestConnectionResponse struct {

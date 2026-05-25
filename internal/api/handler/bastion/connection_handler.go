@@ -23,9 +23,7 @@ import (
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/notification"
 	"github.com/fisker086/keyops/internal/repository"
-	"github.com/fisker086/keyops/internal/routing"
 	authService "github.com/fisker086/keyops/internal/service/auth"
-	bastionService "github.com/fisker086/keyops/internal/service/bastion"
 	"github.com/fisker086/keyops/pkg/database"
 	"github.com/fisker086/keyops/pkg/sshclient"
 	"github.com/gin-gonic/gin"
@@ -46,7 +44,6 @@ var upgrader = websocket.Upgrader{
 
 // ConnectionHandler 连接处理器 - 统一入口（支持直连和代理）
 type ConnectionHandler struct {
-	router         *routing.ConnectionRouter
 	hostRepo       repository.HostRepository
 	authSvc        *authService.AuthService
 	storage        storage.Storage
@@ -58,7 +55,6 @@ type ConnectionHandler struct {
 
 // NewConnectionHandler 创建连接处理器
 func NewConnectionHandler(
-	r *routing.ConnectionRouter,
 	hostRepo repository.HostRepository,
 	authSvc *authService.AuthService,
 	st storage.Storage,
@@ -78,7 +74,6 @@ func NewConnectionHandler(
 	}
 
 	return &ConnectionHandler{
-		router:         r,
 		hostRepo:       hostRepo,
 		authSvc:        authSvc,
 		storage:        st,
@@ -216,7 +211,7 @@ func (h *ConnectionHandler) HandleConnection(c *gin.Context) {
 	log.Printf("[Connection] Using system user: %s (%s)", systemUser.Name, systemUser.Username)
 
 	// 3. 路由决策
-	decision, err := h.router.MakeRoutingDecision(hostID, userInfo.UserID, userInfo.Username)
+	decision, err := makeRoutingDecision(h.hostRepo, hostID, userInfo.Username)
 	if err != nil {
 		log.Printf("[Connection] Routing decision failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Routing failed: %v", err)})
@@ -236,14 +231,9 @@ func (h *ConnectionHandler) HandleConnection(c *gin.Context) {
 	// 生成会话ID
 	sessionID := uuid.New().String()
 
-	// 5. 根据决策模式建立连接
-	if decision.Mode == model.ConnectionModeDirect {
-		log.Printf("[Connection] Using DIRECT mode for session %s", sessionID)
-		h.handleDirectConnection(ws, hostID, sessionID, userInfo, systemUser, width, height)
-	} else {
-		log.Printf("[Connection] Using PROXY mode for session %s (proxy: %s)", sessionID, decision.ProxyID)
-		h.handleProxyConnection(ws, hostID, sessionID, userInfo, decision, systemUser)
-	}
+	// 5. 纯直连模式
+	log.Printf("[Connection] Using DIRECT mode for session %s, reason=%s", sessionID, decision.Reason)
+	h.handleDirectConnection(ws, hostID, sessionID, userInfo, systemUser, width, height)
 }
 
 // handleDirectConnection 直接连接主机
@@ -522,9 +512,9 @@ func (h *ConnectionHandler) handleDirectConnection(ws *websocket.Conn, hostID st
 		// SSH 连接
 		// 创建命令解析器，用于记录命令到数据库
 		commandParser := parser.NewCommandExtractor(func(cmd string) {
-			log.Printf("[Connection] ===== Command detected ===== session=%s, host=%s, user=%s, command=%q", 
+			log.Printf("[Connection] ===== Command detected ===== session=%s, host=%s, user=%s, command=%q",
 				sessionID, host.IP, userInfo.Username, cmd)
-			
+
 			// 记录命令到数据库
 			commandRecord := &storage.CommandRecord{
 				ProxyID:    "api-server-direct",
@@ -536,16 +526,16 @@ func (h *ConnectionHandler) handleDirectConnection(ws *websocket.Conn, hostID st
 				Command:    cmd,
 				ExecutedAt: time.Now(),
 			}
-			
+
 			log.Printf("[Connection] Preparing to save command record: %+v", commandRecord)
-			
+
 			if err := h.storage.SaveCommand(commandRecord); err != nil {
 				log.Printf("[Connection] ERROR: Failed to save command: %v", err)
 			} else {
 				log.Printf("[Connection] SUCCESS: Command saved successfully: %s", cmd)
 			}
 		})
-		
+
 		if err := h.proxySSHConnectionWithTimeout(ws, host, systemUser, sessionID, rec, commandParser, userInfo, &connectionSuccess, startTime); err != nil {
 			log.Printf("[Connection] SSH connection error: %v", err)
 
@@ -567,95 +557,6 @@ func (h *ConnectionHandler) handleDirectConnection(ws *websocket.Conn, hostID st
 			log.Printf("[Connection] SSH connection function returned normally for session %s", sessionID)
 		}
 	}
-}
-
-// handleProxyConnection 通过代理连接主机
-func (h *ConnectionHandler) handleProxyConnection(ws *websocket.Conn, hostID string, sessionID string, userInfo *UserInfo, decision *model.RoutingDecision, systemUser *model.SystemUser) {
-	host, err := h.hostRepo.FindByID(hostID)
-	if err != nil {
-		ws.WriteJSON(map[string]interface{}{
-			"type":    "error",
-			"message": "Host not found",
-		})
-		return
-	}
-
-	log.Printf("[Connection] Connecting via proxy %s to %s as %s", decision.ProxyID, host.Name, systemUser.Username)
-
-	// 增加登录次数
-	if err := h.hostRepo.IncrementLoginCount(host.ID); err != nil {
-		log.Printf("[Connection] Failed to increment login count: %v", err)
-	}
-	if err := h.hostRepo.UpdateLastLoginTime(host.ID); err != nil {
-		log.Printf("[Connection] Failed to update last login time: %v", err)
-	}
-
-	// 发送连接消息
-	ws.WriteJSON(map[string]interface{}{
-		"type":    "info",
-		"message": fmt.Sprintf("正在通过代理 %s 连接到 %s...", decision.ProxyID, host.Name),
-	})
-
-	// 生成 Proxy Token（用于 Proxy Server 验证）
-	proxyToken := h.generateProxyToken(hostID, userInfo)
-
-	// 连接到 Proxy Server
-	proxyURL := fmt.Sprintf("%s?token=%s&hostId=%s", decision.ProxyURL, proxyToken, hostID)
-	log.Printf("[Connection] Dialing proxy: %s", proxyURL)
-
-	proxyWS, _, err := websocket.DefaultDialer.Dial(proxyURL, nil)
-	if err != nil {
-		log.Printf("[Connection] Failed to connect to proxy: %v", err)
-		ws.WriteJSON(map[string]interface{}{
-			"type":    "error",
-			"message": fmt.Sprintf("无法连接到代理服务器: %v", err),
-		})
-		return
-	}
-	defer proxyWS.Close()
-
-	log.Printf("[Connection] Successfully connected to proxy, starting bidirectional forwarding...")
-
-	// 双向转发 WebSocket 数据
-	errChan := make(chan error, 2)
-
-	// 客户端 -> 代理
-	go func() {
-		for {
-			messageType, message, err := ws.ReadMessage()
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if err := proxyWS.WriteMessage(messageType, message); err != nil {
-				errChan <- err
-				return
-			}
-		}
-	}()
-
-	// 代理 -> 客户端
-	go func() {
-		for {
-			messageType, message, err := proxyWS.ReadMessage()
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if err := ws.WriteMessage(messageType, message); err != nil {
-				errChan <- err
-				return
-			}
-		}
-	}()
-
-	// 等待任一方向发生错误
-	err = <-errChan
-	if err != nil && !websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
-		log.Printf("[Connection] Proxy forwarding error: %v", err)
-	}
-
-	log.Printf("[Connection] Session %s closed (proxy mode)", sessionID)
 }
 
 // proxySSHConnectionWithTimeout 代理 SSH 连接（带超时倒计时）
@@ -1064,13 +965,6 @@ func (h *ConnectionHandler) validateToken(token string) (*UserInfo, error) {
 	// 验证 JWT Token（用户登录token，24小时有效期）
 	claims, err := h.authSvc.ValidateToken(token)
 	if err != nil {
-		// 兼容旧的SessionToken方式（可选）
-		if tokenInfo, err := bastionService.ValidateSessionToken(token); err == nil {
-			return &UserInfo{
-				UserID:   tokenInfo.UserID,
-				Username: tokenInfo.Username,
-			}, nil
-		}
 		return nil, fmt.Errorf("invalid or expired token: %w", err)
 	}
 
@@ -1078,13 +972,6 @@ func (h *ConnectionHandler) validateToken(token string) (*UserInfo, error) {
 		UserID:   claims.UserID,
 		Username: claims.Username,
 	}, nil
-}
-
-// generateProxyToken 生成给 Proxy Server 的 Token
-func (h *ConnectionHandler) generateProxyToken(hostID string, userInfo *UserInfo) string {
-	// TODO: 实现真实的 token 生成
-	// 这里简化处理，实际应该生成 JWT
-	return "proxy-token-" + hostID + "-" + userInfo.UserID
 }
 
 // UserInfo 用户信息
@@ -1148,6 +1035,7 @@ type windowsSettings struct {
 	AllowClipboard     bool
 	EnableFileTransfer bool
 	DrivePath          string
+	Security           string // rdp / nla / tls / any
 }
 
 func (h *ConnectionHandler) loadWindowsSettings() windowsSettings {
@@ -1162,6 +1050,7 @@ func (h *ConnectionHandler) loadWindowsSettings() windowsSettings {
 		AllowClipboard:     false,
 		EnableFileTransfer: false,
 		DrivePath:          "/replay-drive",
+		Security:           "rdp",
 	}
 
 	if h.settingRepo == nil {
@@ -1220,6 +1109,13 @@ func (h *ConnectionHandler) loadWindowsSettings() windowsSettings {
 		case "drive_path", "drivePath":
 			if s.Value != "" {
 				result.DrivePath = s.Value
+			}
+		case "security":
+			if s.Value != "" {
+				valid := map[string]bool{"rdp": true, "nla": true, "tls": true, "any": true}
+				if valid[s.Value] {
+					result.Security = s.Value
+				}
 			}
 		}
 	}
@@ -1305,16 +1201,8 @@ func (h *ConnectionHandler) handleRDPConnection(ws *websocket.Conn, host *model.
 	// 存储界面用户名（登录 zjump 的用户），用于录制文件名
 	config.Options["ui_username"] = userInfo.Username
 
-	// 设置 RDP 安全模式
-	// 默认使用 "rdp" 传统 RDP 安全模式，兼容 xrdp 和大多数 RDP 服务器
-	// xrdp 服务器（如 satishweb/xrdp Docker 镜像）需要 "rdp" 模式，否则会出现错误 519
-	// 如果连接失败，可以尝试以下模式：
-	// - "rdp": 传统 RDP 安全（默认，推荐）- 兼容 xrdp、旧 Windows 服务器
-	// - "nla": Network Level Authentication（现代 Windows 服务器，更安全）
-	// - "tls": TLS 加密
-	// - "any": 自动协商（某些服务器可能不支持）
-	// TODO: 未来可以通过配置文件或主机配置来覆盖默认值
-	config.Options["security"] = "rdp"
+	// 从数据库 setting 表读取 RDP 安全模式，支持 rdp / nla / tls / any
+	config.Options["security"] = winCfg.Security
 	// 建立 RDP 连接
 	ctx := context.Background()
 	if err := handler.Connect(ctx, config); err != nil {

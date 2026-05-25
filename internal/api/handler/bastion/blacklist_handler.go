@@ -135,8 +135,8 @@ func (h *BlacklistHandler) DeleteCommand(c *gin.Context) {
 	})
 }
 
-// GetActiveCommands 获取启用的黑名单命令（供 proxy 使用，不需要认证）
-// 路由：GET /api/proxy/blacklist
+// GetActiveCommands 获取启用的黑名单命令（供内部同步使用）
+// 路由：GET /api/blacklist/active
 // 返回完整的规则信息，包括作用范围和用户列表
 func (h *BlacklistHandler) GetActiveCommands(c *gin.Context) {
 	var rules []model.BlacklistRule

@@ -1,32 +1,14 @@
 package bastion
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"sync"
 	"time"
 
 	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
 	"github.com/google/uuid"
-)
-
-// SessionToken 会话令牌（用于 Proxy 验证）
-type SessionToken struct {
-	Token     string
-	HostID    string
-	UserID    string
-	Username  string
-	ExpiresAt time.Time
-}
-
-// 内存存储会话令牌（生产环境可以用 Redis）
-var (
-	sessionTokens = sync.Map{}
 )
 
 type SessionService struct {
@@ -49,15 +31,13 @@ func (s *SessionService) CreateSession(hostID string, userID string) (*model.Ses
 
 	sessionID := uuid.New().String()
 
-	// 创建登录记录（会话记录统一使用 session_recordings 表）
-	// TODO: Username 应从系统用户获取，需要扩展 CreateSession 方法签名
 	loginRecord := &model.LoginRecord{
 		ID:        uuid.New().String(),
-		UserID:    userID, // 使用认证上下文中的用户ID
+		UserID:    userID,
 		HostID:    hostID,
 		HostName:  host.Name,
 		HostIP:    host.IP,
-		Username:  "", // TODO: 从系统用户获取
+		Username:  "",
 		LoginTime: time.Now(),
 		Status:    "active",
 		SessionID: sessionID,
@@ -67,74 +47,9 @@ func (s *SessionService) CreateSession(hostID string, userID string) (*model.Ses
 		return nil, err
 	}
 
-	// 生成临时令牌（用于 Proxy 验证）
-	token := generateSessionToken()
-
-	// 存储令牌信息（5分钟有效期）
-	// TODO: Username 应从系统用户获取
-	tokenInfo := &SessionToken{
-		Token:     token,
-		HostID:    hostID,
-		UserID:    userID, // 使用真实用户ID
-		Username:  "",     // TODO: 从系统用户获取
-		ExpiresAt: time.Now().Add(5 * time.Minute),
-	}
-	sessionTokens.Store(token, tokenInfo)
-
-	// 清理过期令牌（异步）
-	go cleanExpiredTokens()
-
-	// 根据设备类型选择 Proxy 端口和协议
-	proxyPort := 8022 // 默认 Linux SSH Proxy
-	protocol := "ssh"
-
-	// TODO: 根据 host.DeviceType 和 host.Protocol 选择对应的 Proxy
-	// 可以从配置文件或数据库读取 Proxy 地址
-
-	wsURL := fmt.Sprintf("ws://localhost:%d/ws/%s?token=%s", proxyPort, protocol, token)
-
 	return &model.SessionResponse{
 		SessionID: sessionID,
-		WSUrl:     wsURL,
-		Token:     token, // 返回令牌给前端
 	}, nil
-}
-
-// ValidateSessionToken 验证会话令牌（供 Proxy 调用）
-func ValidateSessionToken(token string) (*SessionToken, error) {
-	value, ok := sessionTokens.Load(token)
-	if !ok {
-		return nil, fmt.Errorf("invalid token")
-	}
-
-	tokenInfo := value.(*SessionToken)
-
-	// 检查是否过期
-	if time.Now().After(tokenInfo.ExpiresAt) {
-		sessionTokens.Delete(token)
-		return nil, fmt.Errorf("token expired")
-	}
-
-	return tokenInfo, nil
-}
-
-// generateSessionToken 生成随机令牌
-func generateSessionToken() string {
-	b := make([]byte, 32)
-	rand.Read(b)
-	return base64.URLEncoding.EncodeToString(b)
-}
-
-// cleanExpiredTokens 清理过期令牌
-func cleanExpiredTokens() {
-	now := time.Now()
-	sessionTokens.Range(func(key, value interface{}) bool {
-		tokenInfo := value.(*SessionToken)
-		if now.After(tokenInfo.ExpiresAt) {
-			sessionTokens.Delete(key)
-		}
-		return true
-	})
 }
 
 func (s *SessionService) GetLoginRecords(page, pageSize int, hostID string) ([]model.LoginRecord, int64, error) {
@@ -494,59 +409,11 @@ func (s *SessionService) TerminateSession(sessionID string) error {
 		}
 	}
 
-	// 2. 检查会话状态
 	if recording.Status != "active" {
 		return fmt.Errorf("会话已结束，无需终止")
 	}
 
-	// 3. 获取 Proxy 信息（仅 webshell 需要）
-	if recording.ConnectionType == "webshell" && recording.ProxyID != "" {
-		var proxy struct {
-			ID      string `gorm:"column:id"`
-			ProxyID string `gorm:"column:proxy_id"`
-			IP      string `gorm:"column:ip"`
-			Port    int    `gorm:"column:port"`
-			Status  string `gorm:"column:status"`
-		}
-		if err := s.repo.GetDB().Table("proxies").
-			Where("proxy_id = ?", recording.ProxyID).
-			First(&proxy).Error; err != nil {
-			logger.Infof("[TerminateSession] 无法找到 Proxy 信息: %v", err)
-			return fmt.Errorf("无法找到 Proxy 信息: %w", err)
-		}
-
-		logger.Infof("[TerminateSession] Found proxy: ID=%s, IP=%s, Port=%d", proxy.ProxyID, proxy.IP, proxy.Port)
-
-		// 4. 调用 Proxy 的终止会话 API
-		proxyURL := fmt.Sprintf("http://%s:%d/api/sessions/%s/terminate",
-			proxy.IP, proxy.Port, sessionID)
-		logger.Infof("[TerminateSession] Calling proxy URL: %s", proxyURL)
-
-		req, err := http.NewRequest("DELETE", proxyURL, nil)
-		if err != nil {
-			logger.Infof("[TerminateSession] 创建请求失败: %v", err)
-			return fmt.Errorf("创建请求失败: %w", err)
-		}
-
-		client := &http.Client{Timeout: 5 * time.Second}
-		resp, err := client.Do(req)
-		if err != nil {
-			logger.Infof("[TerminateSession] 调用 Proxy API 失败: %v", err)
-			return fmt.Errorf("调用 Proxy API 失败: %w", err)
-		}
-		defer resp.Body.Close()
-
-		logger.Infof("[TerminateSession] Proxy response status: %d", resp.StatusCode)
-
-		if resp.StatusCode != http.StatusOK {
-			logger.Infof("[TerminateSession] Proxy 返回错误状态: %d", resp.StatusCode)
-			return fmt.Errorf("Proxy 返回错误状态: %d", resp.StatusCode)
-		}
-	} else {
-		logger.Infof("[TerminateSession] SSH客户端会话，不需要调用 Proxy API")
-	}
-
-	// 5. 更新数据库状态（统一的 session_recordings 表和 login_records）
+	// 更新数据库状态
 	now := time.Now()
 	diff := now.Sub(recording.StartTime)
 	minutes := int(diff.Minutes())

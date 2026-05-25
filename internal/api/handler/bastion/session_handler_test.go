@@ -109,23 +109,20 @@ func TestCreateSession(t *testing.T) {
 		{
 			name:        "success",
 			requestBody: `{"hostId":"host-1"}`,
-			mockCreate: func(hostID, userID string) (*model.SessionResponse, error) {
-				return &model.SessionResponse{
-					SessionID: "session-1",
-					WSUrl:     "ws://localhost/ws/ssh?token=abc",
-					Token:     "abc",
-				}, nil
-			},
-			expectedStatus: http.StatusOK,
-			expectedCode:   0,
-			checkResponse: func(t *testing.T, resp model.Response) {
-				data, _ := json.Marshal(resp.Data)
-				var s model.SessionResponse
-				err := json.Unmarshal(data, &s)
-				assert.NoError(t, err)
-				assert.Equal(t, "session-1", s.SessionID)
-				assert.Equal(t, "abc", s.Token)
-			},
+		mockCreate: func(hostID, userID string) (*model.SessionResponse, error) {
+			return &model.SessionResponse{
+				SessionID: "session-1",
+			}, nil
+		},
+		expectedStatus: http.StatusOK,
+		expectedCode:   0,
+		checkResponse: func(t *testing.T, resp model.Response) {
+			data, _ := json.Marshal(resp.Data)
+			var s model.SessionResponse
+			err := json.Unmarshal(data, &s)
+			assert.NoError(t, err)
+			assert.Equal(t, "session-1", s.SessionID)
+		},
 			userID: "user-1",
 		},
 		{

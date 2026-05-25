@@ -2,6 +2,7 @@ package permission
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/fisker086/keyops/internal/model"
@@ -94,22 +95,29 @@ func (h *PermissionHandler) GetUserMenus(c *gin.Context) {
 	role, _ := c.Get("role")
 	roleStr := role.(string)
 
+	log.Printf("[GetUserMenus] userID=%s, role=%s", userIDStr, roleStr)
+
 	// 获取所有菜单
 	allMenus, err := h.menuRepo.FindAll()
 	if err != nil {
+		log.Printf("[GetUserMenus] FindAll error: %v", err)
 		c.JSON(http.StatusInternalServerError, model.Error(500, "获取菜单列表失败: "+err.Error()))
 		return
 	}
+	log.Printf("[GetUserMenus] allMenus count: %d", len(allMenus))
 
 	// 检查是否有role级别的菜单权限配置
 	// 先检查数据库中是否有该role的权限配置记录
 	hasPermissions, err := h.menuRepo.HasMenuPermissions("role:" + roleStr)
+	log.Printf("[GetUserMenus] HasMenuPermissions(role:%s) = %v, err=%v", roleStr, hasPermissions, err)
 	if err == nil && hasPermissions {
 		// 如果数据库中有该role的权限配置记录，使用role权限
 		// 即使现在为空数组（用户取消了所有菜单），也返回空菜单，不fallback到所有菜单
 		roleMenus, err := h.menuRepo.GetMenusByRole(roleStr)
+		log.Printf("[GetUserMenus] GetMenusByRole(%s) = %d menus, err=%v", roleStr, len(roleMenus), err)
 		if err == nil {
 			menuTree := h.menuRepo.BuildMenuTree(roleMenus)
+			log.Printf("[GetUserMenus] return role-based menus, count=%d", len(menuTree))
 			c.JSON(http.StatusOK, model.Success(menuTree))
 			return
 		}
@@ -117,23 +125,28 @@ func (h *PermissionHandler) GetUserMenus(c *gin.Context) {
 
 	// 如果没有role级别的配置，检查用户组权限
 	userGroupMenus, err := h.menuRepo.GetMenusByUserID(userIDStr)
+	log.Printf("[GetUserMenus] GetMenusByUserID(%s) = %d menus, err=%v", userIDStr, len(userGroupMenus), err)
 	if err == nil && len(userGroupMenus) > 0 {
 		// 有用户组级别的菜单权限配置，使用用户组权限
 		menuTree := h.menuRepo.BuildMenuTree(userGroupMenus)
+		log.Printf("[GetUserMenus] return user-group-based menus, count=%d", len(menuTree))
 		c.JSON(http.StatusOK, model.Success(menuTree))
 		return
 	}
 
 	// 如果既没有role配置也没有用户组配置，根据角色返回默认菜单
+	log.Printf("[GetUserMenus] no config found, role=%s, fallback to default", roleStr)
 	if roleStr == "admin" {
 		// 管理员默认返回所有菜单
 		menuTree := h.menuRepo.BuildMenuTree(allMenus)
+		log.Printf("[GetUserMenus] admin fallback: return all menus, count=%d", len(menuTree))
 		c.JSON(http.StatusOK, model.Success(menuTree))
 		return
 	}
 
 	// 普通用户且没有配置权限，返回空菜单
 	// 前端会显示授权提示页面
+	log.Printf("[GetUserMenus] regular user with no config, return empty menus")
 	c.JSON(http.StatusOK, model.Success([]model.Menu{}))
 }
 

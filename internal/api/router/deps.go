@@ -23,7 +23,6 @@ type HandlerSet struct {
 	Host             *handler.HostHandler
 	Dashboard        *handler.DashboardHandler
 	Session          *handler.SessionHandler
-	Proxy            *handler.ProxyHandler
 	Auth             *handler.AuthHandler
 	Blacklist        *handler.BlacklistHandler
 	Setting          *handler.SettingHandler

@@ -12,7 +12,6 @@ func RouterDeps(h *Handlers, s *Services, repos *Repositories, mode string) rout
 			Host:             h.Host,
 			Dashboard:        h.Dashboard,
 			Session:          h.Session,
-			Proxy:            h.Proxy,
 			Auth:             h.Auth,
 			Blacklist:        h.Blacklist,
 			Setting:          h.Setting,
