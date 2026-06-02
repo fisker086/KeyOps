@@ -50,10 +50,10 @@ func (s *AuthService) exchangeOIDCToken(code, clientID, clientSecret, tokenURL, 
 
 	var tokenResp struct {
 		AccessToken string `json:"access_token"`
-		TokenType  string `json:"token_type"`
-		ExpiresIn int    `json:"expires_in"`
-		Error     string `json:"error"`
-		ErrorDesc string `json:"error_description"`
+		TokenType   string `json:"token_type"`
+		ExpiresIn   int    `json:"expires_in"`
+		Error       string `json:"error"`
+		ErrorDesc   string `json:"error_description"`
 	}
 
 	if err := json.Unmarshal(body, &tokenResp); err != nil {

@@ -1,4 +1,4 @@
-# AI 运维助手 Skills
+# AI 巡检 Skills
 
 采用 [SKILL.md](https://agentskills.io/) 标准格式，每个技能独立目录，含 `name`、`description`。Skills 不存库，由目标环境配置推导，根据提示词/任务动态注入可用工具。
 

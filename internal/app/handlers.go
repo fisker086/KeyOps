@@ -52,28 +52,29 @@ type Handlers struct {
 	K8sPermission    *handler.K8sPermissionHandler
 	K8sSearch        *handler.K8sSearchHandler
 	Deployment       *handler.DeploymentHandler
-	Bill             *handler.BillHandler // 合并后的账单处理器
+	Bill             *handler.BillHandler
 	ExpensesMap      *handler.ExpensesMapHandler
 	CloudAccount     *handler.CloudAccountHandler
 	Resources        *handler.ResourcesHandler
 	BillDashboard    *handler.BillDashboardHandler
 
-	Monitor          *handler.MonitorHandler
-	Organization     *handler.OrganizationHandler
-	Application      *handler.ApplicationHandler
-	AppDeployBinding *handler.AppDeployBindingHandler
-	Registry         *handler.RegistryHandler
-	Jenkins          *handler.JenkinsHandler
-	Audit            *handler.AuditHandler
-	Alert            *handler.AlertHandler
-	OnCall           *handler.OnCallHandler
-	DMSInstance      *handler.DMSInstanceHandler
-	DMSQuery         *handler.DMSQueryHandler
-	DMSQueryLog      *handler.DMSQueryLogHandler
-	DMSPermission    *handler.DMSPermissionHandler
-	Release          *handler.ReleaseHandler
-	BuildMaster      *handler.BuildMasterHandler
-	AiAssistant      *aiassistant.Handler
+	Monitor        *handler.MonitorHandler
+	Organization   *handler.OrganizationHandler
+	Environment    *handler.EnvironmentHandler
+	Application    *handler.ApplicationHandler
+	Registry       *handler.RegistryHandler
+	Audit          *handler.AuditHandler
+	Alert          *handler.AlertHandler
+	OnCall         *handler.OnCallHandler
+	DMSInstance    *handler.DMSInstanceHandler
+	DMSQuery       *handler.DMSQueryHandler
+	DMSQueryLog    *handler.DMSQueryLogHandler
+	DMSPermission  *handler.DMSPermissionHandler
+	Release        *handler.ReleaseHandler
+	BuildMaster    *handler.BuildMasterHandler
+	DeployParam    *handler.DeployParamHandler
+	AppDeployParam *handler.AppDeployParamHandler
+	AiAssistant    *aiassistant.Handler
 }
 
 // InitializeHandlers 初始化所有 Handler
@@ -132,7 +133,7 @@ func InitializeHandlers(
 		repos.Session,
 	)
 	hostGroupHandler := handler.NewHostGroupHandler(repos.HostGroup, repos.Host, repos.User)
-	approvalHandler := handler.NewApprovalHandler(database.DB, approvalFactory, services.Release)
+	approvalHandler := handler.NewApprovalHandler(database.DB, approvalFactory, services.Release, repos.PermissionRule)
 	approvalCallbackHandler := handler.NewApprovalCallbackHandler(database.DB)
 	fileHandler := handler.NewFileHandler(database.DB, repos.Host, repos.SystemUser)
 	assetSyncHandler := handler.NewAssetSyncHandler(repos.AssetSync, services.AssetSync)
@@ -159,10 +160,9 @@ func InitializeHandlers(
 
 	monitorHandler := handler.NewMonitorHandler(services.Monitor)
 	organizationHandler := handler.NewOrganizationHandler(repos.Organization)
+	environmentHandler := handler.NewEnvironmentHandler(repos.Environment)
 	applicationHandler := handler.NewApplicationHandler(repos.Application)
-	appDeployBindingHandler := handler.NewAppDeployBindingHandler(repos.AppDeployBinding, repos.Application)
 	registryHandler := handler.NewRegistryHandler(repos.Application, services.Registry)
-	jenkinsHandler := handler.NewJenkinsHandler(services.Jenkins)
 	auditHandler := handler.NewAuditHandler()
 	alertHandler := handler.NewAlertHandler(services.Alert, notificationMgr)
 	alertHandler.SetCertificateRepositories(repos.DomainCertificate, repos.SSLCertificate, repos.HostedCertificate)
@@ -174,10 +174,13 @@ func InitializeHandlers(
 	dmsQueryHandler := handler.NewDMSQueryHandler(services.DMSQuery)
 	dmsQueryLogHandler := handler.NewDMSQueryLogHandler(repos.QueryLog)
 	dmsPermissionHandler := handler.NewDMSPermissionHandler(services.DMSPermission)
-	releaseHandler := handler.NewReleaseHandler(services.Release, repos.ReleasePipelineDef, repos.AppDeployBinding)
-	buildMasterHandler := handler.NewBuildMasterHandler(repos.BuildMaster)
+	releaseHandler := handler.NewReleaseHandler(services.Release)
+	buildMasterHandler := handler.NewBuildMasterHandler(repos.BuildMaster, database.DB, approvalFactory)
+	buildMasterHandler.SetReleaseService(services.Release)
+	deployParamHandler := handler.NewDeployParamHandler(database.DB)
+	appDeployParamHandler := handler.NewAppDeployParamHandler(database.DB)
 
-	// AI运维助手（纯 Go 实现）：注入 GetUserRoleIDs 用于专家与平台角色关联（列表过滤与创建任务校验）
+	// AI巡检（纯 Go 实现）：注入 GetUserRoleIDs 用于专家与平台角色关联（列表过滤与创建任务校验）
 	var aiAssistantHandler *aiassistant.Handler
 	if config.GlobalConfig != nil {
 		dataDir := "data/ai_assistant"
@@ -265,22 +268,23 @@ func InitializeHandlers(
 		Resources:        resourcesHandler,
 		BillDashboard:    billDashboardHandler,
 
-		Monitor:          monitorHandler,
-		Organization:     organizationHandler,
-		Application:      applicationHandler,
-		AppDeployBinding: appDeployBindingHandler,
-		Registry:         registryHandler,
-		Jenkins:          jenkinsHandler,
-		Audit:            auditHandler,
-		Alert:            alertHandler,
-		OnCall:           onCallHandler,
-		DMSInstance:      dmsInstanceHandler,
-		DMSQuery:         dmsQueryHandler,
-		DMSQueryLog:      dmsQueryLogHandler,
-		DMSPermission:    dmsPermissionHandler,
-		Release:          releaseHandler,
-		BuildMaster:      buildMasterHandler,
-		AiAssistant:      aiAssistantHandler,
+		Monitor:        monitorHandler,
+		Organization:   organizationHandler,
+		Environment:    environmentHandler,
+		Application:    applicationHandler,
+		Registry:       registryHandler,
+		Audit:          auditHandler,
+		Alert:          alertHandler,
+		OnCall:         onCallHandler,
+		DMSInstance:    dmsInstanceHandler,
+		DMSQuery:       dmsQueryHandler,
+		DMSQueryLog:    dmsQueryLogHandler,
+		DMSPermission:  dmsPermissionHandler,
+		Release:        releaseHandler,
+		BuildMaster:    buildMasterHandler,
+		DeployParam:    deployParamHandler,
+		AppDeployParam: appDeployParamHandler,
+		AiAssistant:    aiAssistantHandler,
 	}
 }
 
@@ -301,11 +305,20 @@ func loadApprovalProviders(db *gorm.DB, factory *approval.Factory) {
 		switch config.Type {
 		case "feishu":
 			if config.AppID != "" && config.AppSecret != "" && config.ApprovalCode != "" {
-				provider := approval.NewFeishuProvider(&config, database.DB)
+				provider := approval.NewFeishuProvider(&config, database.DB, model.ApprovalPlatformFeishu)
 				factory.Register(model.ApprovalPlatformFeishu, provider)
 				logger.Infof("Registered Feishu approval provider: %s", config.Name)
 			} else {
 				logger.Warnf("Feishu config incomplete: app_id=%s, app_secret=%s, approval_code=%s",
+					config.AppID, config.AppSecret, config.ApprovalCode)
+			}
+		case "lark":
+			if config.AppID != "" && config.AppSecret != "" && config.ApprovalCode != "" {
+				provider := approval.NewFeishuProvider(&config, database.DB, model.ApprovalPlatformLark)
+				factory.Register(model.ApprovalPlatformLark, provider)
+				logger.Infof("Registered Lark approval provider: %s", config.Name)
+			} else {
+				logger.Warnf("Lark config incomplete: app_id=%s, app_secret=%s, approval_code=%s",
 					config.AppID, config.AppSecret, config.ApprovalCode)
 			}
 		case "dingtalk":

@@ -6,7 +6,7 @@ import "time"
 type ReleasePipelineDefinition struct {
 	ID        string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	Name      string    `gorm:"type:varchar(255);default:''" json:"name"` // 展示名称，列表与应用-发布选择用
-	Content   string    `gorm:"type:json;not null" json:"content"`         // JSON: { "nodes": [], "edges": [] }
+	Content   string    `gorm:"type:json;not null" json:"content"`        // JSON: { "nodes": [], "edges": [] }
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 	UpdatedBy string    `gorm:"type:varchar(36)" json:"updated_by"`
 }

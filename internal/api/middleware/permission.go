@@ -127,4 +127,3 @@ func OptionalPermissionMiddleware(userRepo repository.UserRepository, roleRepo r
 		c.Next()
 	}
 }
-

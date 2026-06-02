@@ -13,16 +13,16 @@ type VendorCostEntry struct {
 }
 
 type DashboardData struct {
-	CurrentMonthCost float64                      `json:"current_month_cost"`
-	LastMonthCost    float64                      `json:"last_month_cost"`
-	ForecastCost     float64                      `json:"forecast_cost"`
-	ChangePercent    float64                      `json:"change_percent"`
-	BaseCurrency     string                       `json:"base_currency"`
-	TopResources     []TopResource                `json:"top_resources"`
-	CostByVendor     map[string]VendorCostEntry   `json:"cost_by_vendor"`
-	CostByService    map[string]float64           `json:"cost_by_service"`
-	CostByRegion     map[string]float64           `json:"cost_by_region"`
-	CostTrend        []DailyCost                  `json:"cost_trend"`
+	CurrentMonthCost float64                    `json:"current_month_cost"`
+	LastMonthCost    float64                    `json:"last_month_cost"`
+	ForecastCost     float64                    `json:"forecast_cost"`
+	ChangePercent    float64                    `json:"change_percent"`
+	BaseCurrency     string                     `json:"base_currency"`
+	TopResources     []TopResource              `json:"top_resources"`
+	CostByVendor     map[string]VendorCostEntry `json:"cost_by_vendor"`
+	CostByService    map[string]float64         `json:"cost_by_service"`
+	CostByRegion     map[string]float64         `json:"cost_by_region"`
+	CostTrend        []DailyCost                `json:"cost_trend"`
 }
 
 type TopResource struct {
@@ -166,13 +166,13 @@ func (s *BillService) GetDashboardData(baseCurrency string) (*DashboardData, err
 }
 
 type Recommendation struct {
-	ID          string              `json:"id"`
-	Type        string              `json:"type"`
-	Title       string              `json:"title"`
-	Description string              `json:"description"`
-	Savings     float64             `json:"savings"`
-	Resources   int                 `json:"resources"`
-	Priority    string              `json:"priority"`
+	ID          string               `json:"id"`
+	Type        string               `json:"type"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Savings     float64              `json:"savings"`
+	Resources   int                  `json:"resources"`
+	Priority    string               `json:"priority"`
 	Items       []RecommendationItem `json:"items,omitempty"`
 }
 

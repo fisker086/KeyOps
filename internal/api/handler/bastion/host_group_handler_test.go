@@ -19,18 +19,18 @@ import (
 var errTest = errors.New("test error")
 
 type mockGroupRepo struct {
-	findAllFunc                       func() ([]model.HostGroup, error)
-	findAllWithStatsFunc              func() ([]model.HostGroup, error)
-	findByIDFunc                      func(id string) (*model.HostGroup, error)
-	createFunc                        func(group *model.HostGroup) error
-	updateFunc                        func(group *model.HostGroup) error
-	deleteFunc                        func(id string) error
-	searchHostsInGroupFunc            func(groupID, search string) ([]model.Host, error)
+	findAllFunc                         func() ([]model.HostGroup, error)
+	findAllWithStatsFunc                func() ([]model.HostGroup, error)
+	findByIDFunc                        func(id string) (*model.HostGroup, error)
+	createFunc                          func(group *model.HostGroup) error
+	updateFunc                          func(group *model.HostGroup) error
+	deleteFunc                          func(id string) error
+	searchHostsInGroupFunc              func(groupID, search string) ([]model.Host, error)
 	getHostsByGroupIDWithPaginationFunc func(groupID string, page, pageSize int) ([]model.Host, int64, error)
-	addHostsToGroupFunc               func(groupID string, hostIDs []string, addedBy string) error
-	removeHostsFromGroupFunc          func(groupID string, hostIDs []string) error
-	getGroupsByHostIDFunc             func(hostID string) ([]model.HostGroup, error)
-	getGroupStatisticsFunc            func(groupID string) (*model.HostGroupStatistics, error)
+	addHostsToGroupFunc                 func(groupID string, hostIDs []string, addedBy string) error
+	removeHostsFromGroupFunc            func(groupID string, hostIDs []string) error
+	getGroupsByHostIDFunc               func(hostID string) ([]model.HostGroup, error)
+	getGroupStatisticsFunc              func(groupID string) (*model.HostGroupStatistics, error)
 }
 
 func (m *mockGroupRepo) Create(group *model.HostGroup) error {
@@ -298,12 +298,12 @@ func (m *mockUserRepo) FindAllUsersWithGroupsAndHosts(page, pageSize int, keywor
 
 type mockHostRepo struct{}
 
-func (m *mockHostRepo) Create(host *model.Host) error { return nil }
-func (m *mockHostRepo) FindByID(id string) (*model.Host, error) { return nil, nil }
-func (m *mockHostRepo) FindByIP(ip string) (*model.Host, error) { return nil, nil }
+func (m *mockHostRepo) Create(host *model.Host) error                            { return nil }
+func (m *mockHostRepo) FindByID(id string) (*model.Host, error)                  { return nil, nil }
+func (m *mockHostRepo) FindByIP(ip string) (*model.Host, error)                  { return nil, nil }
 func (m *mockHostRepo) FindByIPAndPort(ip string, port int) (*model.Host, error) { return nil, nil }
-func (m *mockHostRepo) Update(host *model.Host) error { return nil }
-func (m *mockHostRepo) Delete(id string) error { return nil }
+func (m *mockHostRepo) Update(host *model.Host) error                            { return nil }
+func (m *mockHostRepo) Delete(id string) error                                   { return nil }
 func (m *mockHostRepo) FindAll(page, pageSize int, search string, tags []string) ([]model.Host, int64, error) {
 	return nil, 0, nil
 }
@@ -319,7 +319,9 @@ func (m *mockHostRepo) UpdateLastLoginTime(id string) error { return nil }
 func (m *mockHostRepo) GetHostsWithUserLoginCount(page, pageSize int, search string, tags []string, userID string) ([]model.Host, int64, error) {
 	return nil, 0, nil
 }
-func (m *mockHostRepo) GetUserFrequentHosts(userID string, limit int) ([]model.Host, error) { return nil, nil }
+func (m *mockHostRepo) GetUserFrequentHosts(userID string, limit int) ([]model.Host, error) {
+	return nil, nil
+}
 func (m *mockHostRepo) UpdateStatus(id string, status string) error { return nil }
 func (m *mockHostRepo) FindAllWithPagination(page, pageSize int, search string, tags []string) ([]model.Host, int64, error) {
 	return nil, 0, nil
@@ -331,9 +333,9 @@ func (m *mockHostRepo) GetAccessibleHostIDsForUser(userID string) ([]string, err
 func (m *mockHostRepo) FindAllWithFilters(filters map[string]interface{}, page, pageSize int, search string, tags []string) ([]model.Host, int64, error) {
 	return nil, 0, nil
 }
-func (m *mockHostRepo) FindByIDs(ids []string) ([]model.Host, error) { return nil, nil }
-func (m *mockHostRepo) GetDB() *gorm.DB { return nil }
-func (m *mockHostRepo) BatchUpdateTags(updates map[string]string) error { return nil }
+func (m *mockHostRepo) FindByIDs(ids []string) ([]model.Host, error)            { return nil, nil }
+func (m *mockHostRepo) GetDB() *gorm.DB                                         { return nil }
+func (m *mockHostRepo) BatchUpdateTags(updates map[string]string) error         { return nil }
 func (m *mockHostRepo) MoveHostsToGroup(hostIDs []string, groupID string) error { return nil }
 func (m *mockHostRepo) CheckIPAndPortDuplicate(ip string, port int, excludeID string) (bool, error) {
 	return false, nil
@@ -446,9 +448,9 @@ func TestGetGroup(t *testing.T) {
 	groupID := uuid.New().String()
 	group := &model.HostGroup{ID: groupID, Name: "test-group"}
 	stats := &model.HostGroupStatistics{
-		GroupID:    groupID,
-		GroupName:  "test-group",
-		TotalHosts: 10,
+		GroupID:     groupID,
+		GroupName:   "test-group",
+		TotalHosts:  10,
 		OnlineHosts: 5,
 	}
 
@@ -657,8 +659,8 @@ func TestDeleteGroup(t *testing.T) {
 		expectedStatus int
 	}{
 		{
-			name:    "success",
-			groupID: uuid.New().String(),
+			name:           "success",
+			groupID:        uuid.New().String(),
 			expectedCode:   0,
 			expectedStatus: http.StatusOK,
 		},
@@ -696,12 +698,12 @@ func TestGetGroupHosts(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		groupID      string
-		query        string
-		mockSearch   func(groupID, search string) ([]model.Host, error)
+		name           string
+		groupID        string
+		query          string
+		mockSearch     func(groupID, search string) ([]model.Host, error)
 		mockPagination func(groupID string, page, pageSize int) ([]model.Host, int64, error)
-		expectedCode int
+		expectedCode   int
 	}{
 		{
 			name:    "success",
@@ -831,13 +833,13 @@ func TestRemoveHostsFromGroup(t *testing.T) {
 	groupID := uuid.New().String()
 
 	tests := []struct {
-		name           string
-		groupID        string
-		requestBody    string
-		mockFindByID   func(id string) (*model.HostGroup, error)
+		name            string
+		groupID         string
+		requestBody     string
+		mockFindByID    func(id string) (*model.HostGroup, error)
 		mockRemoveHosts func(groupID string, hostIDs []string) error
-		expectedCode   int
-		expectedStatus int
+		expectedCode    int
+		expectedStatus  int
 	}{
 		{
 			name:        "success",
@@ -906,10 +908,10 @@ func TestGetHostGroups(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		hostID            string
+		name                  string
+		hostID                string
 		mockGetGroupsByHostID func(hostID string) ([]model.HostGroup, error)
-		expectedCode      int
+		expectedCode          int
 	}{
 		{
 			name:   "success",
@@ -952,10 +954,10 @@ func TestGetHostGroups(t *testing.T) {
 
 func TestGetGroupStatistics(t *testing.T) {
 	stats := &model.HostGroupStatistics{
-		GroupID:    uuid.New().String(),
-		GroupName:  "test-group",
-		TotalHosts: 10,
-		OnlineHosts: 5,
+		GroupID:      uuid.New().String(),
+		GroupName:    "test-group",
+		TotalHosts:   10,
+		OnlineHosts:  5,
 		OfflineHosts: 5,
 	}
 

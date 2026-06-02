@@ -10,10 +10,10 @@ type Menu struct {
 	ParentID  string    `json:"parentId" gorm:"type:varchar(36);index;default:''"` // 父菜单ID，空字符串表示顶级菜单
 	Path      string    `json:"path" gorm:"type:varchar(255);not null"`            // 路由路径
 	Name      string    `json:"name" gorm:"type:varchar(100);not null"`            // 路由名称（唯一标识）
-	Component string    `json:"component,omitempty" gorm:"type:varchar(255)"`     // 前端组件路径
-	Hidden    bool      `json:"hidden" gorm:"default:false"`                      // 是否隐藏
-	Sort      int       `json:"sort" gorm:"default:0;index"`                      // 排序
-	Meta      MenuMeta  `json:"meta" gorm:"embedded"`                             // 菜单元数据
+	Component string    `json:"component,omitempty" gorm:"type:varchar(255)"`      // 前端组件路径
+	Hidden    bool      `json:"hidden" gorm:"default:false"`                       // 是否隐藏
+	Sort      int       `json:"sort" gorm:"default:0;index"`                       // 排序
+	Meta      MenuMeta  `json:"meta" gorm:"embedded"`                              // 菜单元数据
 	Children  []Menu    `json:"children,omitempty" gorm:"-"`                       // 子菜单（不存储）
 	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
@@ -26,7 +26,7 @@ func (Menu) TableName() string {
 // MenuMeta 菜单元数据
 type MenuMeta struct {
 	Title       string `json:"title" gorm:"type:varchar(100);not null"`       // 菜单标题
-	Icon        string `json:"icon,omitempty" gorm:"type:varchar(50)"`       // 菜单图标
+	Icon        string `json:"icon,omitempty" gorm:"type:varchar(50)"`        // 菜单图标
 	KeepAlive   bool   `json:"keepAlive" gorm:"default:false"`                // 是否缓存
 	ActiveName  string `json:"activeName,omitempty" gorm:"type:varchar(100)"` // 激活菜单名称
 	CloseTab    bool   `json:"closeTab" gorm:"default:false"`                 // 是否自动关闭标签页
@@ -49,10 +49,10 @@ func (MenuPermission) TableName() string {
 // API API模型（用于API权限管理）
 type API struct {
 	ID          uint      `json:"id" gorm:"primaryKey;autoIncrement"`
-	Path        string    `json:"path" gorm:"type:varchar(255);not null;index"`        // API路径
-	Method      string    `json:"method" gorm:"type:varchar(20);not null;index"`       // HTTP方法
-	Group       string    `json:"group" gorm:"type:varchar(100);not null;index"`       // API分组
-	Description string    `json:"description" gorm:"type:varchar(255)"`               // API描述
+	Path        string    `json:"path" gorm:"type:varchar(255);not null;index"`  // API路径
+	Method      string    `json:"method" gorm:"type:varchar(20);not null;index"` // HTTP方法
+	Group       string    `json:"group" gorm:"type:varchar(100);not null;index"` // API分组
+	Description string    `json:"description" gorm:"type:varchar(255)"`          // API描述
 	CreatedAt   time.Time `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 }
@@ -66,4 +66,3 @@ type MenuWithPermission struct {
 	Menu
 	HasPermission bool `json:"hasPermission" gorm:"-"` // 用户是否有权限访问此菜单
 }
-

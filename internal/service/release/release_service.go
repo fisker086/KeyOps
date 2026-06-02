@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fisker086/keyops/internal/approval"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
-	jenkinsService "github.com/fisker086/keyops/internal/service/jenkins"
+	svc "github.com/fisker086/keyops/internal/service"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -30,22 +31,23 @@ type Service struct {
 	repo              repository.ReleaseRunRepository
 	db                *gorm.DB
 	appRepo           repository.ApplicationRepository
-	bindingRepo       repository.ApplicationDeployBindingRepository
 	settingRepo       repository.SettingRepository
-	jenkinsSvc        *jenkinsService.JenkinsService
-	deployProdStarter DeployProdStarter // 若设置则审批通过后走编排（如 Temporal），否则直接执行
+	deployProdStarter DeployProdStarter
+	deploymentSvc     *svc.DeploymentService
 }
 
 func NewService(repo repository.ReleaseRunRepository) *Service {
 	return &Service{repo: repo}
 }
 
-// SetDependencies 注入 DB、应用、绑定、设置与 Jenkins 依赖（用于执行发布与创建 prod 审批）
-func (s *Service) SetDependencies(db *gorm.DB, appRepo repository.ApplicationRepository, bindingRepo repository.ApplicationDeployBindingRepository, jenkinsSvc *jenkinsService.JenkinsService) {
+// SetDB 注入数据库
+func (s *Service) SetDB(db *gorm.DB) {
 	s.db = db
+}
+
+// SetAppRepo 注入应用仓库
+func (s *Service) SetAppRepo(appRepo repository.ApplicationRepository) {
 	s.appRepo = appRepo
-	s.bindingRepo = bindingRepo
-	s.jenkinsSvc = jenkinsSvc
 }
 
 // SetSettingRepository 注入设置仓库（用于读取 release_approval 创建第三方审批）
@@ -56,6 +58,11 @@ func (s *Service) SetSettingRepository(repo repository.SettingRepository) {
 // SetDeployProdStarter 注入生产发布编排器（如 Temporal）；为 nil 时审批通过后直接执行
 func (s *Service) SetDeployProdStarter(starter DeployProdStarter) {
 	s.deployProdStarter = starter
+}
+
+// SetDeploymentService 注入部署服务，用于审批通过后执行 Helm 发布
+func (s *Service) SetDeploymentService(deploymentSvc *svc.DeploymentService) {
+	s.deploymentSvc = deploymentSvc
 }
 
 // CreateFromWebhook 根据 Webhook 负载创建一条发布记录（仅落库，不执行流水线）
@@ -103,6 +110,11 @@ func (s *Service) CreateManual(repoURL, branch, commitSHA, commitMessage, applic
 	return run, nil
 }
 
+// CreateRun 直接创建一条部署记录（供 BuildMaster 等模块调用）
+func (s *Service) CreateRun(run *model.ReleaseRun) error {
+	return s.repo.Create(run)
+}
+
 // List 分页列表
 func (s *Service) List(repoURL, branch, status string, page, pageSize int) ([]model.ReleaseRun, int64, error) {
 	return s.repo.List(repoURL, branch, status, page, pageSize)
@@ -113,7 +125,7 @@ func (s *Service) GetByID(id string) (*model.ReleaseRun, error) {
 	return s.repo.GetByID(id)
 }
 
-// UpdateRunStatus 更新 run 状态（Jenkins 回调或人工标记成功/失败后调用，用于回滚源）
+// UpdateRunStatus 更新 run 状态（人工标记成功/失败后调用，用于回滚源）
 func (s *Service) UpdateRunStatus(id string, status string, completedAt *time.Time) error {
 	return s.repo.UpdateStatus(id, status, nil, completedAt)
 }
@@ -125,7 +137,7 @@ type DeployConfigForApproval struct {
 	ApplicationID string `json:"application_id"`
 }
 
-// ExecuteRun 执行一条发布记录：按环境选择绑定并触发 Jenkins，或提交 prod 工单
+// ExecuteRun 执行一条发布记录：按环境直接执行，或提交 prod 工单
 // environment: dev/test/qa/staging 直接触发；prod 创建发布审批单，审批通过后自动执行
 func (s *Service) ExecuteRun(id string, environment string, applicantID string, applicantName string) (prodApprovalCreated bool, approvalID string, err error) {
 	if environment == "" {
@@ -165,8 +177,9 @@ func (s *Service) ExecuteRun(id string, environment string, applicantID string, 
 		return true, approvalID, nil
 	}
 
-	// 非 prod：直接执行 Jenkins
-	return false, "", s.doExecuteRun(run, applicationID, environment)
+	// 非 prod：直接标记为运行中
+	now := time.Now()
+	return false, "", s.repo.UpdateStatusAndDeployedEnv(run.ID, model.ReleaseRunStatusRunning, environment, &now, nil)
 }
 
 // createProdApproval 创建生产发布审批单，DeployConfig 存 release_run_id 等，审批通过后由回调执行
@@ -191,17 +204,17 @@ func (s *Service) createProdApproval(releaseRunID, applicationID, repoURL, branc
 		title = fmt.Sprintf("生产发布 %s @ %s (%s)", repoURL, branch, commitSHA[:7])
 	}
 	a := &model.Approval{
-		ID:           uuid.New().String(),
-		Title:        title,
-		Description:  fmt.Sprintf("发布代码记录 %s，环境 prod", releaseRunID),
-		Type:         model.ApprovalTypeDeployment,
-		Status:       model.ApprovalStatusPending,
-		Platform:     model.ApprovalPlatformInternal,
-		ApplicantID:  applicantID,
+		ID:            uuid.New().String(),
+		Title:         title,
+		Description:   fmt.Sprintf("发布代码记录 %s，环境 prod", releaseRunID),
+		Type:          model.ApprovalTypeDeployment,
+		Status:        model.ApprovalStatusPending,
+		Platform:      model.ApprovalPlatformInternal,
+		ApplicantID:   applicantID,
 		ApplicantName: applicantName,
-		DeployConfig: string(cfgJSON),
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		DeployConfig:  string(cfgJSON),
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 	if len(approverIDs) > 0 {
 		a.ApproverIDs = model.StringArray(approverIDs)
@@ -267,9 +280,9 @@ func (s *Service) tryCreateReleaseThirdPartyApproval(a *model.Approval) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// 目前仅实现飞书：按字段名称构建表单并创建实例
+	// 目前仅实现飞书/Lark：按字段名称构建表单并创建实例
 	if platform == "feishu" {
-		provider := approval.NewFeishuProvider(config, s.db)
+		provider := approval.NewFeishuProvider(config, s.db, model.ApprovalPlatformFeishu)
 		formData, err := provider.BuildReleaseFormData(ctx, approvalCode, a, "")
 		if err != nil {
 			return err
@@ -280,7 +293,19 @@ func (s *Service) tryCreateReleaseThirdPartyApproval(a *model.Approval) error {
 		}
 		a.Platform = model.ApprovalPlatformFeishu
 		a.ExternalID = externalID
-		a.ExternalURL = fmt.Sprintf("https://www.feishu.cn/approval/instance/%s", externalID)
+	} else if platform == "lark" {
+		provider := approval.NewFeishuProvider(config, s.db, model.ApprovalPlatformLark)
+		formData, err := provider.BuildReleaseFormData(ctx, approvalCode, a, "")
+		if err != nil {
+			return err
+		}
+		externalID, err := provider.CreateApprovalWithFormData(ctx, approvalCode, formData, a)
+		if err != nil {
+			return err
+		}
+		a.Platform = model.ApprovalPlatformLark
+		a.ExternalID = externalID
+		a.ExternalURL = fmt.Sprintf("https://www.larksuite.com/approval/instance/%s", externalID)
 		return s.db.Save(a).Error
 	}
 	// 钉钉/企微后续可按同样方式接入
@@ -310,50 +335,6 @@ func (s *Service) ExecuteDeployment(runID, applicationID, environment string) er
 	run, err := s.repo.GetByID(runID)
 	if err != nil {
 		return err
-	}
-	return s.doExecuteRun(run, applicationID, environment)
-}
-
-// doExecuteRun 根据应用+环境触发 Jenkins（带发布策略参数），并更新 run 状态与部署环境
-func (s *Service) doExecuteRun(run *model.ReleaseRun, applicationID string, environment string) error {
-	if s.jenkinsSvc == nil || s.bindingRepo == nil {
-		return fmt.Errorf("release execute not configured: missing jenkins or binding")
-	}
-	binding, err := s.bindingRepo.FindByApplicationDeployTypeAndEnvironment(applicationID, "jenkins", environment)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("no Jenkins binding for environment %q, configure in 应用-发布", environment)
-		}
-		return err
-	}
-	serverID, err := strconv.ParseUint(binding.DeployConfigID, 10, 32)
-	if err != nil {
-		return fmt.Errorf("invalid jenkins server id in binding: %s", binding.DeployConfigID)
-	}
-	jobName := binding.JenkinsJob
-	if jobName == "" {
-		return fmt.Errorf("jenkins job name is empty in binding")
-	}
-	params := map[string]string{
-		"BRANCH":     run.Branch,
-		"COMMIT":     run.CommitSHA,
-		"GIT_COMMIT": run.CommitSHA,
-	}
-	// 发布策略：run 单次覆盖 > binding 默认
-	strategy := run.DeployStrategy
-	if strategy == "" {
-		strategy = binding.DeployStrategy
-	}
-	if strategy == "" {
-		strategy = model.DeployStrategyRolling
-	}
-	params["DEPLOY_STRATEGY"] = strategy
-	if binding.StrategyOptions != "" {
-		params["STRATEGY_OPTIONS"] = binding.StrategyOptions
-	}
-	_, err = s.jenkinsSvc.StartJob(uint(serverID), jobName, &model.StartJobRequest{Parameters: params})
-	if err != nil {
-		return fmt.Errorf("start jenkins job: %w", err)
 	}
 	now := time.Now()
 	return s.repo.UpdateStatusAndDeployedEnv(run.ID, model.ReleaseRunStatusRunning, environment, &now, nil)
@@ -448,8 +429,8 @@ func ParseGitHubPush(body []byte) (repoURL, branch, commitSHA, commitMessage, re
 
 // GitLabPushPayload GitLab push event 部分字段
 type GitLabPushPayload struct {
-	Ref          string `json:"ref"`
-	Project      struct {
+	Ref     string `json:"ref"`
+	Project struct {
 		GitHTTPURL string `json:"git_http_url"`
 		GitSSHURL  string `json:"git_ssh_url"`
 	} `json:"project"`
@@ -486,4 +467,300 @@ func ParseGitLabPush(body []byte) (repoURL, branch, commitSHA, commitMessage, re
 	commitMessage = last.Message
 	author = last.Author.Name
 	return repoURL, branch, commitSHA, commitMessage, ref, author, nil
+}
+
+// HelmDeployRequest 一键 Helm 部署请求
+type HelmDeployRequest struct {
+	AppName     string
+	AppID       string
+	Environment string
+	Version     string
+	UserID      string
+	UserName    string
+}
+
+// DeployHelmRelease 一键 Helm 部署：查找应用→解析参数→创建记录→异步执行
+func (s *Service) DeployHelmRelease(req *HelmDeployRequest) (deploymentID string, err error) {
+	if s.deploymentSvc == nil {
+		return "", fmt.Errorf("deployment service not configured")
+	}
+	env := req.Environment
+	if env == "" {
+		env = "prod"
+	}
+
+	var app *model.Application
+	if req.AppID != "" {
+		app, err = s.appRepo.FindByID(req.AppID)
+	} else if req.AppName != "" {
+		var a model.Application
+		if err = s.db.Where("name = ?", req.AppName).First(&a).Error; err != nil {
+			return "", fmt.Errorf("application not found by name %q: %w", req.AppName, err)
+		}
+		app = &a
+	} else {
+		return "", fmt.Errorf("app_id or app_name required")
+	}
+	if err != nil {
+		return "", fmt.Errorf("find application: %w", err)
+	}
+
+	clusterID := resolveParam(s.db, app.ID, env, "cluster")
+	namespace := resolveParam(s.db, app.ID, env, "namespace")
+
+	// 构建完整的 Helm values（根据数据库参数动态生成）
+	helmValues := buildHelmValues(s.db, app.ID, env, req)
+
+	// 默认让资源名等于应用名：standard-app chart 的 fullname 模板在 release 名不含 chart 名时
+	// 会拼成 "<release>-standard-app"（如 xxl-job-admin-standard-app）。设置 fullnameOverride 去掉多余后缀。
+	// 仅覆盖 fullnameOverride，不动 nameOverride，避免改变 Deployment 的不可变 selector 导致升级失败。
+	if _, ok := helmValues["fullnameOverride"]; !ok {
+		helmValues["fullnameOverride"] = app.Name
+	}
+
+	// executeHelmDeployment 会把 DeployConfig 解析为 model.HelmDeployConfig，
+	// 真正的 Helm values 必须放在 "values" 键下，否则 cfg.Values 为空、参数不生效。
+	deployConfig := map[string]interface{}{
+		"values": helmValues,
+	}
+
+	// 打印 Helm values YAML 用于调试
+	valuesYAML, _ := json.MarshalIndent(helmValues, "", "  ")
+	fmt.Printf("[HelmDeployRelease] app=%s env=%s values=\n%s\n", app.Name, env, string(valuesYAML))
+
+	deployReq := &svc.CreateDeploymentRequest{
+		ProjectName:   app.Name,
+		ProjectID:     app.ID,
+		EnvName:       env,
+		ClusterID:     clusterID,
+		Namespace:     namespace,
+		DeployType:    "helm",
+		DeployConfig:  deployConfig,
+		Version:       req.Version,
+		CreatedBy:     req.UserID,
+		CreatedByName: req.UserName,
+		Description:   "Helm release: " + app.Name + "/" + env,
+	}
+
+	deployment, err := s.deploymentSvc.CreateDeployment(deployReq)
+	if err != nil {
+		return "", fmt.Errorf("create deployment record: %w", err)
+	}
+
+	go func(id string) {
+		_ = s.deploymentSvc.ExecuteK8sDeployment(id)
+	}(deployment.ID)
+
+	return deployment.ID, nil
+}
+
+// DeployBuildMasterResult 一键发版结果
+type DeployBuildMasterResult struct {
+	DeploymentIDs []string     `json:"deployment_ids"`
+	FailedItems   []FailedItem `json:"failed_items,omitempty"`
+}
+
+type FailedItem struct {
+	AppName string `json:"app_name"`
+	Tag     string `json:"tag"`
+	Error   string `json:"error"`
+}
+
+// DeployBuildMaster 一键发版 Build Master 发布单，返回创建的 deployment ID 列表
+func (s *Service) DeployBuildMaster(listID string, userID string, userName string) (*DeployBuildMasterResult, error) {
+	var details []model.BuildMasterItemDetail
+	if err := s.db.Where("list_id = ?", listID).Find(&details).Error; err != nil {
+		return nil, fmt.Errorf("find details: %w", err)
+	}
+	if len(details) == 0 {
+		return nil, fmt.Errorf("no details to deploy")
+	}
+	result := &DeployBuildMasterResult{}
+	for _, d := range details {
+		if d.AppName == "" {
+			s.db.Model(&d).Update("status", model.BuildMasterItemStatusDone)
+			continue
+		}
+		id, err := s.DeployHelmRelease(&HelmDeployRequest{
+			AppName:  d.AppName,
+			Version:  d.Tag,
+			UserID:   userID,
+			UserName: userName,
+		})
+		if err != nil {
+			s.db.Model(&d).Updates(map[string]interface{}{
+				"status": model.BuildMasterItemStatusUndone,
+				"record": fmt.Sprintf("部署失败: %v", err),
+			})
+			result.FailedItems = append(result.FailedItems, FailedItem{
+				AppName: d.AppName,
+				Tag:     d.Tag,
+				Error:   err.Error(),
+			})
+			continue
+		}
+		result.DeploymentIDs = append(result.DeploymentIDs, id)
+		s.db.Model(&d).Updates(map[string]interface{}{
+			"status": model.BuildMasterItemStatusDone,
+			"record": fmt.Sprintf("部署已触发，部署ID: %s", id),
+		})
+	}
+	var remaining []model.BuildMasterItemDetail
+	if err := s.db.Where("list_id = ? AND status = ?", listID, model.BuildMasterItemStatusUndone).Find(&remaining).Error; err == nil && len(remaining) == 0 {
+		s.db.Model(&model.BuildMasterList{}).Where("id = ? AND status = ?", listID, model.BuildMasterStatusReleasing).
+			Update("status", model.BuildMasterStatusCompleted)
+	}
+	return result, nil
+}
+
+func resolveParam(db *gorm.DB, appID, env, paramName string) string {
+	var cfg model.AppDeployParamConfig
+	if err := db.Where("app_id = ? AND env = ? AND param_name = ?", appID, env, paramName).
+		First(&cfg).Error; err == nil {
+		return cfg.ParamValue
+	}
+	var def model.AppDeployParamDefault
+	if err := db.Where("param_name = ?", paramName).First(&def).Error; err == nil {
+		return def.DefaultValue
+	}
+	return ""
+}
+
+// buildHelmValues 从数据库读取所有 k8s.* 参数，剥掉前缀后按 Helm --set 路径语义展开为嵌套 map。
+// 例如 k8s.image.repository → values["image"]["repository"]；
+// k8s.env[0].name → values["env"][0]["name"]。
+// helm.* 参数（chart 元信息）不会被放入 values 中。
+func buildHelmValues(db *gorm.DB, appID, env string, req *HelmDeployRequest) map[string]interface{} {
+	values := make(map[string]interface{})
+
+	// 收集 app+env 级别的 k8s.* 参数
+	paramMap := make(map[string]string)
+	var configs []model.AppDeployParamConfig
+	db.Where("app_id = ? AND env = ? AND param_name LIKE ?", appID, env, "k8s.%").Find(&configs)
+	for _, cfg := range configs {
+		paramMap[cfg.ParamName[4:]] = cfg.ParamValue
+	}
+
+	// 补充全局默认值（仅在 app 级别未设置时）
+	var defaults []model.AppDeployParamDefault
+	db.Where("param_name LIKE ?", "k8s.%").Find(&defaults)
+	for _, d := range defaults {
+		name := d.ParamName[4:]
+		if _, exists := paramMap[name]; !exists {
+			paramMap[name] = d.DefaultValue
+		}
+	}
+
+	// 展开为嵌套结构
+	for key, val := range paramMap {
+		setNestedValue(values, key, val)
+	}
+
+	return values
+}
+
+// setNestedValue 将 "a.b[0].c" = val 展开为 map[a][b][0][c] = val
+func setNestedValue(m map[string]interface{}, key string, val string) {
+	parts := strings.Split(key, ".")
+	insertValue(m, parts, inferValue(val))
+}
+
+// insertValue 递归创建嵌套 map/slice 并将 val 设置在叶子节点
+func insertValue(m map[string]interface{}, parts []string, val interface{}) {
+	if len(parts) == 0 {
+		return
+	}
+	part := parts[0]
+	name, idx, hasIndex := parseArrayIndex(part)
+
+	if len(parts) == 1 {
+		if hasIndex {
+			arr := growSlice(m, name, idx+1)
+			arr[idx] = val
+		} else {
+			m[name] = val
+		}
+		return
+	}
+
+	if hasIndex {
+		arr := growSlice(m, name, idx+1)
+		if arr[idx] == nil {
+			arr[idx] = make(map[string]interface{})
+		}
+		if next, ok := arr[idx].(map[string]interface{}); ok {
+			insertValue(next, parts[1:], val)
+		} else {
+			n := make(map[string]interface{})
+			arr[idx] = n
+			insertValue(n, parts[1:], val)
+		}
+	} else {
+		if _, ok := m[name]; !ok {
+			m[name] = make(map[string]interface{})
+		}
+		if next, ok := m[name].(map[string]interface{}); ok {
+			insertValue(next, parts[1:], val)
+		} else {
+			n := make(map[string]interface{})
+			m[name] = n
+			insertValue(n, parts[1:], val)
+		}
+	}
+}
+
+// parseArrayIndex 解析 "env[0]" → ("env", 0, true)，无索引返回 (part, 0, false)
+func parseArrayIndex(part string) (string, int, bool) {
+	start := strings.Index(part, "[")
+	if start == -1 {
+		return part, 0, false
+	}
+	end := strings.Index(part, "]")
+	if end == -1 || end <= start {
+		return part, 0, false
+	}
+	idx, err := strconv.Atoi(part[start+1 : end])
+	if err != nil {
+		return part, 0, false
+	}
+	return part[:start], idx, true
+}
+
+// growSlice 确保 m[name] 为长度 >= minLen 的 []interface{}，不足时扩容
+func growSlice(m map[string]interface{}, name string, minLen int) []interface{} {
+	existing, ok := m[name]
+	if ok {
+		if arr, ok := existing.([]interface{}); ok {
+			if len(arr) < minLen {
+				newArr := make([]interface{}, minLen)
+				copy(newArr, arr)
+				m[name] = newArr
+				return newArr
+			}
+			return arr
+		}
+	}
+	arr := make([]interface{}, minLen)
+	m[name] = arr
+	return arr
+}
+
+// inferValue 将字符串按内容推测为 bool / int64 / float64 / string
+func inferValue(s string) interface{} {
+	if s == "" {
+		return s
+	}
+	if s == "true" {
+		return true
+	}
+	if s == "false" {
+		return false
+	}
+	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return i
+	}
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return f
+	}
+	return s
 }

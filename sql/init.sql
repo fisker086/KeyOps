@@ -132,42 +132,11 @@ CREATE TABLE IF NOT EXISTS host_group_members (
 COMMENT='Host-Group relationship (many-to-many)';
 
 -- ==================================================================================
--- DEPRECATED: 以下两个表已废弃，新权限架构使用：
--- User → Role → PermissionRule → (SystemUser + HostGroup)
--- 保留这些表是为了向后兼容，但建议在新系统中不再使用
 -- ==================================================================================
-
--- User-Group permissions table (DEPRECATED - 使用新的 roles + permission_rules)
-CREATE TABLE IF NOT EXISTS user_group_permissions (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL COMMENT 'User ID',
-    group_id VARCHAR(36) NOT NULL COMMENT 'Host group ID',
-    created_by VARCHAR(36) COMMENT 'Admin who assigned this permission',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_user_group (user_id, group_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_group_id (group_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES host_groups(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[DEPRECATED] User-HostGroup permission mapping - Use roles + permission_rules instead';
-
--- User-Host permissions table (DEPRECATED - 使用新的 roles + permission_rules)
-CREATE TABLE IF NOT EXISTS user_host_permissions (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL COMMENT 'User ID',
-    host_id VARCHAR(36) NOT NULL COMMENT 'Host ID',
-    created_by VARCHAR(36) COMMENT 'Admin who assigned this permission',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_user_host (user_id, host_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_host_id (host_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (host_id) REFERENCES hosts(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='User-Host permission mapping for individual host access';
+-- 以下两张表已迁移至 PermissionRule 架构（user_repository 双写过渡中）
+-- 待确认所有数据已写入 permission_rules 表后删除
+-- 当前由 GORM AutoMigrate 自动维护表结构（pkg/database/init.go 保留模型注册）
+-- ==================================================================================
 
 -- ============================================================================
 -- Session & Connection Tables
@@ -506,6 +475,7 @@ COMMENT='表单模板分类表';
 -- Form templates table (表单模板表)
 CREATE TABLE IF NOT EXISTS form_templates (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid VARCHAR(36) NOT NULL COMMENT '模板对外唯一标识(UUID)，用于审批回调等',
     name VARCHAR(100) NOT NULL COMMENT '模板名称',
     category VARCHAR(50) DEFAULT NULL COMMENT '分类',
     description TEXT COMMENT '描述',
@@ -516,6 +486,7 @@ CREATE TABLE IF NOT EXISTS form_templates (
     created_by VARCHAR(50) DEFAULT NULL COMMENT '创建者',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_form_templates_uuid (uuid),
     INDEX idx_category (category),
     INDEX idx_status (status),
     INDEX idx_name (name)
@@ -621,6 +592,14 @@ CREATE TABLE IF NOT EXISTS approvals (
     deploy_config TEXT COMMENT 'Deployment configuration (JSON format)',
     deployment_id VARCHAR(36) COMMENT 'Associated deployment record ID',
     deployed BOOLEAN DEFAULT FALSE COMMENT 'Whether deployment has been executed',
+    
+    -- Callback source
+    callback_source VARCHAR(20) COMMENT 'Callback source: ticket/release/...',
+    callback_token VARCHAR(36) COMMENT 'Callback token (UUID, embedded in form data for direct ticket matching)',
+    
+    -- Ticket association
+    ticket_id BIGINT UNSIGNED COMMENT 'Associated ticket ID',
+    ticket_number VARCHAR(50) COMMENT 'Ticket number',
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1125,7 +1104,9 @@ VALUES
 -- 系统角色和自定义角色都统一在 roles 表中管理，通过 role_members 表关联用户
 INSERT IGNORE INTO roles (id, name, description, color, priority, status, created_at, updated_at) VALUES
 ('role:admin', '管理员', '系统管理员角色，拥有所有权限', '#f5222d', 999, 'active', NOW(), NOW()),
-('role:user', '普通用户', '普通用户角色，拥有基础权限', '#52c41a', 0, 'active', NOW(), NOW());
+('role:user', '普通用户', '普通用户角色，默认含个人设置与首页，其余菜单需按需授权', '#52c41a', 0, 'active', NOW(), NOW()),
+('role:tester', '测试人员', '测试人员角色，可查看发布状态', '#1890ff', 1, 'active', NOW(), NOW()),
+('role:release-manager', '发版', '发版角色，负责执行发布', '#722ed1', 2, 'active', NOW(), NOW());
 
 -- 为 admin 用户分配系统角色 role:admin
 INSERT IGNORE INTO role_members (role_id, user_id, added_by, added_at)
@@ -1274,7 +1255,7 @@ CREATE TABLE IF NOT EXISTS menu_permissions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='菜单权限关联表';
 
--- AI运维助手：目标环境（用户自定义）
+-- AI巡检：目标环境（用户自定义）
 CREATE TABLE IF NOT EXISTS ai_assistant_environments (
     id VARCHAR(36) PRIMARY KEY COMMENT '环境ID',
     name VARCHAR(100) NOT NULL COMMENT '显示名称',
@@ -1289,14 +1270,35 @@ CREATE TABLE IF NOT EXISTS ai_assistant_environments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_sort (sort)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='AI运维助手目标环境';
+COMMENT='AI巡检目标环境';
 
 -- 默认环境（占位测试地址，请在「目标环境」页修改为实际地址）
 INSERT IGNORE INTO ai_assistant_environments (id, name, prom_url, graf_url, graf_token, cluster, sort) VALUES
 ('default', '默认环境', 'http://prometheus.example.com', '', '', '', 0),
 ('k8s-install', 'K8s 安装', '', '', '', '', 1);
 
--- AI运维助手：专家角色（模板+用户自定义）
+-- 平台环境管理（组织管理使用，非 AI 助手环境）
+CREATE TABLE IF NOT EXISTS environments (
+    id VARCHAR(36) PRIMARY KEY COMMENT '环境ID',
+    code VARCHAR(50) NOT NULL COMMENT '环境编码（如 dev/test/stg/prod）',
+    name VARCHAR(100) NOT NULL COMMENT '环境名称（如 开发/测试/预发/生产）',
+    is_active BOOLEAN DEFAULT TRUE COMMENT '是否启用',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    description VARCHAR(500) DEFAULT '' COMMENT '备注',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_code (code),
+    INDEX idx_sort_order (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='平台环境管理';
+
+INSERT IGNORE INTO environments (id, code, name, is_active, sort_order, description) VALUES
+('env-dev', 'dev', '开发', TRUE, 1, ''),
+('env-test', 'test', '测试', TRUE, 2, ''),
+('env-stg', 'stg', '预发', TRUE, 3, ''),
+('env-prod', 'prod', '生产', TRUE, 4, '');
+
+-- AI巡检：专家角色（模板+用户自定义）
 CREATE TABLE IF NOT EXISTS ai_assistant_experts (
     id VARCHAR(36) PRIMARY KEY COMMENT '专家ID（如 sre, inspector 为内置模板）',
     name VARCHAR(100) NOT NULL COMMENT '显示名称',
@@ -1310,7 +1312,7 @@ CREATE TABLE IF NOT EXISTS ai_assistant_experts (
     INDEX idx_sort (sort),
     INDEX idx_is_custom (is_custom)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='AI运维助手专家角色';
+COMMENT='AI巡检专家角色';
 
 -- Seed default experts (prompts editable in UI; code uses same only when DB empty or no-DB)
 INSERT IGNORE INTO ai_assistant_experts (id, name, description, system_prompt, is_custom, sort) VALUES
@@ -1400,7 +1402,7 @@ INSERT IGNORE INTO ai_assistant_experts (id, name, description, system_prompt, i
 ## 下方为安装知识库（由系统注入，包含官方下载地址与安装流程）：
 ', 0, 4);
 
--- AI运维助手：模型配置（可新建多个，智能对话中可选）
+-- AI巡检：模型配置（可新建多个，智能对话中可选）
 CREATE TABLE IF NOT EXISTS ai_assistant_models (
     id VARCHAR(36) PRIMARY KEY COMMENT '模型配置ID',
     name VARCHAR(100) NOT NULL COMMENT '显示名称',
@@ -1414,7 +1416,7 @@ CREATE TABLE IF NOT EXISTS ai_assistant_models (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_sort (sort)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='AI运维助手模型配置';
+COMMENT='AI巡检模型配置';
 
 -- API表（用于API权限管理）
 CREATE TABLE IF NOT EXISTS apis (
@@ -1643,9 +1645,10 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 -- 组织管理子菜单
 ('menu-departments', 'menu-user-permission', '/departments', 'departments', 'pages/user-management/Departments', false, 1, '部门管理', 'Business', false, '', false, false, NOW(), NOW()),
 ('menu-services', 'menu-user-permission', '/services', 'services', 'pages/user-management/Services', false, 2, '应用管理', 'Settings', false, '', false, false, NOW(), NOW()),
-('menu-users', 'menu-user-permission', '/users', 'users', 'pages/user-management/Users', false, 3, '人员管理', 'People', false, '', false, false, NOW(), NOW()),
-('menu-roles', 'menu-user-permission', '/roles', 'roles', 'pages/user-management/Roles', false, 4, '角色管理', 'Group', false, '', false, false, NOW(), NOW()),
-('menu-permissions', 'menu-user-permission', '/permissions', 'permissions', 'pages/user-management/Permissions', false, 5, '权限管理', 'Security', false, '', false, false, NOW(), NOW()),
+('menu-environments', 'menu-user-permission', '/environments', 'environments', 'pages/user-management/EnvironmentManagement', false, 3, '环境管理', 'Public', false, '', false, false, NOW(), NOW()),
+('menu-users', 'menu-user-permission', '/users', 'users', 'pages/user-management/Users', false, 4, '人员管理', 'People', false, '', false, false, NOW(), NOW()),
+('menu-roles', 'menu-user-permission', '/roles', 'roles', 'pages/user-management/Roles', false, 5, '角色管理', 'Group', false, '', false, false, NOW(), NOW()),
+('menu-permissions', 'menu-user-permission', '/permissions', 'permissions', 'pages/user-management/Permissions', false, 6, '权限管理', 'Security', false, '', false, false, NOW(), NOW()),
 
 -- 资产管理分组（一级菜单，放在组织管理下面）
 ('menu-assets', '', '', 'assets', '', false, 3, '资产管理', 'Storage', false, '', false, false, NOW(), NOW()),
@@ -1674,7 +1677,7 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-cloud-bill-recommendations', 'menu-cloud-bill', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 4, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
 
 -- 集群管理分组
-('menu-k8s', '', '', 'k8s', '', false, 6, '集群管理', 'Cloud', false, '', false, false, NOW(), NOW()),
+('menu-k8s', '', '', 'k8s', '', false, 7, '集群管理', 'Cloud', false, '', false, false, NOW(), NOW()),
 
 -- k8s 管理类子菜单
 ('menu-k8s-management', 'menu-k8s', '', 'k8sManagement', '', false, 1, '集群管理', 'FolderOpen', false, '', false, false, NOW(), NOW()),
@@ -1737,8 +1740,8 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-monitor-oncall-shift', 'menu-monitor-oncall', '/monitors/oncall-shift', 'monitorOnCallShift', 'pages/monitor/OnCallShift', false, 2, '值班班次', 'AccessTime', false, '', false, false, NOW(), NOW()),
 ('menu-monitor-oncall-calendar', 'menu-monitor-oncall', '/monitors/oncall-calendar', 'monitorOnCallCalendar', 'pages/monitor/OnCallCalendar', false, 3, '值班日历', 'CalendarMonth', false, '', false, false, NOW(), NOW()),
 
--- AI运维助手（一级菜单）
-('menu-ai-assistant', '', '', 'aiAssistant', '', false, 9, 'AI运维助手', 'SmartToy', false, '', false, false, NOW(), NOW()),
+-- AI巡检（一级菜单）
+('menu-ai-assistant', '', '', 'aiAssistant', '', false, 9, 'AI巡检', 'SmartToy', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-chat', 'menu-ai-assistant', '/ai-assistant/chat', 'aiAssistantChat', 'pages/ai-assistant/Chat', false, 1, '智能对话', 'Chat', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-sessions', 'menu-ai-assistant', '/ai-assistant/sessions', 'aiAssistantSessions', 'pages/ai-assistant/Sessions', false, 2, '会话历史', 'History', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-schedules', 'menu-ai-assistant', '/ai-assistant/schedules', 'aiAssistantSchedules', 'pages/ai-assistant/Schedules', false, 3, '定时任务', 'Schedule', false, '', false, false, NOW(), NOW()),
@@ -2603,6 +2606,21 @@ ON DUPLICATE KEY UPDATE
 -- Deployment Management Tables (发布管理表)
 -- ============================================================================
 
+-- 参数模板表（按语言 + 版本管理）
+CREATE TABLE IF NOT EXISTS param_templates (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    language VARCHAR(50) NOT NULL COMMENT '开发语言',
+    version_name VARCHAR(100) NOT NULL COMMENT '版本名（自定义）',
+    description VARCHAR(255) NOT NULL DEFAULT '' COMMENT '版本描述',
+    is_default BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否默认版本',
+    content LONGTEXT NOT NULL COMMENT '模板内容(JSON对象字符串)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY idx_lang_ver (language, version_name),
+    INDEX idx_lang_default (language, is_default)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='参数模板表（语言多版本）';
+
 -- Deployments table (部署记录表)
 CREATE TABLE IF NOT EXISTS deployments (
     id VARCHAR(36) PRIMARY KEY COMMENT 'Deployment unique identifier',
@@ -2613,19 +2631,17 @@ CREATE TABLE IF NOT EXISTS deployments (
     cluster_id VARCHAR(100) COMMENT '集群ID',
     cluster_name VARCHAR(100) COMMENT '集群名称',
     namespace VARCHAR(100) COMMENT '命名空间（K8s部署）',
-    deploy_type VARCHAR(50) NOT NULL COMMENT '部署类型: jenkins, k8s, gitops, argocd, helm',
+    deploy_type VARCHAR(50) NOT NULL COMMENT '部署类型: k8s, gitops, helm',
     deploy_config JSON COMMENT '部署配置（JSON格式，存储不同发布方式的特定配置）',
     version VARCHAR(100) COMMENT '版本号',
     artifact_url TEXT COMMENT '制品地址',
-    jenkins_job VARCHAR(255) COMMENT 'Jenkins Job名称（向后兼容字段）',
-    jenkins_build_number INT COMMENT 'Jenkins构建号（向后兼容字段）',
     k8s_yaml TEXT COMMENT 'K8s编排文件（YAML，向后兼容字段）',
     k8s_kind VARCHAR(50) COMMENT 'K8s资源类型: Deployment, StatefulSet, DaemonSet等（向后兼容字段）',
     verify_enabled BOOLEAN DEFAULT FALSE COMMENT '是否启用kubedog验证',
     verify_timeout INT DEFAULT 300 COMMENT '验证超时时间（秒），默认300秒',
     status VARCHAR(20) DEFAULT 'pending' COMMENT '状态: pending, running, success, failed, cancelled',
     log_path TEXT COMMENT '部署日志路径',
-    build_log LONGTEXT COMMENT 'Jenkins构建日志内容（保存完整日志，即使job被删除也能查看）',
+    build_log LONGTEXT COMMENT '构建日志内容',
     duration INT COMMENT '部署耗时（秒）',
     description TEXT COMMENT '部署描述',
     created_by VARCHAR(36) COMMENT '创建用户ID',
@@ -2646,53 +2662,6 @@ CREATE TABLE IF NOT EXISTS deployments (
     INDEX idx_status_created (status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='部署记录表';
-
--- Jenkins Servers table (Jenkins服务器配置表)
-CREATE TABLE IF NOT EXISTS jenkins_servers (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'Jenkins服务器ID',
-    alias VARCHAR(255) NOT NULL COMMENT '别名(服务器名称)',
-    url VARCHAR(500) NOT NULL COMMENT 'Jenkins服务器URL（格式：http://host:port 或 https://host:port）',
-    username VARCHAR(100) NOT NULL COMMENT '用户名',
-    password VARCHAR(500) NOT NULL COMMENT '密码或API Token（加密存储）',
-    description TEXT COMMENT '描述',
-    enabled BOOLEAN DEFAULT TRUE COMMENT '是否启用',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    INDEX idx_alias (alias),
-    INDEX idx_enabled (enabled),
-    INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Jenkins服务器配置表';
-
--- Application Deploy Bindings table (应用-发布绑定表)
-CREATE TABLE IF NOT EXISTS application_deploy_bindings (
-    id VARCHAR(36) PRIMARY KEY COMMENT '绑定关系唯一标识',
-    application_id VARCHAR(36) NOT NULL COMMENT '应用ID（关联applications表）',
-    deploy_type VARCHAR(20) NOT NULL COMMENT '发布类型: jenkins, argocd',
-    deploy_config_id VARCHAR(100) NOT NULL COMMENT '发布配置ID（jenkins_server_id或argocd_config_id）',
-    deploy_config_name VARCHAR(255) COMMENT '发布配置名称（冗余字段，便于查询）',
-    environment VARCHAR(50) COMMENT '环境: dev, test, qa, staging, prod',
-    jenkins_job VARCHAR(255) COMMENT 'Jenkins Job名称（当deploy_type=jenkins时使用）',
-    argocd_application VARCHAR(255) COMMENT 'ArgoCD Application名称（当deploy_type=argocd时使用）',
-    deploy_strategy VARCHAR(32) COMMENT '发布策略: rolling, blue_green, canary, multi_lane',
-    strategy_options TEXT COMMENT '策略参数JSON（如 canary 比例、泳道 ID）',
-    pipeline_id VARCHAR(36) COMMENT '关联流水线定义ID，空则默认',
-    webhook_token VARCHAR(64) UNIQUE COMMENT 'Git 推送校验 token，用于动态 webhook URL',
-    enabled BOOLEAN DEFAULT TRUE COMMENT '是否启用',
-    description TEXT COMMENT '描述',
-    created_by VARCHAR(36) COMMENT '创建用户ID',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    INDEX idx_application_id (application_id),
-    INDEX idx_deploy_type (deploy_type),
-    INDEX idx_deploy_config_id (deploy_config_id),
-    INDEX idx_environment (environment),
-    INDEX idx_enabled (enabled),
-    INDEX idx_application_deploy (application_id, deploy_type),
-    INDEX idx_created_at (created_at),
-    UNIQUE KEY uk_app_deploy_env (application_id, deploy_type, deploy_config_id, environment)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='应用-发布绑定表（管理应用与Jenkins/ArgoCD的绑定关系）';
 
 -- Release Runs table (发布代码运行记录表，Git Webhook / 手动触发)
 CREATE TABLE IF NOT EXISTS release_runs (
@@ -3045,8 +3014,6 @@ CREATE TABLE IF NOT EXISTS applications (
     online_at DATETIME COMMENT '应用上线时间',
     offline_at DATETIME COMMENT '应用下线时间',
     git_url VARCHAR(500) COMMENT 'Git地址',
-    jenkins_server_id INT UNSIGNED COMMENT 'Jenkins服务器ID（关联jenkins_servers.id）',
-    jenkins_job_name VARCHAR(255) COMMENT 'Jenkins Job名称',
     ops_owners JSON COMMENT '运维负责人(多选)',
     test_owners JSON COMMENT '测试负责人(多选)',
     dev_owners JSON COMMENT '研发负责人(多选)',
@@ -3071,7 +3038,7 @@ COMMENT='应用服务管理表';
 -- Insert application test data
 -- 通过外键关联 organizations 表，使用 SELECT 查询获取 unit_code，避免硬编码
 -- 注意：org 字段存储的是 BizGroup 的 unit_code，line_of_biz 字段存储的是 LineOfBiz 的 unit_code，department 字段存储的是 Department 的 unit_code
--- site 字段为扩展字段，可填写：大陆、香港、北美、欧洲等
+-- site 字段为扩展字段，可填写：Site-A、Site-B 等
 
 -- 技术组（tech-group）下的应用
 -- 技术研发业务线（tech-rd）下的应用
@@ -3081,7 +3048,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
     'xxl-job-admin', FALSE, 'MIDDLEWARE', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     '业务定时任务调度系统', '2024-06-19 13:34:48', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-rd')
@@ -3094,7 +3061,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
     'web-frontend', FALSE, 'WEB', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     'Web前端应用', '2024-04-01 11:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-rd')
@@ -3107,7 +3074,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
     'nginx-proxy', FALSE, 'SERVER', 'ECS', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     'Nginx反向代理', '2024-01-05 09:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-rd')
@@ -3122,7 +3089,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'crm-system', TRUE, 'WEB', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     'CRM客户管理系统（核心业务系统）', '2024-01-20 10:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -3134,7 +3101,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'report-service', FALSE, 'WEB', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '香港',
+    'Site-B',
     '报表服务系统', '2024-03-15 14:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -3146,7 +3113,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'analytics-service', FALSE, 'DATAWARE', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '北美',
+    'Site-A',
     '数据分析服务', '2024-04-10 11:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -3158,7 +3125,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'notification-service', FALSE, 'MIDDLEWARE', 'K8S', 'Running', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     '消息通知服务', '2024-02-25 09:30:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -3172,7 +3139,7 @@ SELECT UUID(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'old-crm', FALSE, 'WEB', 'EC2', 'Stopped', 
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '香港',
+    'Site-B',
     '旧版CRM系统（已迁移）', '2019-06-01 00:00:00', '2023-12-31 23:59:59'
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -3213,24 +3180,12 @@ INSERT INTO menu_permissions (role_id, menu_id, created_at) VALUES
 ('role:admin', 'menu-ai-assistant-models', NOW())
 ON DUPLICATE KEY UPDATE menu_id = menu_id;
 
--- 确保 user 角色拥有基础菜单权限
+-- 普通用户默认授予：个人设置、首页（组织大盘为默认落地页），其余菜单按需授权
 DELETE FROM menu_permissions WHERE role_id = 'role:user';
-INSERT INTO menu_permissions (role_id, menu_id, created_at) 
-SELECT 'role:user', menus.id, NOW() FROM menus
-WHERE menus.id IN (
-    'menu-home',
-    'menu-cloud-bill',
-    'menu-cloud-bill-explorer',
-    'menu-cloud-bill-finops-dashboard',
-    'menu-cloud-bill-recommendations',
-    'menu-cloud-bill-accounts',
-    'menu-org-dashboard',
-    'menu-app-dashboard',
-    'menu-system-dashboard',
-    'menu-k8s-dashboard',
-    'menu-personal'
-)
-ON DUPLICATE KEY UPDATE created_at = NOW();
+INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at) VALUES
+('role:user', 'menu-personal', NOW()),
+('role:user', 'menu-home', NOW()),
+('role:user', 'menu-org-dashboard', NOW());
 
 -- 更新后续一级菜单的排序
 UPDATE menus SET sort = 4 WHERE id = 'menu-bastion';
@@ -3314,5 +3269,114 @@ INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at) VALUES
 ('role:admin', 'menu-k8s-operations', NOW()),
 ('role:admin', 'menu-k8s-cluster-overview', NOW());
 
+-- ============================================================================
+-- Build Master / Release Management Tables
+-- ============================================================================
+
+-- Build master lists (发版总览)
+CREATE TABLE IF NOT EXISTS `build_master_lists` (
+  `id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `publish_date` date NOT NULL,
+  `type` bigint NOT NULL,
+  `status` bigint NOT NULL DEFAULT '0',
+  `order_num` bigint NOT NULL DEFAULT '1',
+  `order_describe` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `owner_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `owner_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hurried` bigint DEFAULT '0',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `site` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `approval_config_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `approval_platform` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `approval_instance` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `release_run_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `deploy_status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `idx_build_master_date_type` (`publish_date`,`type`),
+  KEY `idx_build_master_lists_owner_id` (`owner_id`),
+  KEY `idx_build_master_date_type_site` (`publish_date`,`site`,`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Build master items (应用列表)
+CREATE TABLE IF NOT EXISTS `build_master_items` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `order_num` bigint NOT NULL DEFAULT '0',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_bm_item_list` (`list_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Build master item details (发版项详情)
+CREATE TABLE IF NOT EXISTS `build_master_item_details` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` bigint unsigned NOT NULL,
+  `app_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `operate` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tag` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `content` text COLLATE utf8mb4_unicode_ci,
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `rollback` text COLLATE utf8mb4_unicode_ci,
+  `jenkins` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `record` text COLLATE utf8mb4_unicode_ci,
+  `status` bigint NOT NULL DEFAULT '0',
+  `code_review` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `maker` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `checker` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `log_viewer` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `market_viewer` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tester` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `app_affect` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_affect` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `lib_deps` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stg_validate` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `prd_validate` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sim_sync` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `order_num` bigint NOT NULL DEFAULT '0',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `sub_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_bm_detail_list` (`list_id`),
+  KEY `idx_bm_detail_item` (`item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Build master approvals (审批记录)
+CREATE TABLE IF NOT EXISTS `build_master_approvals` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `approver_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `approver_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `result` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `comment` text COLLATE utf8mb4_unicode_ci,
+  `order_num` bigint NOT NULL DEFAULT '0',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_bm_approval_list` (`list_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Build master operation logs (操作日志)
+CREATE TABLE IF NOT EXISTS `build_master_operation_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `operator_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `operator_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `method` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_bm_log_list` (`list_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Release Orders (发版工单)
+-- ============================================================================
+
+-- Release orders (发布工单，以工单编号为维度展示发版)
 
 SELECT 'Database initialized successfully!' AS Status;

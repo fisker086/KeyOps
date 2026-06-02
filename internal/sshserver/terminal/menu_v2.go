@@ -67,7 +67,7 @@ func (m *MenuV2) ShowGoodbye() {
 	goodbye += colorCyan + colorBold + "║                                                              ║\r\n" + colorReset
 	goodbye += colorCyan + colorBold + "║              " + colorGreen + "✓ Session Completed Successfully" + colorCyan + "                ║\r\n" + colorReset
 	goodbye += colorCyan + colorBold + "║                                                              ║\r\n" + colorReset
-	goodbye += colorCyan + colorBold + "║          " + colorYellow + "Thank you for using ZJump Gateway" + colorCyan + "           ║\r\n" + colorReset
+	goodbye += colorCyan + colorBold + "║          " + colorYellow + "Thank you for using KeyOps Gateway" + colorCyan + "           ║\r\n" + colorReset
 	goodbye += colorCyan + colorBold + "║              " + colorWhite + "Stay secure, stay connected! " + colorCyan + "             ║\r\n" + colorReset
 	goodbye += colorCyan + colorBold + "║                                                              ║\r\n" + colorReset
 	goodbye += colorCyan + colorBold + "╚══════════════════════════════════════════════════════════════╝\r\n" + colorReset
@@ -645,10 +645,9 @@ func (m *MenuV2) PromptPressToContinue() {
 
 // ShowConnectionInfo 显示连接信息（兼容旧接口）
 func (m *MenuV2) ShowConnectionInfo(host *types.HostInfo) {
-	// TODO: host.Username 已移除，需要从 SystemUser 获取
 	username := host.Username
 	if username == "" {
-		username = "(system user)" // TODO: 显示实际的系统用户名
+		username = "(system user)"
 	}
 	info := fmt.Sprintf("\r\n%sConnecting to %s (%s:%d) as %s...%s\r\n",
 		colorGreen, host.Name, host.IP, host.Port, username, colorReset)

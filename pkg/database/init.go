@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/fisker086/keyops/internal/model"
@@ -250,8 +251,8 @@ func AutoMigrateAll() error {
 		&model.WorkflowStep{},
 		&model.WorkflowComment{},
 		&model.User{},
-		&model.UserGroupPermission{},
-		&model.UserHostPermission{},
+		&model.UserGroupPermission{}, // 迁移过渡中：双写至 PermissionRule，迁移完成后删除
+		&model.UserHostPermission{},  // 同上
 		&model.PlatformLoginRecord{},
 		&model.Role{},
 		&model.RoleMember{},
@@ -275,7 +276,7 @@ func AutoMigrateAll() error {
 		&model.Monitor{},
 		&model.Organization{},
 		&model.Application{},
-		&model.JenkinsServer{},
+
 		&model.FormCategory{},
 		&model.FormTemplate{},
 		&model.Ticket{},
@@ -308,10 +309,12 @@ func AutoMigrateAll() error {
 		&model.PermissionExpirationLog{},
 		&model.TwoFactorConfig{},
 		&model.ReleaseRun{},
-		&model.ApplicationDeployBinding{},
 		&model.ReleasePipelineDefinition{},
 		&model.BuildMasterList{},
 		&model.BuildMasterOperationLog{},
+		&model.BuildMasterItem{},
+		&model.BuildMasterItemDetail{},
+		&model.BuildMasterApproval{},
 	}
 
 	// 检查每个表是否存在，只迁移不存在的表
@@ -339,8 +342,10 @@ func AutoMigrateAll() error {
 			// 已存在时仍参与迁移，以自动添加新字段
 			if tableName == "release_runs" || tableName == "application_deploy_bindings" ||
 				tableName == "release_pipeline_definitions" || tableName == "build_master_lists" ||
-				tableName == "build_master_operation_logs" ||
-				tableName == "bill_records" || tableName == "bill_resources" || tableName == "bill_price" {
+				tableName == "build_master_operation_logs" || tableName == "build_master_items" ||
+				tableName == "build_master_item_details" || tableName == "build_master_approvals" ||
+				tableName == "bill_records" || tableName == "bill_resources" || tableName == "bill_price" ||
+				tableName == "form_templates" {
 				tablesToMigrate = append(tablesToMigrate, table)
 			}
 		}
@@ -349,25 +354,47 @@ func AutoMigrateAll() error {
 	// 如果没有需要迁移的表，直接返回
 	if len(tablesToMigrate) == 0 {
 		logger.Info("All database tables already exist, no migration needed")
-		return nil
+	} else {
+		// 执行自动迁移，只创建不存在的表
+		logger.Infof("Starting auto-migration for %d table(s)...", len(tablesToMigrate))
+		err := DB.AutoMigrate(tablesToMigrate...)
+		if err != nil {
+			return fmt.Errorf("failed to auto-migrate database: %w", err)
+		}
+		logger.Infof("Successfully migrated %d table(s)", len(tablesToMigrate))
+
+		// 创建默认数据（用户、角色等）
+		if err := createDefaultData(); err != nil {
+			logger.Warnf("Failed to create default data: %v", err)
+			// 不返回错误，因为表已经创建成功，默认数据可以后续手动创建
+		}
 	}
 
-	// 执行自动迁移，只创建不存在的表
-	logger.Infof("Starting auto-migration for %d table(s)...", len(tablesToMigrate))
-	err := DB.AutoMigrate(tablesToMigrate...)
-
-	if err != nil {
-		return fmt.Errorf("failed to auto-migrate database: %w", err)
+	if err := backfillFormTemplateUUIDs(); err != nil {
+		logger.Warnf("form_templates uuid backfill: %v", err)
 	}
 
-	logger.Infof("Successfully migrated %d table(s)", len(tablesToMigrate))
+	return nil
+}
 
-	// 创建默认数据（用户、角色等）
-	if err := createDefaultData(); err != nil {
-		logger.Warnf("Failed to create default data: %v", err)
-		// 不返回错误，因为表已经创建成功，默认数据可以后续手动创建
+// backfillFormTemplateUUIDs 为历史 form_templates 记录补全 uuid（依赖 AutoMigrate 已添加列）
+func backfillFormTemplateUUIDs() error {
+	if DB == nil {
+		return fmt.Errorf("database connection is not initialized")
 	}
-
+	var templates []model.FormTemplate
+	if err := DB.Find(&templates).Error; err != nil {
+		return err
+	}
+	for i := range templates {
+		if strings.TrimSpace(templates[i].UUID) != "" {
+			continue
+		}
+		newUUID := uuid.New().String()
+		if err := DB.Model(&templates[i]).Update("uuid", newUUID).Error; err != nil {
+			return fmt.Errorf("template_id=%d: %w", templates[i].ID, err)
+		}
+	}
 	return nil
 }
 

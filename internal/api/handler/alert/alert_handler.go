@@ -19,12 +19,12 @@ import (
 
 // AlertHandler 告警处理器
 type AlertHandler struct {
-	service             *alertService.AlertService
-	notificationManager *notification.NotificationManager
-	onCallService       interface{} // 避免循环依赖，使用 interface{}
-	domainCertRepo      interface{} // 域名证书仓库
-	sslCertRepo         interface{} // SSL证书仓库
-	hostedCertRepo      interface{} // 托管证书仓库
+	service                 *alertService.AlertService
+	notificationManager     *notification.NotificationManager
+	onCallService           interface{} // 避免循环依赖，使用 interface{}
+	domainCertRepo          interface{} // 域名证书仓库
+	sslCertRepo             interface{} // SSL证书仓库
+	hostedCertRepo          interface{} // 托管证书仓库
 	certificateAlertService interface{} // 证书告警服务（避免循环依赖，使用 interface{}）
 }
 
@@ -555,7 +555,6 @@ func (h *AlertHandler) OpenEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Success(nil))
 }
 
-
 // WebhookPrometheus 接收Prometheus告警Webhook
 // 必须使用API Key认证，支持以下方式：
 // 1. Authorization: Bearer <api_key> (推荐)
@@ -658,7 +657,7 @@ func (h *AlertHandler) CreateStrategy(c *gin.Context) {
 	}
 
 	// 调试日志：打印接收到的数据
-	log.Printf("[AlertHandler] CreateStrategy received: StrategyName=%s, Filters=%s, StrategySet=%s", 
+	log.Printf("[AlertHandler] CreateStrategy received: StrategyName=%s, Filters=%s, StrategySet=%s",
 		req.StrategyName, string(req.Filters), string(req.StrategySet))
 
 	strategy, err := h.service.CreateStrategy(&req)
@@ -668,7 +667,7 @@ func (h *AlertHandler) CreateStrategy(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[AlertHandler] CreateStrategy success: ID=%d, Filters=%s, StrategySet=%s", 
+	log.Printf("[AlertHandler] CreateStrategy success: ID=%d, Filters=%s, StrategySet=%s",
 		strategy.ID, string(strategy.Filters), string(strategy.StrategySet))
 
 	c.JSON(http.StatusOK, model.Success(strategy))
@@ -1206,12 +1205,18 @@ func (h *AlertHandler) GetStrategyLogs(c *gin.Context) {
 
 	log.Printf("[AlertHandler] GetStrategyLogs result: alertID=%d, total=%d, logs count=%d", alertID, total, len(logs))
 
-	// 获取策略名称映射（所有策略都是自定义策略）
+	// 批量获取策略名称
 	strategyMap := make(map[uint]string)
+	var strategyIDs []uint
 	for _, log := range logs {
 		if log.StrategyID > 0 {
-			if strategy, err := h.service.GetStrategy(log.StrategyID); err == nil {
-				strategyMap[log.StrategyID] = strategy.StrategyName
+			strategyIDs = append(strategyIDs, log.StrategyID)
+		}
+	}
+	if len(strategyIDs) > 0 {
+		if strategies, err := h.service.GetStrategiesByIDs(strategyIDs); err == nil {
+			for _, s := range strategies {
+				strategyMap[s.ID] = s.StrategyName
 			}
 		}
 	}
@@ -1353,26 +1358,26 @@ func (h *AlertHandler) DeleteAlertGroup(c *gin.Context) {
 // GetStatistics 获取告警统计信息
 func (h *AlertHandler) GetStatistics(c *gin.Context) {
 	timeRange := c.DefaultQuery("time_range", "7d")
-	
+
 	stats, err := h.service.GetStatistics(timeRange)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(stats))
 }
 
 // GetTrendStatistics 获取告警趋势统计
 func (h *AlertHandler) GetTrendStatistics(c *gin.Context) {
 	timeRange := c.DefaultQuery("time_range", "7d")
-	
+
 	trends, err := h.service.GetTrendStatistics(timeRange)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(trends))
 }
 
@@ -1380,13 +1385,13 @@ func (h *AlertHandler) GetTrendStatistics(c *gin.Context) {
 func (h *AlertHandler) GetTopAlerts(c *gin.Context) {
 	timeRange := c.DefaultQuery("time_range", "7d")
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	
+
 	topAlerts, err := h.service.GetTopAlerts(timeRange, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(topAlerts))
 }
 
@@ -1399,17 +1404,17 @@ func (h *AlertHandler) GetDomainCertificates(c *gin.Context) {
 		return
 	}
 	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
-	
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	keyword := c.DefaultQuery("keyword", "")
-	
+
 	total, certs, err := repo.List(page, pageSize, keyword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "success",
@@ -1425,14 +1430,14 @@ func (h *AlertHandler) GetDomainCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, model.Error(404, "证书不存在"))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(cert))
 }
 
@@ -1443,18 +1448,18 @@ func (h *AlertHandler) CreateDomainCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
-	
+
 	var req model.DomainCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
 	}
-	
+
 	if err := repo.Create(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	cert, _ := repo.FindByID(req.ID)
 	c.JSON(http.StatusOK, model.Success(cert))
 }
@@ -1466,20 +1471,20 @@ func (h *AlertHandler) UpdateDomainCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var req model.DomainCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
 	}
-	
+
 	req.ID = uint(id)
 	if err := repo.Update(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	cert, _ := repo.FindByID(uint(id))
 	c.JSON(http.StatusOK, model.Success(cert))
 }
@@ -1491,13 +1496,13 @@ func (h *AlertHandler) DeleteDomainCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err := repo.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(nil))
 }
 
@@ -1508,26 +1513,26 @@ func (h *AlertHandler) RefreshDomainCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.domainCertRepo.(repository.DomainCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, model.Error(404, "证书不存在"))
 		return
 	}
-	
+
 	// 使用 crypto/tls 连接域名并获取证书信息
 	if err := h.fetchCertificateInfo(cert); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, fmt.Sprintf("获取证书信息失败: %v", err)))
 		return
 	}
-	
+
 	// 更新证书信息
 	if err := repo.Update(cert); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	// 返回更新后的证书信息
 	updatedCert, _ := repo.FindByID(uint(id))
 	c.JSON(http.StatusOK, model.Success(updatedCert))
@@ -1544,7 +1549,7 @@ func (h *AlertHandler) CheckCertificateAlerts(c *gin.Context) {
 	type CertificateAlertServiceInterface interface {
 		CheckAndSendAlerts() error
 	}
-	
+
 	service, ok := h.certificateAlertService.(CertificateAlertServiceInterface)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, model.Error(500, "证书告警服务类型错误"))
@@ -1569,7 +1574,7 @@ func (h *AlertHandler) fetchCertificateInfo(cert *model.DomainCertificate) error
 		address = net.JoinHostPort(cert.Domain, "443")
 		cert.Port = 443
 	}
-	
+
 	// 建立TCP连接
 	conn, err := net.DialTimeout("tcp", address, 10*time.Second)
 	if err != nil {
@@ -1577,51 +1582,51 @@ func (h *AlertHandler) fetchCertificateInfo(cert *model.DomainCertificate) error
 		return fmt.Errorf("连接失败: %w", err)
 	}
 	defer conn.Close()
-	
+
 	// 创建TLS连接
 	tlsConn := tls.Client(conn, &tls.Config{
 		ServerName:         cert.Domain,
 		InsecureSkipVerify: true, // 允许自签名证书
 	})
 	defer tlsConn.Close()
-	
+
 	// 握手获取证书
 	if err := tlsConn.Handshake(); err != nil {
 		cert.ConnectStatus = boolPtr(false)
 		return fmt.Errorf("TLS握手失败: %w", err)
 	}
-	
+
 	// 获取证书链
 	state := tlsConn.ConnectionState()
 	if len(state.PeerCertificates) == 0 {
 		cert.ConnectStatus = boolPtr(false)
 		return fmt.Errorf("未获取到证书")
 	}
-	
+
 	// 获取第一个证书（服务器证书）
 	serverCert := state.PeerCertificates[0]
-	
+
 	// 解析证书信息
 	cert.ConnectStatus = boolPtr(true)
 	cert.StartTime = &serverCert.NotBefore
 	cert.ExpireTime = &serverCert.NotAfter
-	
+
 	// 计算剩余天数
 	if cert.ExpireTime != nil {
 		days := int(time.Until(*cert.ExpireTime).Hours() / 24)
 		cert.ExpireDays = days
 	}
-	
+
 	// 将证书转换为PEM格式
 	certPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: serverCert.Raw,
 	})
 	cert.SSLCertificate = string(certPEM)
-	
+
 	// 私钥不在这里获取（需要服务器权限）
 	cert.SSLCertificateKey = ""
-	
+
 	return nil
 }
 
@@ -1637,17 +1642,17 @@ func (h *AlertHandler) GetSslCertificates(c *gin.Context) {
 		return
 	}
 	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
-	
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	keyword := c.DefaultQuery("keyword", "")
-	
+
 	total, certs, err := repo.List(page, pageSize, keyword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "success",
@@ -1663,14 +1668,14 @@ func (h *AlertHandler) GetSslCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, model.Error(404, "证书不存在"))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(cert))
 }
 
@@ -1681,18 +1686,18 @@ func (h *AlertHandler) CreateSslCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
-	
+
 	var req model.SSLCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
 	}
-	
+
 	if err := repo.Create(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(req))
 }
 
@@ -1703,20 +1708,20 @@ func (h *AlertHandler) UpdateSslCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var req model.SSLCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
 	}
-	
+
 	req.ID = uint(id)
 	if err := repo.Update(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	cert, _ := repo.FindByID(uint(id))
 	c.JSON(http.StatusOK, model.Success(cert))
 }
@@ -1728,13 +1733,13 @@ func (h *AlertHandler) DeleteSslCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.sslCertRepo.(repository.SSLCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err := repo.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(nil))
 }
 
@@ -1745,17 +1750,17 @@ func (h *AlertHandler) GetHostedCertificates(c *gin.Context) {
 		return
 	}
 	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
-	
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	keyword := c.DefaultQuery("keyword", "")
-	
+
 	total, certs, err := repo.List(page, pageSize, keyword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "success",
@@ -1771,14 +1776,14 @@ func (h *AlertHandler) GetHostedCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	cert, err := repo.FindByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, model.Error(404, "证书不存在"))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(cert))
 }
 
@@ -1789,18 +1794,18 @@ func (h *AlertHandler) CreateHostedCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
-	
+
 	var req model.HostedCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
 	}
-	
+
 	if err := repo.Create(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(req))
 }
 
@@ -1811,20 +1816,20 @@ func (h *AlertHandler) UpdateHostedCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var req model.HostedCertificate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(400, err.Error()))
 		return
 	}
-	
+
 	req.ID = uint(id)
 	if err := repo.Update(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	cert, _ := repo.FindByID(uint(id))
 	c.JSON(http.StatusOK, model.Success(cert))
 }
@@ -1836,12 +1841,12 @@ func (h *AlertHandler) DeleteHostedCertificate(c *gin.Context) {
 		return
 	}
 	repo := h.hostedCertRepo.(repository.HostedCertificateRepository)
-	
+
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err := repo.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, model.Error(500, err.Error()))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, model.Success(nil))
 }

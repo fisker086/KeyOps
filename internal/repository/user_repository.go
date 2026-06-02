@@ -1,10 +1,12 @@
 package repository
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/fisker086/keyops/internal/model"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -41,12 +43,23 @@ type UserRepository interface {
 	FindAllUsersWithGroupsAndHosts(page, pageSize int, keyword string) ([]model.UserWithGroups, int64, error)
 }
 
+const directGrantRulePrefix = "_direct_grant_"
+
 type userRepository struct {
 	db *gorm.DB
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
+}
+
+// getUserPrimaryRole 获取用户的主角色（第一个角色的ID）
+func (r *userRepository) getUserPrimaryRole(userID string) (string, error) {
+	var member model.RoleMember
+	if err := r.db.Where("user_id = ?", userID).Order("id ASC").First(&member).Error; err != nil {
+		return "", err
+	}
+	return member.RoleID, nil
 }
 
 // ===== User Methods =====
@@ -219,7 +232,7 @@ func (r *userRepository) AssignRolesToUser(userID string, roleIDs []string, crea
 	if err := r.db.Where("user_id = ?", userID).Delete(&model.RoleMember{}).Error; err != nil {
 		return fmt.Errorf("删除现有角色失败: %w", err)
 	}
-	
+
 	// 如果没有角色要分配，直接返回
 	if len(roleIDs) == 0 {
 		// 同时更新 users.role 字段为 'user'（向后兼容）
@@ -228,7 +241,7 @@ func (r *userRepository) AssignRolesToUser(userID string, roleIDs []string, crea
 		}
 		return nil
 	}
-	
+
 	// 批量插入新角色成员关系（统一使用 role_members 表）
 	members := make([]model.RoleMember, 0, len(roleIDs))
 	hasAdminRole := false
@@ -242,11 +255,11 @@ func (r *userRepository) AssignRolesToUser(userID string, roleIDs []string, crea
 			hasAdminRole = true
 		}
 	}
-	
+
 	if err := r.db.Create(&members).Error; err != nil {
 		return fmt.Errorf("分配角色失败: %w", err)
 	}
-	
+
 	// 同步更新 users.role 字段（向后兼容，用于快速查询）
 	// 如果用户有 role:admin，则 users.role = 'admin'，否则为 'user'
 	userRole := "user"
@@ -256,7 +269,7 @@ func (r *userRepository) AssignRolesToUser(userID string, roleIDs []string, crea
 	if err := r.UpdateUserRole(userID, userRole); err != nil {
 		return fmt.Errorf("更新用户角色失败: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -268,12 +281,12 @@ func (r *userRepository) GetUserRoles(userID string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	roleIDs := make([]string, 0, len(roleMembers))
 	for _, member := range roleMembers {
 		roleIDs = append(roleIDs, member.RoleID)
 	}
-	
+
 	return roleIDs, nil
 }
 
@@ -324,71 +337,201 @@ func (r *userRepository) FindAllUsersWithGroups(page, pageSize int, keyword stri
 
 // RemoveUserFromGroup 从分组中移除用户
 func (r *userRepository) RemoveUserFromGroup(userID, groupID string) error {
-	return r.db.Where("user_id = ? AND group_id = ?", userID, groupID).
-		Delete(&model.UserGroupPermission{}).Error
+	// 旧表
+	if err := r.db.Where("user_id = ? AND group_id = ?", userID, groupID).
+		Delete(&model.UserGroupPermission{}).Error; err != nil {
+		return err
+	}
+
+	// 新表：删除由此迁移逻辑创建的授权规则
+	roleID, err := r.getUserPrimaryRole(userID)
+	if err == nil {
+		ruleName := directGrantRulePrefix + userID + "_group_" + groupID
+		r.db.Where("role_id = ? AND name = ?", roleID, ruleName).
+			Delete(&model.PermissionRule{})
+	}
+
+	return nil
 }
 
 // AddUserToGroup 将用户添加到分组
 func (r *userRepository) AddUserToGroup(userID, groupID, createdBy string) error {
+	// 旧表
 	permission := model.UserGroupPermission{
 		UserID:    userID,
 		GroupID:   groupID,
 		CreatedBy: createdBy,
 	}
-	return r.db.Create(&permission).Error
+	if err := r.db.Create(&permission).Error; err != nil {
+		return err
+	}
+
+	// 新表：为用户的主角色创建授权规则（同时写入关联表）
+	roleID, err := r.getUserPrimaryRole(userID)
+	if err != nil {
+		return nil
+	}
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		rule := &model.PermissionRule{
+			ID:          uuid.New().String(),
+			Name:        directGrantRulePrefix + userID + "_group_" + groupID,
+			RoleID:      roleID,
+			HostGroupID: &groupID,
+			Enabled:     true,
+			Description: fmt.Sprintf("Auto-migrated from user_group_permissions (user=%s, group=%s)", userID, groupID),
+			CreatedBy:   createdBy,
+		}
+		if err := tx.Create(rule).Error; err != nil {
+			return err
+		}
+		relation := &model.PermissionRuleHostGroup{
+			PermissionRuleID: rule.ID,
+			HostGroupID:      groupID,
+		}
+		return tx.Create(relation).Error
+	})
 }
 
 // GetUsersInGroup 获取有权限访问某个分组的所有用户
 func (r *userRepository) GetUsersInGroup(groupID string) ([]model.User, error) {
-	var users []model.User
-	err := r.db.
+	userMap := make(map[string]model.User)
+
+	// 1. 新架构：角色 → 授权规则 → 主机组（关联表 + 直列）
+	type userIDResult struct {
+		UserID string
+	}
+	var fromRules []userIDResult
+	r.db.Table("permission_rules").
+		Select("DISTINCT role_members.user_id").
+		Joins("JOIN role_members ON permission_rules.role_id = role_members.role_id").
+		Where("permission_rules.enabled = ? AND permission_rules.host_group_id = ?", true, groupID).
+		Scan(&fromRules)
+
+	var fromJoinTable []userIDResult
+	r.db.Table("permission_rule_host_groups").
+		Select("DISTINCT role_members.user_id").
+		Joins("JOIN permission_rules ON permission_rule_host_groups.permission_rule_id = permission_rules.id").
+		Joins("JOIN role_members ON permission_rules.role_id = role_members.role_id").
+		Where("permission_rule_host_groups.host_group_id = ?", groupID).
+		Where("permission_rules.enabled = ?", true).
+		Scan(&fromJoinTable)
+
+	fromRules = append(fromRules, fromJoinTable...)
+	for _, row := range fromRules {
+		if row.UserID != "" {
+			user, err := r.FindUserByID(row.UserID)
+			if err == nil {
+				userMap[user.ID] = *user
+			}
+		}
+	}
+
+	// 2. 旧表 user_group_permissions
+	var legacyUsers []model.User
+	r.db.
 		Joins("JOIN user_group_permissions ON users.id = user_group_permissions.user_id").
 		Where("user_group_permissions.group_id = ?", groupID).
-		Find(&users).Error
-	return users, err
+		Find(&legacyUsers)
+
+	for _, u := range legacyUsers {
+		userMap[u.ID] = u
+	}
+
+	out := make([]model.User, 0, len(userMap))
+	for _, u := range userMap {
+		out = append(out, u)
+	}
+	return out, nil
 }
 
 // ===== User-Host Permission Methods =====
 
 // AssignHostsToUser 给用户分配单个主机权限
 func (r *userRepository) AssignHostsToUser(userID string, hostIDs []string, createdBy string) error {
-	// 先删除该用户现有的所有主机权限
+	// 旧表
 	if err := r.db.Where("user_id = ?", userID).Delete(&model.UserHostPermission{}).Error; err != nil {
 		return err
 	}
+	if len(hostIDs) > 0 {
+		permissions := make([]model.UserHostPermission, 0, len(hostIDs))
+		for _, hostID := range hostIDs {
+			permissions = append(permissions, model.UserHostPermission{
+				UserID:    userID,
+				HostID:    hostID,
+				CreatedBy: createdBy,
+			})
+		}
+		if err := r.db.Create(&permissions).Error; err != nil {
+			return err
+		}
+	}
 
-	// 如果没有主机要分配，直接返回
+	// 新表：为用户的主角色创建/更新授权规则
+	roleID, err := r.getUserPrimaryRole(userID)
+	if err != nil {
+		return nil
+	}
+
+	ruleName := directGrantRulePrefix + userID + "_hosts"
+	var existing model.PermissionRule
+	if err := r.db.Where("role_id = ? AND name = ?", roleID, ruleName).First(&existing).Error; err == nil {
+		if len(hostIDs) == 0 {
+			return r.db.Delete(&existing).Error
+		}
+		hostIDsJSON, _ := json.Marshal(hostIDs)
+		return r.db.Model(&existing).Update("host_ids", string(hostIDsJSON)).Error
+	}
+
 	if len(hostIDs) == 0 {
 		return nil
 	}
 
-	// 批量插入新权限
-	permissions := make([]model.UserHostPermission, 0, len(hostIDs))
-	for _, hostID := range hostIDs {
-		permissions = append(permissions, model.UserHostPermission{
-			UserID:    userID,
-			HostID:    hostID,
-			CreatedBy: createdBy,
-		})
+	hostIDsJSON, _ := json.Marshal(hostIDs)
+	rule := &model.PermissionRule{
+		ID:          uuid.New().String(),
+		Name:        ruleName,
+		RoleID:      roleID,
+		HostIDs:     string(hostIDsJSON),
+		Enabled:     true,
+		Description: fmt.Sprintf("Auto-migrated from user_host_permissions (user=%s)", userID),
+		CreatedBy:   createdBy,
 	}
-
-	return r.db.Create(&permissions).Error
+	return r.db.Create(rule).Error
 }
 
 // GetUserHosts 获取用户有权限访问的主机ID列表（单独授权的）
 func (r *userRepository) GetUserHosts(userID string) ([]string, error) {
+	hostIDMap := make(map[string]bool)
+
+	// 1. 新架构：从 PermissionRule 的 HostIDs 字段读取
+	roleID, err := r.getUserPrimaryRole(userID)
+	if err == nil {
+		ruleName := directGrantRulePrefix + userID + "_hosts"
+		var rule model.PermissionRule
+		if err := r.db.Where("role_id = ? AND name = ?", roleID, ruleName).First(&rule).Error; err == nil && rule.HostIDs != "" {
+			var ids []string
+			if err := json.Unmarshal([]byte(rule.HostIDs), &ids); err == nil {
+				for _, id := range ids {
+					hostIDMap[id] = true
+				}
+			}
+		}
+	}
+
+	// 2. 旧表
 	var permissions []model.UserHostPermission
-	err := r.db.Where("user_id = ?", userID).Find(&permissions).Error
-	if err != nil {
-		return nil, err
+	if err := r.db.Where("user_id = ?", userID).Find(&permissions).Error; err == nil {
+		for _, p := range permissions {
+			hostIDMap[p.HostID] = true
+		}
 	}
 
-	hostIDs := make([]string, 0, len(permissions))
-	for _, p := range permissions {
-		hostIDs = append(hostIDs, p.HostID)
+	out := make([]string, 0, len(hostIDMap))
+	for id := range hostIDMap {
+		out = append(out, id)
 	}
-
-	return hostIDs, nil
+	return out, nil
 }
 
 // GetUserHostGroupIDs 获取用户可访问的主机组 ID：授权规则（permission_rule_host_groups）+ 旧表 user_group_permissions
@@ -427,6 +570,7 @@ func (r *userRepository) GetUserHostGroupIDs(userID string) ([]string, error) {
 				ruleIDs = append(ruleIDs, rule.ID)
 			}
 
+			// a) 从 permission_rule_host_groups 关联表读取
 			var hostGroupRelations []struct {
 				HostGroupID string `gorm:"column:host_group_id"`
 			}
@@ -440,6 +584,20 @@ func (r *userRepository) GetUserHostGroupIDs(userID string) ([]string, error) {
 			for _, rel := range hostGroupRelations {
 				if rel.HostGroupID != "" {
 					hostGroupIDMap[rel.HostGroupID] = true
+				}
+			}
+
+			// b) 从 permission_rules.host_group_id 直列读取
+			var directGroups []struct {
+				HostGroupID string `gorm:"column:host_group_id"`
+			}
+			r.db.Table("permission_rules").
+				Select("DISTINCT host_group_id").
+				Where("id IN (?) AND host_group_id IS NOT NULL AND host_group_id != ''", ruleIDs).
+				Scan(&directGroups)
+			for _, dg := range directGroups {
+				if dg.HostGroupID != "" {
+					hostGroupIDMap[dg.HostGroupID] = true
 				}
 			}
 		}
@@ -465,18 +623,88 @@ func (r *userRepository) GetUserHostGroupIDs(userID string) ([]string, error) {
 
 // AddUserToHost 将用户添加到单个主机权限
 func (r *userRepository) AddUserToHost(userID, hostID, createdBy string) error {
+	// 旧表
 	permission := model.UserHostPermission{
 		UserID:    userID,
 		HostID:    hostID,
 		CreatedBy: createdBy,
 	}
-	return r.db.Create(&permission).Error
+	if err := r.db.Create(&permission).Error; err != nil {
+		return err
+	}
+
+	// 新表：更新用户的个人主机授权规则（追加hostID）
+	roleID, err := r.getUserPrimaryRole(userID)
+	if err != nil {
+		return nil
+	}
+
+	ruleName := directGrantRulePrefix + userID + "_hosts"
+	var existing model.PermissionRule
+	if err := r.db.Where("role_id = ? AND name = ?", roleID, ruleName).First(&existing).Error; err == nil {
+		var ids []string
+		if existing.HostIDs != "" {
+			json.Unmarshal([]byte(existing.HostIDs), &ids)
+		}
+		for _, id := range ids {
+			if id == hostID {
+				return nil
+			}
+		}
+		ids = append(ids, hostID)
+		hostIDsJSON, _ := json.Marshal(ids)
+		return r.db.Model(&existing).Update("host_ids", string(hostIDsJSON)).Error
+	}
+
+	hostIDsJSON, _ := json.Marshal([]string{hostID})
+	rule := &model.PermissionRule{
+		ID:          uuid.New().String(),
+		Name:        ruleName,
+		RoleID:      roleID,
+		HostIDs:     string(hostIDsJSON),
+		Enabled:     true,
+		Description: fmt.Sprintf("Auto-migrated from user_host_permissions (user=%s)", userID),
+		CreatedBy:   createdBy,
+	}
+	return r.db.Create(rule).Error
 }
 
 // RemoveUserFromHost 从主机移除用户权限
 func (r *userRepository) RemoveUserFromHost(userID, hostID string) error {
-	return r.db.Where("user_id = ? AND host_id = ?", userID, hostID).
-		Delete(&model.UserHostPermission{}).Error
+	// 旧表
+	if err := r.db.Where("user_id = ? AND host_id = ?", userID, hostID).
+		Delete(&model.UserHostPermission{}).Error; err != nil {
+		return err
+	}
+
+	// 新表：从个人主机授权规则中移除hostID
+	roleID, err := r.getUserPrimaryRole(userID)
+	if err != nil {
+		return nil
+	}
+
+	ruleName := directGrantRulePrefix + userID + "_hosts"
+	var existing model.PermissionRule
+	if err := r.db.Where("role_id = ? AND name = ?", roleID, ruleName).First(&existing).Error; err != nil {
+		return nil
+	}
+
+	var ids []string
+	if existing.HostIDs != "" {
+		json.Unmarshal([]byte(existing.HostIDs), &ids)
+	}
+	filtered := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if id != hostID {
+			filtered = append(filtered, id)
+		}
+	}
+
+	if len(filtered) == 0 {
+		return r.db.Delete(&existing).Error
+	}
+	hostIDsJSON, _ := json.Marshal(filtered)
+	return r.db.Model(&existing).Update("host_ids", string(hostIDsJSON)).Error
 }
 
 // GetUserWithGroupsAndHosts 获取用户及其分组和主机权限信息

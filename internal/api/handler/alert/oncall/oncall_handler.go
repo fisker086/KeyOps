@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fisker086/keyops/internal/model"
 	oncallService "github.com/fisker086/keyops/internal/alert/oncall/service"
+	"github.com/fisker086/keyops/internal/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -291,4 +291,3 @@ func (h *OnCallHandler) ListAssignmentsByUser(c *gin.Context) {
 		"total":   total,
 	})
 }
-

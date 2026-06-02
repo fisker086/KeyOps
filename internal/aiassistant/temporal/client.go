@@ -11,7 +11,7 @@ import (
 
 // Client 用于触发 AI 助手定时任务工作流（原子：巡检 + 发报告）
 type Client struct {
-	c        client.Client
+	c         client.Client
 	taskQueue string
 }
 

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	WorkflowIDPrefix     = "ai-assistant-schedule-"
+	WorkflowIDPrefix       = "ai-assistant-schedule-"
 	ActivityNameRunAndSend = "RunInspectionAndSendReport"
 )
 

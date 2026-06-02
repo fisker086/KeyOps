@@ -2,8 +2,8 @@ package terminal
 
 import (
 	"fmt"
-	"io"
 	"github.com/fisker086/keyops/pkg/logger"
+	"io"
 	"strconv"
 	"strings"
 
@@ -45,7 +45,7 @@ func (m *Menu) ShowWelcome(username string) {
 
 	banner := fmt.Sprintf("\r\n%s"+
 		"================================================================\r\n"+
-		"           Welcome to ZJump SSH Gateway\r\n"+
+		"           Welcome to KeyOps SSH Gateway\r\n"+
 		"        Zero-Trust Jump Server with Full Audit\r\n"+
 		"================================================================%s\r\n"+
 		"\r\n"+
@@ -240,10 +240,9 @@ func (m *Menu) ShowError(errMsg string) {
 
 // ShowConnectionInfo 显示连接信息
 func (m *Menu) ShowConnectionInfo(host *types.HostInfo) {
-	// TODO: host.Username 已移除，需要从 SystemUser 获取
 	username := host.Username
 	if username == "" {
-		username = "(system user)" // TODO: 显示实际的系统用户名
+		username = "(system user)"
 	}
 	info := fmt.Sprintf("\r\n%sConnecting to %s (%s:%d) as %s...%s\r\n",
 		colorGreen, host.Name, host.IP, host.Port, username, colorReset)
@@ -393,7 +392,7 @@ func (m *Menu) showCommandHelp() {
 
 // showDetailedHelp 显示详细帮助
 func (m *Menu) showDetailedHelp() {
-	help := fmt.Sprintf("\r\n%s=== ZJump Help ===%s\r\n"+
+	help := fmt.Sprintf("\r\n%s=== KeyOps Help ===%s\r\n"+
 		"%sNavigation:%s\r\n"+
 		"  [Number] - Connect to host by number\r\n"+
 		"  p - Refresh and display host list (page)\r\n"+
@@ -412,7 +411,7 @@ func (m *Menu) showDetailedHelp() {
 
 // ShowGoodbye 显示再见信息
 func (m *Menu) ShowGoodbye() {
-	goodbye := fmt.Sprintf("\r\n%sThank you for using ZJump SSH Gateway. Goodbye!%s\r\n",
+	goodbye := fmt.Sprintf("\r\n%sThank you for using KeyOps SSH Gateway. Goodbye!%s\r\n",
 		colorGreen+colorBold, colorReset)
 
 	m.channel.Write([]byte(goodbye))

@@ -14,7 +14,7 @@ import (
 type EnvRecord struct {
 	ID             string    `gorm:"primaryKey;size:36"`
 	Name           string    `gorm:"size:100;not null"`
-	PromURL        string    `gorm:"size:500"`   // 可选，非 Prometheus 场景可空
+	PromURL        string    `gorm:"size:500"` // 可选，非 Prometheus 场景可空
 	GrafURL        string    `gorm:"size:500"`
 	GrafToken      string    `gorm:"size:500"`
 	Cluster        string    `gorm:"size:100"`
@@ -122,7 +122,7 @@ func (s *Store) upgradeExpertPromptsForSkills() error {
 				"name":          cfg.Name,
 				"description":   cfg.Description,
 				"system_prompt": cfg.SystemPrompt,
-				"sort":         ivalExpert(cfg.ID),
+				"sort":          ivalExpert(cfg.ID),
 			}).Error; err != nil {
 				return err
 			}
@@ -262,12 +262,12 @@ func (s *Store) UpdateEnvironment(e *Environment) error {
 		return nil
 	}
 	return s.db.Model(&EnvRecord{}).Where("id = ?", e.ID).Updates(map[string]interface{}{
-		"name":              e.Name,
-		"prom_url":          e.PromURL,
-		"graf_url":          e.GrafURL,
-		"graf_token":        e.GrafToken,
-		"cluster":           e.Cluster,
-		"k8s_cluster_id":    e.K8sClusterID,
+		"name":             e.Name,
+		"prom_url":         e.PromURL,
+		"graf_url":         e.GrafURL,
+		"graf_token":       e.GrafToken,
+		"cluster":          e.Cluster,
+		"k8s_cluster_id":   e.K8sClusterID,
 		"extra_config":     marshalExtraConfig(e.ExtraConfig),
 		"allowed_role_ids": marshalAllowedRoleIDs(e.AllowedRoleIDs),
 	}).Error

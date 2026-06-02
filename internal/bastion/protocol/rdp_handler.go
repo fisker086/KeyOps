@@ -313,7 +313,7 @@ func (h *RDPHandler) Connect(ctx context.Context, config *ConnectionConfig) erro
 	// 注意：参数顺序需要根据 guacd 返回的 args 响应来调整
 	params := []string{
 		"version", "VERSION_1_5_0", // 协议版本（1.6.0 版本仍支持此协议版本）
-		"client-name", "ZJump",
+		"client-name", "KeyOps",
 		"scheme", "rdp",
 		"hostname", config.HostIP,
 		"port", strconv.Itoa(rdpPort),

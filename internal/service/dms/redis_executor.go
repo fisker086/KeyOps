@@ -281,7 +281,7 @@ func (e *RedisExecutor) ExecuteUpdate(ctx context.Context, databaseName, query s
 	} else if cmdSize > 100*1024 { // 大于100KB
 		timeout = 120 * time.Second // 2分钟
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	alertnotification "github.com/fisker086/keyops/internal/alert/notification"
 	"github.com/fisker086/keyops/internal/aiassistant"
 	aitemporal "github.com/fisker086/keyops/internal/aiassistant/temporal"
+	alertnotification "github.com/fisker086/keyops/internal/alert/notification"
 )
 
 type aiAssistantReportSender struct {

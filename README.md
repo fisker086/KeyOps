@@ -5,7 +5,7 @@
 ---
 
 **Screenshots**
-![Personnel Management (English)](image/readme-en.jpg)
+![Personnel Management (English)](image/readme-en.png)
 
 **Enterprise-grade DevOps platform built with Go** — bastion host, K8s multi-cluster, monitoring & alerts, DMS, cloud FinOps, AI assistant, and more.
 

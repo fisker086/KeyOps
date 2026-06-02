@@ -88,13 +88,13 @@ func InitializeSSHServer(
 		MaxSessions:      getMaxSessions(cfg),
 		SessionTimeout:   24 * time.Hour,
 		IdleTimeout:      30 * time.Minute,
-		ServerVersion:    "SSH-2.0-ZJump_1.0",
+		ServerVersion:    "SSH-2.0-KeyOps_1.0",
 		HostKeyPath:      "", // 不使用本地文件（使用数据库共享模式）
 		EnablePassword:   true,
 		EnablePublicKey:  true,        // 启用公钥认证
 		DB:               database.DB, // 数据库连接
 		UseSharedHostKey: true,        // 启用数据库共享密钥（多实例部署推荐）
-		BannerMessage:    "Welcome to ZJump SSH Gateway\r\n",
+		BannerMessage:    "Welcome to KeyOps SSH Gateway\r\n",
 	}
 
 	// 创建标准SSH服务器

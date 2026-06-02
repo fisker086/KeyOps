@@ -99,12 +99,11 @@ func (s *MonitorService) QueryProbe(group, project, env, module, address string)
 	// TODO: 实现 Probe 查询逻辑
 	// 目前返回模拟数据
 	return map[string]interface{}{
-		"group":     group,
-		"project":   project,
-		"env":       env,
-		"module":    module,
-		"address":   address,
-		"probes":    []interface{}{},
+		"group":   group,
+		"project": project,
+		"env":     env,
+		"module":  module,
+		"address": address,
+		"probes":  []interface{}{},
 	}, nil
 }
-

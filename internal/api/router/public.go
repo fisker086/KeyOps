@@ -26,5 +26,4 @@ func registerPublic(
 	api.GET("/auth/methods", settingHandler.GetAuthMethods)
 
 	api.POST("/release/webhook", releaseHandler.HandleWebhook)
-	api.POST("/release/webhook/push", releaseHandler.HandleWebhookPush)
 }

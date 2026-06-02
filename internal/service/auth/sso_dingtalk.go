@@ -24,7 +24,7 @@ func (s *AuthService) exchangeDingTalkToken(code, clientID, clientSecret, tokenU
 		"clientId":     clientID,
 		"clientSecret": clientSecret,
 		"code":         code,
-		"grantType":   "authorization_code",
+		"grantType":    "authorization_code",
 	}
 	b, err := json.Marshal(body)
 	if err != nil {
@@ -96,12 +96,12 @@ func (s *AuthService) getDingTalkUserInfo(userAccessToken, userInfoURL string) (
 
 	var payload struct {
 		Nick      string `json:"nick"`
-		Name     string `json:"name"`
-		UnionId  string `json:"unionId"`
-		OpenId   string `json:"openId"`
-		Email   string `json:"email"`
-		Mobile  string `json:"mobile"`
-		Avatar  string `json:"avatar"`
+		Name      string `json:"name"`
+		UnionId   string `json:"unionId"`
+		OpenId    string `json:"openId"`
+		Email     string `json:"email"`
+		Mobile    string `json:"mobile"`
+		Avatar    string `json:"avatar"`
 		AvatarUrl string `json:"avatarUrl"`
 	}
 	if err := json.Unmarshal(raw, &payload); err != nil {
@@ -114,7 +114,7 @@ func (s *AuthService) getDingTalkUserInfo(userAccessToken, userInfoURL string) (
 		OpenID:    payload.OpenId,
 		Email:     payload.Email,
 		Name:      name,
-		Mobile:   payload.Mobile,
+		Mobile:    payload.Mobile,
 		AvatarURL: firstNonEmpty(payload.Avatar, payload.AvatarUrl),
 	}
 	if ui.Email != "" {

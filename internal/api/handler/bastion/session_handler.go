@@ -377,18 +377,18 @@ func (h *SessionHandler) GetSessionRecordingFile(c *gin.Context) {
 
 		if isMP4 {
 			logger.Infof("[Session] Recording file is MP4 format, serving as video file")
-			
+
 			// 重置文件指针到开头
 			if _, err := f.Seek(0, 0); err != nil {
 				logger.Errorf("[Session] Failed to seek to file start: %v", err)
 				c.JSON(http.StatusInternalServerError, model.Error(500, fmt.Sprintf("无法重置文件指针: %v", err)))
 				return
 			}
-			
+
 			// 支持 HTTP Range 请求（视频播放必需）
 			// 浏览器会发送 Range: bytes=0- 或 Range: bytes=start-end 请求
 			rangeHeader := c.GetHeader("Range")
-			
+
 			if rangeHeader != "" {
 				// 解析 Range 请求
 				// 格式: bytes=start-end 或 bytes=start- 或 bytes=-suffix
@@ -396,7 +396,7 @@ func (h *SessionHandler) GetSessionRecordingFile(c *gin.Context) {
 				if strings.HasPrefix(rangeHeader, "bytes=") {
 					rangeSpec := rangeHeader[6:] // 移除 "bytes=" 前缀
 					parts := strings.Split(rangeSpec, "-")
-					
+
 					if len(parts) == 2 {
 						if parts[0] != "" {
 							start, _ = strconv.ParseInt(parts[0], 10, 64)
@@ -407,7 +407,7 @@ func (h *SessionHandler) GetSessionRecordingFile(c *gin.Context) {
 							end = fileSize - 1 // 到文件末尾
 						}
 					}
-					
+
 					// 验证范围
 					if start < 0 {
 						start = 0
@@ -420,21 +420,21 @@ func (h *SessionHandler) GetSessionRecordingFile(c *gin.Context) {
 						c.Status(http.StatusRequestedRangeNotSatisfiable)
 						return
 					}
-					
+
 					// 设置 Range 响应头
 					c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileSize))
 					c.Header("Content-Length", strconv.FormatInt(end-start+1, 10))
 					c.Header("Accept-Ranges", "bytes")
 					c.Header("Content-Type", "video/mp4")
 					c.Status(http.StatusPartialContent) // HTTP 206
-					
+
 					// 跳转到指定位置
 					if _, err := f.Seek(start, 0); err != nil {
 						logger.Errorf("[Session] Failed to seek to position %d: %v", start, err)
 						c.Status(http.StatusInternalServerError)
 						return
 					}
-					
+
 					// 只传输请求的范围
 					limitedReader := io.LimitReader(f, end-start+1)
 					_, err = io.Copy(c.Writer, limitedReader)
@@ -444,14 +444,14 @@ func (h *SessionHandler) GetSessionRecordingFile(c *gin.Context) {
 					return
 				}
 			}
-			
+
 			// 没有 Range 请求，返回整个文件
 			c.Header("Content-Type", "video/mp4")
 			c.Header("Content-Length", strconv.FormatInt(fileSize, 10))
 			c.Header("Accept-Ranges", "bytes")
 			c.Header("Cache-Control", "public, max-age=3600") // 缓存1小时
 			c.Status(http.StatusOK)
-			
+
 			_, err = io.Copy(c.Writer, f)
 			if err != nil {
 				logger.Errorf("[Session] Error streaming MP4 file: %v", err)

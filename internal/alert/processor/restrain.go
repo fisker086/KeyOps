@@ -78,4 +78,3 @@ func (p *RestrainProcessor) matchRestrainFields(tags map[string]string, alertTit
 
 	return true
 }
-

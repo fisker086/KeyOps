@@ -243,5 +243,3 @@ func (h *FormCategoryHandler) GetCategory(c *gin.Context) {
 		"data":    category,
 	})
 }
-
-

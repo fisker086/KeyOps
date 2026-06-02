@@ -106,5 +106,3 @@ func (h *ApiKeyHandler) Revoke(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.Success(gin.H{"success": true}))
 }
-
-

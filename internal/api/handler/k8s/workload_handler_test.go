@@ -98,10 +98,10 @@ func TestGetDeploymentRevisions(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "deployment_name", Value: "test-deployment"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "deployment_name", Value: "test-deployment"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -135,13 +135,13 @@ func TestGetDeploymentRevisions(t *testing.T) {
 
 func TestRollbackDeployment(t *testing.T) {
 	tests := []struct {
-		name          string
-		query         string
-		params        []gin.Param
-		body          string
-		mockErr       error
-		wantStatus    int
-		wantCode      int
+		name       string
+		query      string
+		params     []gin.Param
+		body       string
+		mockErr    error
+		wantStatus int
+		wantCode   int
 	}{
 		{
 			name:       "success",
@@ -211,13 +211,13 @@ func TestRollbackDeployment(t *testing.T) {
 
 func TestGetDeploymentMetrics(t *testing.T) {
 	tests := []struct {
-		name          string
-		query         string
-		params        []gin.Param
-		mockMetrics   interface{}
-		mockErr       error
-		wantStatus    int
-		wantCode      int
+		name        string
+		query       string
+		params      []gin.Param
+		mockMetrics interface{}
+		mockErr     error
+		wantStatus  int
+		wantCode    int
 	}{
 		{
 			name:        "success",
@@ -234,10 +234,10 @@ func TestGetDeploymentMetrics(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "deployment_name", Value: "test-deployment"}},
-			mockErr: errors.New("metrics error"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "deployment_name", Value: "test-deployment"}},
+			mockErr:    errors.New("metrics error"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -271,13 +271,13 @@ func TestGetDeploymentMetrics(t *testing.T) {
 
 func TestGetDeploymentDetail(t *testing.T) {
 	tests := []struct {
-		name         string
-		query        string
-		params       []gin.Param
-		mockDetail   *k8sService.DeploymentDetail
-		mockErr      error
-		wantStatus   int
-		wantCode     int
+		name       string
+		query      string
+		params     []gin.Param
+		mockDetail *k8sService.DeploymentDetail
+		mockErr    error
+		wantStatus int
+		wantCode   int
 	}{
 		{
 			name:       "success",
@@ -301,10 +301,10 @@ func TestGetDeploymentDetail(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "deployment_name", Value: "test-deployment"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "deployment_name", Value: "test-deployment"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -342,19 +342,19 @@ func TestGetDeploymentDetail(t *testing.T) {
 
 func TestGetDaemonSetList(t *testing.T) {
 	tests := []struct {
-		name          string
-		query         string
+		name           string
+		query          string
 		mockDaemonSets []*k8sService.DaemonSet
-		mockErr       error
-		wantStatus    int
-		wantCode      int
+		mockErr        error
+		wantStatus     int
+		wantCode       int
 	}{
 		{
-			name:          "success",
-			query:         "?cluster_id=test-cluster&namespace=default",
+			name:           "success",
+			query:          "?cluster_id=test-cluster&namespace=default",
 			mockDaemonSets: []*k8sService.DaemonSet{{Name: "ds-1", Namespace: "default"}},
-			wantStatus:    http.StatusOK,
-			wantCode:      0,
+			wantStatus:     http.StatusOK,
+			wantCode:       0,
 		},
 		{
 			name:       "service error",
@@ -414,10 +414,10 @@ func TestGetDaemonSetMetrics(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "daemonset_name", Value: "test-daemonset"}},
-			mockErr: errors.New("metrics error"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "daemonset_name", Value: "test-daemonset"}},
+			mockErr:    errors.New("metrics error"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -476,10 +476,10 @@ func TestGetDaemonSetRevisions(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "daemonset_name", Value: "test-daemonset"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "daemonset_name", Value: "test-daemonset"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -614,10 +614,10 @@ func TestGetDaemonSetDetail(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "daemonset_name", Value: "test-daemonset"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "daemonset_name", Value: "test-daemonset"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -655,12 +655,12 @@ func TestGetDaemonSetDetail(t *testing.T) {
 
 func TestGetStatefulSetList(t *testing.T) {
 	tests := []struct {
-		name              string
-		query             string
-		mockStatefulSets  []*k8sService.StatefulSet
-		mockErr           error
-		wantStatus        int
-		wantCode          int
+		name             string
+		query            string
+		mockStatefulSets []*k8sService.StatefulSet
+		mockErr          error
+		wantStatus       int
+		wantCode         int
 	}{
 		{
 			name:             "success",
@@ -734,10 +734,10 @@ func TestGetStatefulSetDetail(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "statefulset_name", Value: "test-statefulset"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "statefulset_name", Value: "test-statefulset"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -794,10 +794,10 @@ func TestGetStatefulSetMetrics(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "statefulset_name", Value: "test-statefulset"}},
-			mockErr: errors.New("metrics error"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "statefulset_name", Value: "test-statefulset"}},
+			mockErr:    errors.New("metrics error"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -856,10 +856,10 @@ func TestGetStatefulSetRevisions(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "statefulset_name", Value: "test-statefulset"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "statefulset_name", Value: "test-statefulset"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -1017,13 +1017,13 @@ func TestGetCronJobList(t *testing.T) {
 
 func TestGetCronJobDetail(t *testing.T) {
 	tests := []struct {
-		name         string
-		query        string
-		params       []gin.Param
-		mockDetail   *k8sService.CronJobDetail
-		mockErr      error
-		wantStatus   int
-		wantCode     int
+		name       string
+		query      string
+		params     []gin.Param
+		mockDetail *k8sService.CronJobDetail
+		mockErr    error
+		wantStatus int
+		wantCode   int
 	}{
 		{
 			name:       "success",
@@ -1040,10 +1040,10 @@ func TestGetCronJobDetail(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "cronjob_name", Value: "test-cronjob"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "cronjob_name", Value: "test-cronjob"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},
@@ -1149,10 +1149,10 @@ func TestGetJobDetail(t *testing.T) {
 			wantCode:   400,
 		},
 		{
-			name:   "service error",
-			query:  "?cluster_id=test-cluster&namespace=default",
-			params: []gin.Param{{Key: "job_name", Value: "test-job"}},
-			mockErr: errors.New("not found"),
+			name:       "service error",
+			query:      "?cluster_id=test-cluster&namespace=default",
+			params:     []gin.Param{{Key: "job_name", Value: "test-job"}},
+			mockErr:    errors.New("not found"),
 			wantStatus: http.StatusInternalServerError,
 			wantCode:   500,
 		},

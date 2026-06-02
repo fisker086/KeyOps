@@ -13,9 +13,9 @@ import (
 )
 
 type DeploymentHandler struct {
-	deploymentService  *k8sService.DeploymentService
-	permissionService  *k8sService.K8sPermissionService
-	roleRepo           repository.RoleRepository
+	deploymentService *k8sService.DeploymentService
+	permissionService *k8sService.K8sPermissionService
+	roleRepo          repository.RoleRepository
 }
 
 func NewDeploymentHandler(deploymentService *k8sService.DeploymentService, permissionService *k8sService.K8sPermissionService, roleRepo repository.RoleRepository) *DeploymentHandler {
@@ -26,6 +26,49 @@ func NewDeploymentHandler(deploymentService *k8sService.DeploymentService, permi
 	}
 }
 
+// HasK8sDeployPermission 纯权限判断：当前用户(或其角色)是否对 集群+命名空间 有部署(write/admin)权限。
+// 不写响应、不 Abort，供批量发布等场景使用。admin 角色默认放行。
+func HasK8sDeployPermission(permissionService *k8sService.K8sPermissionService, roleRepo repository.RoleRepository, userID, clusterID, namespace string) bool {
+	if userID == "" || clusterID == "" || namespace == "" {
+		return false
+	}
+	// 部署需要 write 权限（创建/更新资源）
+	if hasPermission, err := permissionService.CheckPermission(userID, clusterID, namespace, k8sService.ResourceTypeNamespace, "", k8sService.ActionWrite); err == nil && hasPermission {
+		return true
+	}
+	if roleRepo == nil {
+		return false
+	}
+	roles, err := roleRepo.GetRolesByUserID(userID)
+	if err != nil {
+		return false
+	}
+	for _, role := range roles {
+		if role.ID == "role:admin" {
+			return true
+		}
+		if hasPermission, err := permissionService.CheckPermission(role.ID, clusterID, namespace, k8sService.ResourceTypeNamespace, "", k8sService.ActionWrite); err == nil && hasPermission {
+			return true
+		}
+		if hasPermission, _ := permissionService.CheckPermission(role.ID, clusterID, namespace, k8sService.ResourceTypeNamespace, "", k8sService.ActionAdmin); hasPermission {
+			return true
+		}
+	}
+	return false
+}
+
+// userIDFromContext 从 gin 上下文取当前用户 ID（兼容 userID / user_id 两种键）
+func userIDFromContext(c *gin.Context) string {
+	for _, key := range []string{"userID", "user_id"} {
+		if uid, exists := c.Get(key); exists {
+			if s, ok := uid.(string); ok && s != "" {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
 // checkK8sDeployPermission 检查当前用户是否有指定集群+命名空间的部署权限（write 或 admin），无权限时返回 false 并已 Abort+写 403
 func (h *DeploymentHandler) checkK8sDeployPermission(c *gin.Context, clusterID, namespace string) bool {
 	if clusterID == "" || namespace == "" {
@@ -33,50 +76,15 @@ func (h *DeploymentHandler) checkK8sDeployPermission(c *gin.Context, clusterID, 
 		c.Abort()
 		return false
 	}
-	var userIDStr string
-	if uid, exists := c.Get("userID"); exists {
-		if s, ok := uid.(string); ok {
-			userIDStr = s
-		}
-	}
-	if userIDStr == "" {
-		if uid, exists := c.Get("user_id"); exists {
-			if s, ok := uid.(string); ok {
-				userIDStr = s
-			}
-		}
-	}
+	userIDStr := userIDFromContext(c)
 	if userIDStr == "" {
 		c.JSON(http.StatusUnauthorized, model.Response{Code: http.StatusUnauthorized, Message: "未登录"})
 		c.Abort()
 		return false
 	}
-	// 部署需要 write 权限（创建/更新资源）
-	hasPermission, err := h.permissionService.CheckPermission(userIDStr, clusterID, namespace, k8sService.ResourceTypeNamespace, "", k8sService.ActionWrite)
-	if err == nil && hasPermission {
-		logger.Infof("部署权限通过: user=%s cluster=%s namespace=%s (用户或角色有 write 权限)", userIDStr, clusterID, namespace)
+	if HasK8sDeployPermission(h.permissionService, h.roleRepo, userIDStr, clusterID, namespace) {
+		logger.Infof("部署权限通过: user=%s cluster=%s namespace=%s", userIDStr, clusterID, namespace)
 		return true
-	}
-	if h.roleRepo != nil {
-		roles, err := h.roleRepo.GetRolesByUserID(userIDStr)
-		if err == nil {
-			for _, role := range roles {
-				if role.ID == "role:admin" {
-					logger.Infof("部署权限通过: user=%s cluster=%s namespace=%s (管理员默认有权限)", userIDStr, clusterID, namespace)
-					return true
-				}
-				hasPermission, err = h.permissionService.CheckPermission(role.ID, clusterID, namespace, k8sService.ResourceTypeNamespace, "", k8sService.ActionWrite)
-				if err == nil && hasPermission {
-					logger.Infof("部署权限通过: user=%s cluster=%s namespace=%s (角色 %s 有 write 权限)", userIDStr, clusterID, namespace, role.ID)
-					return true
-				}
-				hasPermission, _ = h.permissionService.CheckPermission(role.ID, clusterID, namespace, k8sService.ResourceTypeNamespace, "", k8sService.ActionAdmin)
-				if hasPermission {
-					logger.Infof("部署权限通过: user=%s cluster=%s namespace=%s (角色 %s 有 admin 权限)", userIDStr, clusterID, namespace, role.ID)
-					return true
-				}
-			}
-		}
 	}
 	logger.Warnf("部署权限拒绝: user=%s cluster=%s namespace=%s 无该集群/命名空间的 write 或 admin 权限", userIDStr, clusterID, namespace)
 	c.JSON(http.StatusForbidden, model.Response{
@@ -107,10 +115,10 @@ func (h *DeploymentHandler) CreateDeployment(c *gin.Context) {
 	}
 
 	// 验证部署类型
-	if req.DeployType != model.DeployTypeJenkins && req.DeployType != model.DeployTypeK8s {
+	if req.DeployType != model.DeployTypeK8s && req.DeployType != model.DeployTypeHelm {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Code:    http.StatusBadRequest,
-			Message: "部署类型必须是 jenkins 或 k8s",
+			Message: "部署类型必须是 k8s 或 helm",
 		})
 		return
 	}
@@ -124,12 +132,12 @@ func (h *DeploymentHandler) CreateDeployment(c *gin.Context) {
 		return
 	}
 
-	// K8s 部署：校验当前用户对该集群+命名空间是否有部署权限（与 K8s 管理-权限管理一致）
-	if req.DeployType == model.DeployTypeK8s {
+	// K8s/Helm 部署：校验当前用户对该集群+命名空间是否有部署权限（与 K8s 管理-权限管理一致）
+	if req.DeployType == model.DeployTypeK8s || req.DeployType == model.DeployTypeHelm {
 		if req.ClusterID == "" || req.Namespace == "" {
 			c.JSON(http.StatusBadRequest, model.Response{
 				Code:    http.StatusBadRequest,
-				Message: "K8s 部署需填写集群与命名空间",
+				Message: "部署需填写集群与命名空间",
 			})
 			return
 		}
@@ -141,7 +149,7 @@ func (h *DeploymentHandler) CreateDeployment(c *gin.Context) {
 	// 获取当前用户
 	userID, _ := c.Get("user_id")
 	userName, _ := c.Get("username")
-	
+
 	createdBy := ""
 	createdByName := ""
 	if userID != nil {
@@ -160,9 +168,9 @@ func (h *DeploymentHandler) CreateDeployment(c *gin.Context) {
 		ClusterName:   req.ClusterName,
 		Namespace:     req.Namespace,
 		DeployType:    req.DeployType,
+		DeployConfig:  req.DeployConfig,
 		Version:       req.Version,
 		ArtifactURL:   req.ArtifactURL,
-		JenkinsJob:    req.JenkinsJob,
 		K8sYAML:       req.K8sYAML,
 		K8sKind:       req.K8sKind,
 		VerifyEnabled: req.VerifyEnabled,
@@ -198,7 +206,7 @@ func (h *DeploymentHandler) CreateDeployment(c *gin.Context) {
 // @Router /api/deployments/{id} [get]
 func (h *DeploymentHandler) GetDeployment(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	deployment, err := h.deploymentService.GetDeployment(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, model.Response{
@@ -225,7 +233,7 @@ func (h *DeploymentHandler) GetDeployment(c *gin.Context) {
 // @Param project_name query string false "项目名称"
 // @Param env_id query string false "环境ID"
 // @Param cluster_id query string false "集群ID"
-// @Param deploy_type query string false "部署类型: jenkins, k8s"
+// @Param deploy_type query string false "部署类型: k8s"
 // @Param status query string false "状态: pending, running, success, failed, cancelled"
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(20)
@@ -313,9 +321,9 @@ func (h *DeploymentHandler) ListDeployments(c *gin.Context) {
 		Code:    http.StatusOK,
 		Message: "查询成功",
 		Data: DeploymentListResponse{
-			Items: deployments,
-			Total: total,
-			Page:  params.Page,
+			Items:    deployments,
+			Total:    total,
+			Page:     params.Page,
 			PageSize: params.PageSize,
 		},
 	})
@@ -333,7 +341,7 @@ func (h *DeploymentHandler) ListDeployments(c *gin.Context) {
 // @Router /api/deployments/{id}/status [put]
 func (h *DeploymentHandler) UpdateDeploymentStatus(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	var req UpdateDeploymentStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.Response{
@@ -346,10 +354,10 @@ func (h *DeploymentHandler) UpdateDeploymentStatus(c *gin.Context) {
 	// 验证状态值
 	validStatuses := map[string]bool{
 		model.DeploymentStatusPending:   true,
-		model.DeploymentStatusRunning:    true,
-		model.DeploymentStatusSuccess:    true,
-		model.DeploymentStatusFailed:     true,
-		model.DeploymentStatusCancelled:  true,
+		model.DeploymentStatusRunning:   true,
+		model.DeploymentStatusSuccess:   true,
+		model.DeploymentStatusFailed:    true,
+		model.DeploymentStatusCancelled: true,
 	}
 	if !validStatuses[req.Status] {
 		c.JSON(http.StatusBadRequest, model.Response{
@@ -390,7 +398,7 @@ func (h *DeploymentHandler) UpdateDeploymentStatus(c *gin.Context) {
 // @Router /api/deployments/{id} [delete]
 func (h *DeploymentHandler) DeleteDeployment(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	err := h.deploymentService.DeleteDeployment(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.Response{
@@ -436,27 +444,32 @@ func (h *DeploymentHandler) ExecuteK8sDeployment(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Response{
 		Code:    http.StatusOK,
 		Message: "部署任务已启动，正在后台执行",
+		Data: gin.H{
+			"deployment_id": id,
+			"status":        "running",
+			"query_url":     "/api/deployments/" + id,
+		},
 	})
 }
 
 // CreateDeploymentRequest 创建部署请求
 type CreateDeploymentRequest struct {
-	ProjectName string `json:"project_name" binding:"required"`
-	ProjectID   string `json:"project_id"`
-	EnvID       string `json:"env_id"`
-	EnvName     string `json:"env_name"`
-	ClusterID   string `json:"cluster_id"`
-	ClusterName string `json:"cluster_name"`
-	Namespace   string `json:"namespace"`
-	DeployType  string `json:"deploy_type" binding:"required"` // jenkins, k8s
-	Version     string `json:"version"`
-	ArtifactURL string `json:"artifact_url"`
-	JenkinsJob    string `json:"jenkins_job"`
-	K8sYAML       string `json:"k8s_yaml"`
-	K8sKind       string `json:"k8s_kind"`
-	VerifyEnabled bool   `json:"verify_enabled"`
-	VerifyTimeout int    `json:"verify_timeout"`
-	Description   string `json:"description"`
+	ProjectName   string                 `json:"project_name" binding:"required"`
+	ProjectID     string                 `json:"project_id"`
+	EnvID         string                 `json:"env_id"`
+	EnvName       string                 `json:"env_name"`
+	ClusterID     string                 `json:"cluster_id"`
+	ClusterName   string                 `json:"cluster_name"`
+	Namespace     string                 `json:"namespace"`
+	DeployType    string                 `json:"deploy_type" binding:"required"` // k8s
+	DeployConfig  map[string]interface{} `json:"deploy_config"`
+	Version       string                 `json:"version"`
+	ArtifactURL   string                 `json:"artifact_url"`
+	K8sYAML       string                 `json:"k8s_yaml"`
+	K8sKind       string                 `json:"k8s_kind"`
+	VerifyEnabled bool                   `json:"verify_enabled"`
+	VerifyTimeout int                    `json:"verify_timeout"`
+	Description   string                 `json:"description"`
 }
 
 // UpdateDeploymentStatusRequest 更新部署状态请求
@@ -473,4 +486,3 @@ type DeploymentListResponse struct {
 	Page     int                 `json:"page"`
 	PageSize int                 `json:"page_size"`
 }
-

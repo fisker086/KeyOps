@@ -3,16 +3,28 @@ package ticket
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"github.com/fisker086/keyops/internal/model"
+	"github.com/fisker086/keyops/pkg/logger"
 )
 
 // FormTemplateHandler 表单模板处理器
 type FormTemplateHandler struct {
 	db *gorm.DB
+}
+
+// ensureFormTemplateUUID 为历史数据补全 uuid
+func ensureFormTemplateUUID(db *gorm.DB, template *model.FormTemplate) error {
+	if strings.TrimSpace(template.UUID) != "" {
+		return nil
+	}
+	template.UUID = uuid.New().String()
+	return db.Model(template).Update("uuid", template.UUID).Error
 }
 
 // NewFormTemplateHandler 创建表单模板处理器
@@ -58,6 +70,12 @@ func (h *FormTemplateHandler) ListFormTemplates(c *gin.Context) {
 		return
 	}
 
+	for i := range templates {
+		if err := ensureFormTemplateUUID(h.db, &templates[i]); err != nil {
+			logger.Warnf("补全模板 UUID 失败 template_id=%d: %v", templates[i].ID, err)
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "success",
@@ -69,7 +87,7 @@ func (h *FormTemplateHandler) ListFormTemplates(c *gin.Context) {
 // GetFormTemplate 获取表单模板详情
 func (h *FormTemplateHandler) GetFormTemplate(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	var template model.FormTemplate
 	if err := h.db.First(&template, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -82,6 +100,15 @@ func (h *FormTemplateHandler) GetFormTemplate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "获取模板详情失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if err := ensureFormTemplateUUID(h.db, &template); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "补全模板 UUID 失败",
 			"error":   err.Error(),
 		})
 		return
@@ -133,7 +160,7 @@ func (h *FormTemplateHandler) CreateFormTemplate(c *gin.Context) {
 // UpdateFormTemplate 更新表单模板
 func (h *FormTemplateHandler) UpdateFormTemplate(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	var template model.FormTemplate
 	if err := h.db.First(&template, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -204,7 +231,7 @@ func (h *FormTemplateHandler) UpdateFormTemplate(c *gin.Context) {
 // DeleteFormTemplate 删除表单模板
 func (h *FormTemplateHandler) DeleteFormTemplate(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	var template model.FormTemplate
 	if err := h.db.First(&template, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -248,10 +275,80 @@ func (h *FormTemplateHandler) DeleteFormTemplate(c *gin.Context) {
 	})
 }
 
+// GetApprovalCallbackURL 生成该工单模板专用的三方审批回调地址
+func (h *FormTemplateHandler) GetApprovalCallbackURL(c *gin.Context) {
+	id := c.Param("id")
+	platform := strings.ToLower(strings.TrimSpace(c.DefaultQuery("platform", "feishu")))
+	source := strings.Trim(strings.TrimSpace(c.DefaultQuery("source", "ticket")), "/")
+	if source == "" {
+		source = "ticket"
+	}
+	if platform == "" {
+		platform = "feishu"
+	}
+
+	var template model.FormTemplate
+	if err := h.db.First(&template, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "模板不存在",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "获取模板失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	baseURL := strings.TrimSpace(c.Query("base_url"))
+	if baseURL == "" {
+		scheme := "https"
+		if c.Request.TLS == nil && !strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") {
+			scheme = "http"
+		}
+		if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+			scheme = strings.ToLower(strings.TrimSpace(proto))
+		}
+		baseURL = scheme + "://" + c.Request.Host
+	}
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	if err := ensureFormTemplateUUID(h.db, &template); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "补全模板 UUID 失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	path := BuildApprovalCallbackPath(source, platform, template.UUID)
+	callbackURL := baseURL + path
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data": gin.H{
+			"callback_url":  callbackURL,
+			"path":          path,
+			"source":        source,
+			"platform":      platform,
+			"scope_id":      template.UUID,
+			"template_id":   template.ID,
+			"template_uuid": template.UUID,
+			"template_name": template.Name,
+		},
+	})
+}
+
 // PreviewFormTemplate 预览表单模板
 func (h *FormTemplateHandler) PreviewFormTemplate(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	var template model.FormTemplate
 	if err := h.db.First(&template, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -275,4 +372,3 @@ func (h *FormTemplateHandler) PreviewFormTemplate(c *gin.Context) {
 		"data":    template,
 	})
 }
-

@@ -205,7 +205,7 @@ func (s *PermissionService) BatchGrantPermissions(reqs []*GrantPermissionRequest
 	// 1. 构建所有权限的资源路径和规则
 	for _, req := range reqs {
 		resourcePath := s.buildResourcePath(req.InstanceID, req.DatabaseName, req.TableName)
-		
+
 		// 检查精确的权限策略是否已存在（使用 GetFilteredPolicy 而不是 Enforce）
 		// Enforce 会考虑权限层级（如实例级权限会覆盖数据库级权限），不适合检查精确策略是否存在
 		policies, err := casbin.GetFilteredPolicy(0, req.UserID)
@@ -224,7 +224,7 @@ func (s *PermissionService) BatchGrantPermissions(reqs []*GrantPermissionRequest
 		}
 
 		rules = append(rules, []string{req.UserID, resourcePath, req.PermissionType})
-		
+
 		metadatas = append(metadatas, &model.DBPermissionMetadata{
 			UserID:         req.UserID,
 			InstanceID:     req.InstanceID,
@@ -273,13 +273,13 @@ func (s *PermissionService) BatchGrantPermissions(reqs []*GrantPermissionRequest
 func (s *PermissionService) UpdatePermission(req *UpdatePermissionRequest) error {
 	// 1. 构建资源路径
 	resourcePath := s.buildResourcePath(req.InstanceID, req.DatabaseName, req.TableName)
-	
+
 	// 2. 检查权限是否存在
 	existing, _ := casbin.Enforce(req.UserID, resourcePath, req.PermissionType)
 	if !existing {
 		return errors.New("权限不存在")
 	}
-	
+
 	// 3. 更新元数据
 	updates := make(map[string]interface{})
 	if req.ExpiresAt != nil {
@@ -293,11 +293,11 @@ func (s *PermissionService) UpdatePermission(req *UpdatePermissionRequest) error
 	} else {
 		updates["description"] = ""
 	}
-	
+
 	if err := s.permissionRepo.Update(req.UserID, req.InstanceID, req.DatabaseName, req.TableName, req.PermissionType, updates); err != nil {
 		return fmt.Errorf("更新权限元数据失败: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -307,13 +307,13 @@ func (s *PermissionService) UpdatePermissionResource(req *UpdatePermissionResour
 	// 1. 构建新旧资源路径
 	oldResourcePath := s.buildResourcePath(req.OldInstanceID, req.OldDatabaseName, req.OldTableName)
 	newResourcePath := s.buildResourcePath(req.NewInstanceID, req.NewDatabaseName, req.NewTableName)
-	
+
 	// 2. 检查旧权限是否存在（检查精确的策略）
 	policies, err := casbin.GetFilteredPolicy(0, req.UserID)
 	if err != nil {
 		return fmt.Errorf("获取权限策略失败: %w", err)
 	}
-	
+
 	oldExists := false
 	for _, policy := range policies {
 		if len(policy) >= 3 && policy[0] == req.UserID && policy[1] == oldResourcePath && policy[2] == req.OldPermissionType {
@@ -324,14 +324,14 @@ func (s *PermissionService) UpdatePermissionResource(req *UpdatePermissionResour
 	if !oldExists {
 		return errors.New("旧权限不存在")
 	}
-	
+
 	// 3. 检查新权限是否已存在（检查精确的策略，避免重复）
 	// 注意：如果新旧权限路径和类型完全相同，则认为是更新操作，不应该报错
 	if oldResourcePath == newResourcePath && req.OldPermissionType == req.NewPermissionType {
 		// 新旧权限完全相同，不需要更新
 		return nil
 	}
-	
+
 	newExists := false
 	for _, policy := range policies {
 		if len(policy) >= 3 && policy[0] == req.UserID && policy[1] == newResourcePath && policy[2] == req.NewPermissionType {
@@ -342,7 +342,7 @@ func (s *PermissionService) UpdatePermissionResource(req *UpdatePermissionResour
 	if newExists {
 		return errors.New("新权限已存在")
 	}
-	
+
 	// 4. 先添加新权限（确保新权限存在）
 	newRule := []string{req.UserID, newResourcePath, req.NewPermissionType}
 	success, err := casbin.AddPolicy(newRule[0], newRule[1], newRule[2])
@@ -352,7 +352,7 @@ func (s *PermissionService) UpdatePermissionResource(req *UpdatePermissionResour
 	if !success {
 		return errors.New("添加新权限失败")
 	}
-	
+
 	// 5. 保存新权限元数据
 	newMetadata := &model.DBPermissionMetadata{
 		UserID:         req.UserID,
@@ -369,7 +369,7 @@ func (s *PermissionService) UpdatePermissionResource(req *UpdatePermissionResour
 		casbin.RemovePolicy(newRule[0], newRule[1], newRule[2])
 		return fmt.Errorf("保存新权限元数据失败: %w", err)
 	}
-	
+
 	// 6. 删除旧权限（即使失败，新权限也已经存在）
 	oldSuccess, err := casbin.RemovePolicy(req.UserID, oldResourcePath, req.OldPermissionType)
 	if err != nil {
@@ -378,12 +378,12 @@ func (s *PermissionService) UpdatePermissionResource(req *UpdatePermissionResour
 		// 删除旧权限元数据
 		s.permissionRepo.Delete(req.UserID, req.OldInstanceID, req.OldDatabaseName, req.OldTableName, req.OldPermissionType)
 	}
-	
+
 	// 7. 重新加载策略
 	if err := casbin.ReloadPolicy(); err != nil {
 		logger.Errorf("重新加载策略失败: %v", err)
 	}
-	
+
 	return nil
 }
 
@@ -420,7 +420,7 @@ func (s *PermissionService) GetUserPermissions(userID string, filters map[string
 // GetUserPermissionsWithPagination 获取用户权限列表（支持分页）
 func (s *PermissionService) GetUserPermissionsWithPagination(userID string, filters map[string]interface{}, page, pageSize int) ([]*PermissionInfo, int64, error) {
 	var allPolicies [][]string
-	
+
 	if userID != "" {
 		// 如果指定了用户ID，只获取该用户的权限
 		policies, err := casbin.GetFilteredPolicy(0, userID)
@@ -456,7 +456,7 @@ func (s *PermissionService) GetUserPermissionsWithPagination(userID string, filt
 		if len(policy) < 3 {
 			continue
 		}
-		
+
 		policyUserID := policy[0]
 		resourcePath := policy[1]
 		permissionType := policy[2]
@@ -506,7 +506,7 @@ func (s *PermissionService) GetUserPermissionsWithPagination(userID string, filt
 	total := int64(len(allPermissions))
 	start := (page - 1) * pageSize
 	end := start + pageSize
-	
+
 	if start >= len(allPermissions) {
 		return []*PermissionInfo{}, total, nil
 	}

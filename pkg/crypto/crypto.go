@@ -135,4 +135,3 @@ func (c *Crypto) IsEncrypted(text string) bool {
 	nonceSize := gcm.NonceSize()
 	return len(decoded) > nonceSize
 }
-

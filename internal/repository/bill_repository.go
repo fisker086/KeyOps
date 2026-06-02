@@ -971,7 +971,7 @@ func (r *billRepository) GetVMRecords(vendor, month string) ([]model.BillRecord,
 	}
 	combined := strings.Join(likeClauses, " OR ")
 	if combined != "" {
-		query = query.Where("(" + combined + ")", likeArgs...)
+		query = query.Where("("+combined+")", likeArgs...)
 	}
 	err := query.Find(&records).Error
 	return records, err
@@ -1086,5 +1086,3 @@ func (r *billRepository) GetLargeResources() ([]IdleResource, error) {
 	}
 	return resources, nil
 }
-
-

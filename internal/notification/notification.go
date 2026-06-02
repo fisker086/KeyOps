@@ -405,7 +405,7 @@ func (n *DingTalkNotifier) SendDangerousCommandAlert(username, hostIP, command, 
 
 ---
 
-*告警来源：ZJump 堡垒机系统*`,
+*告警来源：KeyOps 堡垒机系统*`,
 		username,
 		hostIP,
 		riskLevel,
@@ -540,7 +540,7 @@ func (n *WeChatNotifier) SendDangerousCommandAlert(username, hostIP, command, re
 
 ---
 
-*告警来源：ZJump 堡垒机系统*`,
+*告警来源：KeyOps 堡垒机系统*`,
 		username,
 		hostIP,
 		riskLevel,

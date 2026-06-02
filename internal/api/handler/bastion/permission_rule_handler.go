@@ -21,8 +21,8 @@ func NewPermissionRuleHandler(repo repository.PermissionRuleRepository) *Permiss
 type CreatePermissionRuleRequest struct {
 	model.PermissionRule
 	UserGroupID   string   `json:"userGroupId"`   // 用户组ID（前端字段名，映射到 RoleID）
-	SystemUserIDs []string `json:"systemUserIds"`  // 多个系统用户ID
-	HostGroupIDs  []string `json:"hostGroupIds"`   // 多个主机组ID
+	SystemUserIDs []string `json:"systemUserIds"` // 多个系统用户ID
+	HostGroupIDs  []string `json:"hostGroupIds"`  // 多个主机组ID
 }
 
 // ListPermissionRules 获取授权规则列表
@@ -107,7 +107,7 @@ func (h *PermissionRuleHandler) CreatePermissionRule(c *gin.Context) {
 	if req.UserGroupID != "" {
 		req.PermissionRule.RoleID = req.UserGroupID
 	}
-	
+
 	// 验证 RoleID 不能为空
 	if req.PermissionRule.RoleID == "" {
 		c.JSON(http.StatusBadRequest, model.Response{
@@ -171,7 +171,7 @@ func (h *PermissionRuleHandler) UpdatePermissionRule(c *gin.Context) {
 	if req.UserGroupID != "" {
 		req.PermissionRule.RoleID = req.UserGroupID
 	}
-	
+
 	// 验证 RoleID 不能为空
 	if req.PermissionRule.RoleID == "" {
 		c.JSON(http.StatusBadRequest, model.Response{

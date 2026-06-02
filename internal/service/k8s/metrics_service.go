@@ -10,8 +10,8 @@ import (
 
 // NodeMetrics 节点指标
 type NodeMetrics struct {
-	Name     string            `json:"name"`
-	Usage    NodeResourceUsage `json:"usage"`
+	Name  string            `json:"name"`
+	Usage NodeResourceUsage `json:"usage"`
 }
 
 type NodeResourceUsage struct {
@@ -115,8 +115,8 @@ func (s *K8sService) GetPodMetrics(clusterID string, clusterName string, namespa
 			Name      string `json:"name"`
 			Namespace string `json:"namespace"`
 		} `json:"metadata"`
-		Timestamp string `json:"timestamp"`
-		Window    string `json:"window"`
+		Timestamp  string `json:"timestamp"`
+		Window     string `json:"window"`
 		Containers []struct {
 			Name  string `json:"name"`
 			Usage struct {
@@ -156,4 +156,3 @@ func (s *K8sService) GetPodMetrics(clusterID string, clusterName string, namespa
 
 	return result, nil
 }
-

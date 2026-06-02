@@ -22,4 +22,3 @@ type OperationLog struct {
 func (OperationLog) TableName() string {
 	return "operation_logs"
 }
-

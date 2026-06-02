@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/google/uuid"
 )
 

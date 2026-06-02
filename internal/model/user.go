@@ -39,7 +39,7 @@ func (User) TableName() string {
 	return "users"
 }
 
-// PlatformLoginRecord 平台登录记录（登录到ZJump平台本身，不是连接虚拟机）
+// PlatformLoginRecord 平台登录记录（登录到KeyOps平台本身，不是连接虚拟机）
 type PlatformLoginRecord struct {
 	ID        string    `json:"id" gorm:"primaryKey;type:varchar(36)"`
 	UserID    string    `json:"userId" gorm:"type:varchar(36);not null;index"`
@@ -56,13 +56,15 @@ func (PlatformLoginRecord) TableName() string {
 }
 
 // ==================================================================================
-// DEPRECATED: 以下两个模型已废弃，新权限架构使用：
-// User → UserGroup (user_groups) → PermissionRule (permission_rules) → (SystemUser + HostGroup)
-// 保留这些模型是为了向后兼容，但建议在新系统中不再使用
+// 以下两个模型处于迁移过渡期：
+// 目标架构：User → Role (roles) → PermissionRule (permission_rules) → (SystemUser + HostGroup)
+// user_repository 已改为双写策略（同时写入旧表和新 permission_rules 表），
+// 读取时优先走新表、旧表作为回退。
+// 待所有数据确认迁移完成后可删除以下模型及对应表。
 // ==================================================================================
 
-// UserGroupPermission 用户-主机分组权限关联 [DEPRECATED]
-// Deprecated: 使用新的 UserGroup + PermissionRule 架构替代
+// UserGroupPermission 用户-主机分组权限关联
+// 迁移中：双写至 PermissionRule，迁移完成后删除
 type UserGroupPermission struct {
 	ID        uint      `json:"id" gorm:"primaryKey;autoIncrement"`
 	UserID    string    `json:"userId" gorm:"type:varchar(36);not null;index"`
@@ -76,8 +78,8 @@ func (UserGroupPermission) TableName() string {
 	return "user_group_permissions"
 }
 
-// UserHostPermission 用户-主机权限关联（单个主机）[DEPRECATED]
-// Deprecated: 使用新的 UserGroup + PermissionRule 架构替代
+// UserHostPermission 用户-主机权限关联（单个主机）
+// TODO(v2): 迁移至 PermissionRule 后删除
 type UserHostPermission struct {
 	ID        uint      `json:"id" gorm:"primaryKey;autoIncrement"`
 	UserID    string    `json:"userId" gorm:"type:varchar(36);not null;index"`
@@ -110,11 +112,11 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	AccessToken string `json:"accessToken,omitempty"`
-	User        User   `json:"user"`
-	RequiresTwoFactor   bool `json:"requiresTwoFactor,omitempty"`
-	TwoFactorEnabled    bool `json:"twoFactorEnabled,omitempty"`
-	NeedsTwoFactorSetup bool `json:"needsTwoFactorSetup,omitempty"`
+	AccessToken         string `json:"accessToken,omitempty"`
+	User                User   `json:"user"`
+	RequiresTwoFactor   bool   `json:"requiresTwoFactor,omitempty"`
+	TwoFactorEnabled    bool   `json:"twoFactorEnabled,omitempty"`
+	NeedsTwoFactorSetup bool   `json:"needsTwoFactorSetup,omitempty"`
 }
 
 // RegisterRequest 注册请求
@@ -167,8 +169,8 @@ func (ExpirationNotificationConfig) TableName() string {
 // TwoFactorConfig 双因素认证全局配置
 type TwoFactorConfig struct {
 	ID        uint      `json:"id" gorm:"primaryKey;autoIncrement"`
-	Enabled   bool      `json:"enabled" gorm:"type:boolean;default:false"`       // 是否启用全局2FA
-	Issuer    string    `json:"issuer" gorm:"type:varchar(100);default:'ZJump'"` // 2FA应用名称
+	Enabled   bool      `json:"enabled" gorm:"type:boolean;default:false"`        // 是否启用全局2FA
+	Issuer    string    `json:"issuer" gorm:"type:varchar(100);default:'KeyOps'"` // 2FA应用名称
 	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 }

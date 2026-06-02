@@ -7,14 +7,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/chart/loader"
+	"helm.sh/helm/v4/pkg/cli"
+	"helm.sh/helm/v4/pkg/kube"
 )
 
 // DeploymentService 部署记录服务
@@ -27,24 +33,24 @@ type DeploymentService struct {
 
 // CreateDeploymentRequest 创建部署请求
 type CreateDeploymentRequest struct {
-	ProjectName   string `json:"project_name"`
-	ProjectID     string `json:"project_id"`
-	EnvID         string `json:"env_id"`
-	EnvName       string `json:"env_name"`
-	ClusterID     string `json:"cluster_id"`
-	ClusterName   string `json:"cluster_name"`
-	Namespace     string `json:"namespace"`
-	DeployType    string `json:"deploy_type"` // jenkins, k8s
-	Version       string `json:"version"`
-	ArtifactURL   string `json:"artifact_url"`
-	JenkinsJob    string `json:"jenkins_job"`
-	K8sYAML       string `json:"k8s_yaml"`
-	K8sKind       string `json:"k8s_kind"`
-	VerifyEnabled bool   `json:"verify_enabled"`
-	VerifyTimeout int    `json:"verify_timeout"`
-	Description   string `json:"description"`
-	CreatedBy     string `json:"created_by"`
-	CreatedByName string `json:"created_by_name"`
+	ProjectName   string                 `json:"project_name"`
+	ProjectID     string                 `json:"project_id"`
+	EnvID         string                 `json:"env_id"`
+	EnvName       string                 `json:"env_name"`
+	ClusterID     string                 `json:"cluster_id"`
+	ClusterName   string                 `json:"cluster_name"`
+	Namespace     string                 `json:"namespace"`
+	DeployType    string                 `json:"deploy_type"` // k8s
+	DeployConfig  map[string]interface{} `json:"deploy_config"`
+	Version       string                 `json:"version"`
+	ArtifactURL   string                 `json:"artifact_url"`
+	K8sYAML       string                 `json:"k8s_yaml"`
+	K8sKind       string                 `json:"k8s_kind"`
+	VerifyEnabled bool                   `json:"verify_enabled"`
+	VerifyTimeout int                    `json:"verify_timeout"`
+	Description   string                 `json:"description"`
+	CreatedBy     string                 `json:"created_by"`
+	CreatedByName string                 `json:"created_by_name"`
 }
 
 // NewDeploymentService 创建部署记录服务
@@ -75,30 +81,35 @@ func (s *DeploymentService) CreateDeployment(req *CreateDeploymentRequest) (*mod
 
 	// deploy_config 为 JSON 类型，空字符串会导致 MySQL Error 3140，用 "{}" 表示无扩展配置
 	deployConfig := "{}"
+	if len(req.DeployConfig) > 0 {
+		if raw, err := json.Marshal(req.DeployConfig); err == nil {
+			deployConfig = string(raw)
+		}
+	}
 	deployment := &model.Deployment{
-		ID:             deploymentID,
-		ProjectName:    req.ProjectName,
-		ProjectID:      req.ProjectID,
-		EnvID:          req.EnvID,
-		EnvName:        req.EnvName,
-		ClusterID:      req.ClusterID,
-		ClusterName:    req.ClusterName,
-		Namespace:      req.Namespace,
-		DeployType:     req.DeployType,
-		DeployConfig:   deployConfig,
-		Version:        req.Version,
-		ArtifactURL:    req.ArtifactURL,
-		JenkinsJob:     req.JenkinsJob,
-		K8sYAML:        req.K8sYAML,
-		K8sKind:        req.K8sKind,
-		VerifyEnabled:  req.VerifyEnabled,
-		VerifyTimeout:  req.VerifyTimeout,
-		Description:    req.Description,
-		Status:         model.DeploymentStatusPending,
-		CreatedBy:      req.CreatedBy,
-		CreatedByName:  req.CreatedByName,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		ID:           deploymentID,
+		ProjectName:  req.ProjectName,
+		ProjectID:    req.ProjectID,
+		EnvID:        req.EnvID,
+		EnvName:      req.EnvName,
+		ClusterID:    req.ClusterID,
+		ClusterName:  req.ClusterName,
+		Namespace:    req.Namespace,
+		DeployType:   req.DeployType,
+		DeployConfig: deployConfig,
+		Version:      req.Version,
+		ArtifactURL:  req.ArtifactURL,
+
+		K8sYAML:       req.K8sYAML,
+		K8sKind:       req.K8sKind,
+		VerifyEnabled: req.VerifyEnabled,
+		VerifyTimeout: req.VerifyTimeout,
+		Description:   req.Description,
+		Status:        model.DeploymentStatusPending,
+		CreatedBy:     req.CreatedBy,
+		CreatedByName: req.CreatedByName,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	if err := s.deploymentRepo.Create(deployment); err != nil {
@@ -135,6 +146,10 @@ func (s *DeploymentService) ExecuteK8sDeployment(id string) error {
 	if err != nil {
 		logger.Errorf("获取部署记录失败: %v", err)
 		return fmt.Errorf("获取部署记录失败: %v", err)
+	}
+
+	if deployment.DeployType == model.DeployTypeHelm {
+		return s.executeHelmDeployment(deployment)
 	}
 
 	// 更新状态为运行中
@@ -219,6 +234,324 @@ func (s *DeploymentService) ExecuteK8sDeployment(id string) error {
 	}
 
 	return nil
+}
+
+func (s *DeploymentService) executeHelmDeployment(deployment *model.Deployment) error {
+	startTime := time.Now()
+	var logBuffer strings.Builder
+
+	// 辅助函数：记录日志并追加到 buffer
+	logInfo := func(format string, args ...interface{}) {
+		msg := fmt.Sprintf(format, args...)
+		logger.Infof(msg)
+		logBuffer.WriteString(fmt.Sprintf("[INFO] %s %s\n", time.Now().Format("15:04:05"), msg))
+	}
+
+	logError := func(format string, args ...interface{}) {
+		msg := fmt.Sprintf(format, args...)
+		logger.Errorf(msg)
+		logBuffer.WriteString(fmt.Sprintf("[ERROR] %s %s\n", time.Now().Format("15:04:05"), msg))
+	}
+
+	// 保存日志到数据库的 build_log 字段（前端可以直接读取）
+	saveLogToDB := func(status string) {
+		logContent := logBuffer.String()
+		// 更新 build_log 字段，前端可以直接显示
+		s.deploymentRepo.UpdateBuildLog(deployment.ID, logContent)
+
+		// 更新状态
+		if status != "" {
+			duration := int(time.Since(startTime).Seconds())
+			s.deploymentRepo.UpdateStatus(deployment.ID, status, &duration, "")
+		}
+	}
+
+	logInfo("开始 Helm 部署: deployment_id=%s project=%s", deployment.ID, deployment.ProjectName)
+
+	if err := s.deploymentRepo.UpdateStatus(deployment.ID, model.DeploymentStatusRunning, nil, ""); err != nil {
+		return fmt.Errorf("更新部署状态失败: %v", err)
+	}
+
+	// 获取集群配置
+	logInfo("获取集群配置: cluster_id=%s", deployment.ClusterID)
+	cluster, err := s.k8sService.GetClusterConfig(deployment.ClusterID, deployment.ClusterName)
+	if err != nil {
+		logError("获取集群配置失败: %v", err)
+		saveLogToDB(model.DeploymentStatusFailed)
+		return fmt.Errorf("获取集群配置失败: %v", err)
+	}
+	logInfo("集群配置获取成功: cluster=%s", cluster.Name)
+
+	// 解析 Helm 配置
+	logInfo("解析 Helm 配置...")
+	var cfg model.HelmDeployConfig
+	if deployment.DeployConfig != "" && deployment.DeployConfig != "{}" {
+		if err := json.Unmarshal([]byte(deployment.DeployConfig), &cfg); err != nil {
+			logError("解析 Helm 配置失败: %v", err)
+			saveLogToDB(model.DeploymentStatusFailed)
+			return fmt.Errorf("解析 Helm 配置失败: %v", err)
+		}
+	}
+
+	// 自动填充 chart_name：如果未指定，使用配置文件中的默认值
+	if cfg.ChartName == "" {
+		helmCfg := config.GlobalConfig.Helm
+		if helmCfg.DefaultChartName != "" {
+			cfg.ChartName = helmCfg.DefaultChartName
+			logInfo("未指定 chart_name，使用默认值: %s", cfg.ChartName)
+		}
+	}
+
+	// 自动填充 chart_version：如果未指定，使用配置文件中的默认值
+	if cfg.ChartVersion == "" {
+		helmCfg := config.GlobalConfig.Helm
+		if helmCfg.DefaultChartVersion != "" {
+			cfg.ChartVersion = helmCfg.DefaultChartVersion
+			logInfo("未指定 chart_version，使用默认值: %s", cfg.ChartVersion)
+		} else {
+			logInfo("未指定 chart_version，将使用最新版本")
+		}
+	}
+
+	// 打印配置详情
+	configJSON, _ := json.MarshalIndent(cfg, "", "  ")
+	logInfo("Helm 配置:\n%s", string(configJSON))
+
+	// 验证必需字段
+	if cfg.ChartName == "" {
+		logError("Helm 配置缺少 chart_name，请在 deploy_config 中指定或在配置文件中设置 helm.default_chart_name")
+		saveLogToDB(model.DeploymentStatusFailed)
+		return fmt.Errorf("Helm 配置缺少 chart_name，请在 deploy_config 中指定或在配置文件中设置 helm.default_chart_name")
+	}
+
+	// 验证 Values 中的镜像配置
+	if cfg.Values != nil {
+		if imageMap, ok := cfg.Values["image"].(map[string]interface{}); ok {
+			repo, _ := imageMap["repository"].(string)
+			tag, _ := imageMap["tag"].(string)
+			if repo == "" {
+				logError("镜像仓库地址为空 (image.repository)")
+				logError("请在数据库中配置参数: INSERT INTO app_deploy_param_configs (app_id, env, param_name, param_value) VALUES ('app-id', 'prod', 'image.repository', 'your-image-repo')")
+				saveLogToDB(model.DeploymentStatusFailed)
+				return fmt.Errorf("镜像仓库地址为空，请在数据库中配置 image.repository 参数")
+			}
+			if tag == "" {
+				logError("镜像标签为空 (image.tag)")
+				saveLogToDB(model.DeploymentStatusFailed)
+				return fmt.Errorf("镜像标签为空，请在数据库中配置 image.tag 参数")
+			}
+			logInfo("镜像配置: %s:%s", repo, tag)
+		}
+	}
+
+	releaseName := cfg.ReleaseName
+	if releaseName == "" {
+		releaseName = deployment.ProjectName
+	}
+	namespace := deployment.Namespace
+	if namespace == "" {
+		namespace = cfg.Namespace
+	}
+	if namespace == "" {
+		namespace = cluster.DefaultNamespace
+	}
+	if namespace == "" {
+		namespace = "default"
+	}
+
+	logInfo("Release 名称: %s", releaseName)
+	logInfo("命名空间: %s", namespace)
+
+	// 创建临时 kubeconfig
+	logInfo("创建临时 kubeconfig...")
+	kubeconfigPath, err := s.writeTempKubeconfig(cluster)
+	if err != nil {
+		logError("创建 kubeconfig 失败: %v", err)
+		saveLogToDB(model.DeploymentStatusFailed)
+		return err
+	}
+	defer os.Remove(kubeconfigPath)
+	logInfo("kubeconfig 创建成功")
+
+	// 初始化 Helm 客户端
+	logInfo("初始化 Helm 客户端...")
+	settings := cli.New()
+	settings.KubeConfig = kubeconfigPath
+	settings.SetNamespace(namespace)
+
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(settings.RESTClientGetter(), namespace, "secret"); err != nil {
+		logError("初始化 Helm 客户端失败: %v", err)
+		saveLogToDB(model.DeploymentStatusFailed)
+		return fmt.Errorf("初始化 Helm 客户端失败: %v", err)
+	}
+	logInfo("Helm 客户端初始化成功")
+
+	// 定位 Chart
+	var chartPath string
+	if strings.Contains(cfg.ChartName, "/") || strings.HasPrefix(cfg.ChartName, ".") {
+		chartPath = cfg.ChartName
+		logInfo("使用本地 Helm Chart: %s", chartPath)
+	} else if cfg.Repository != "" {
+		logInfo("从远程仓库拉取 Chart: repo=%s chart=%s version=%s", cfg.Repository, cfg.ChartName, cfg.ChartVersion)
+		chartPathOpts := action.ChartPathOptions{
+			RepoURL: cfg.Repository,
+			Version: cfg.ChartVersion,
+		}
+		var err error
+		chartPath, err = chartPathOpts.LocateChart(cfg.ChartName, settings)
+		if err != nil {
+			logError("定位 Helm Chart 失败: %v", err)
+			saveLogToDB(model.DeploymentStatusFailed)
+			return fmt.Errorf("定位 Helm Chart 失败: %v", err)
+		}
+		logInfo("Chart 拉取成功: %s", chartPath)
+	} else {
+		helmCfg := config.GlobalConfig.Helm
+		if helmCfg.Source == "local" {
+			chartPath = helmCfg.LocalPath
+			logInfo("使用配置文件中的本地 Helm Chart: %s", chartPath)
+		} else if helmCfg.Source == "remote" && helmCfg.RemoteRepo.URL != "" {
+			logInfo("从配置文件远程仓库拉取 Chart: repo=%s chart=%s", helmCfg.RemoteRepo.URL, cfg.ChartName)
+			chartPathOpts := action.ChartPathOptions{
+				RepoURL: helmCfg.RemoteRepo.URL,
+				Version: cfg.ChartVersion,
+			}
+			var err error
+			chartPath, err = chartPathOpts.LocateChart(cfg.ChartName, settings)
+			if err != nil {
+				logError("从配置文件远程仓库定位 Helm Chart 失败: %v", err)
+				saveLogToDB(model.DeploymentStatusFailed)
+				return fmt.Errorf("从配置文件远程仓库定位 Helm Chart 失败: %v", err)
+			}
+			logInfo("Chart 拉取成功: %s", chartPath)
+		} else {
+			logError("Helm Chart 配置不完整：未指定 chart 路径或远程仓库")
+			saveLogToDB(model.DeploymentStatusFailed)
+			return fmt.Errorf("Helm Chart 配置不完整：未指定 chart 路径或远程仓库")
+		}
+	}
+
+	// 加载 Chart
+	logInfo("加载 Helm Chart: %s", chartPath)
+	ch, err := loader.Load(chartPath)
+	if err != nil {
+		logError("加载 Helm Chart 失败: %v", err)
+		saveLogToDB(model.DeploymentStatusFailed)
+		return fmt.Errorf("加载 Helm Chart 失败: %v", err)
+	}
+	logInfo("Chart 加载成功")
+
+	values := map[string]interface{}{}
+	for k, v := range cfg.Values {
+		values[k] = v
+	}
+
+	// 打印 Helm values
+	valuesYAML, _ := yaml.Marshal(values)
+	logInfo("Helm Values:\n%s", string(valuesYAML))
+
+	timeout := time.Duration(cfg.Timeout) * time.Second
+	if timeout <= 0 {
+		timeout = 5 * time.Minute
+	}
+	logInfo("部署超时时间: %v", timeout)
+
+	// 检查 Release 是否存在
+	logInfo("检查 Release 是否存在: %s", releaseName)
+	_, getErr := action.NewGet(actionConfig).Run(releaseName)
+	if getErr == nil {
+		// Release 存在，执行升级
+		logInfo("Release 已存在，执行升级...")
+		upgrade := action.NewUpgrade(actionConfig)
+		upgrade.Namespace = namespace
+		upgrade.Timeout = timeout
+		// Helm v4 要求必须显式设置 WaitStrategy，否则报 "wait strategy not set"
+		if cfg.Wait {
+			upgrade.WaitStrategy = kube.StatusWatcherStrategy
+			upgrade.WaitForJobs = true
+		} else {
+			upgrade.WaitStrategy = kube.HookOnlyStrategy
+		}
+		if _, err := upgrade.Run(releaseName, ch, values); err != nil {
+			logError("Helm 升级失败: %v", err)
+			saveLogToDB(model.DeploymentStatusFailed)
+			return fmt.Errorf("Helm 升级失败: %v", err)
+		}
+		logInfo("Helm 升级成功")
+	} else {
+		// Release 不存在，执行安装
+		logInfo("Release 不存在，执行安装...")
+		install := action.NewInstall(actionConfig)
+		install.ReleaseName = releaseName
+		install.Namespace = namespace
+		install.Timeout = timeout
+		// Helm v4 要求必须显式设置 WaitStrategy，否则报 "wait strategy not set"
+		if cfg.Wait {
+			install.WaitStrategy = kube.StatusWatcherStrategy
+			install.WaitForJobs = true
+		} else {
+			install.WaitStrategy = kube.HookOnlyStrategy
+		}
+		if _, err := install.Run(ch, values); err != nil {
+			logError("Helm 安装失败: %v", err)
+			saveLogToDB(model.DeploymentStatusFailed)
+			return fmt.Errorf("Helm 安装失败: %v", err)
+		}
+		logInfo("Helm 安装成功")
+	}
+
+	duration := int(time.Since(startTime).Seconds())
+	logInfo("部署完成，耗时: %d 秒", duration)
+	saveLogToDB(model.DeploymentStatusSuccess)
+
+	return nil
+}
+
+func (s *DeploymentService) writeTempKubeconfig(cluster *model.K8sCluster) (string, error) {
+	if cluster.AuthType == "kubeconfig" && cluster.Kubeconfig != "" {
+		file, err := os.CreateTemp("", "keyops-helm-kubeconfig-*.yaml")
+		if err != nil {
+			return "", fmt.Errorf("创建临时 kubeconfig 失败: %v", err)
+		}
+		if _, err := file.WriteString(cluster.Kubeconfig); err != nil {
+			file.Close()
+			return "", fmt.Errorf("写入临时 kubeconfig 失败: %v", err)
+		}
+		file.Close()
+		return file.Name(), nil
+	}
+	if cluster.AuthType == "token" && cluster.Token != "" && cluster.APIServer != "" {
+		kubeconfig := fmt.Sprintf(`apiVersion: v1
+kind: Config
+clusters:
+- name: keyops
+  cluster:
+    server: %s
+    insecure-skip-tls-verify: true
+users:
+- name: keyops-user
+  user:
+    token: %s
+contexts:
+- name: keyops
+  context:
+    cluster: keyops
+    user: keyops-user
+current-context: keyops
+`, cluster.APIServer, cluster.Token)
+		file, err := os.CreateTemp("", "keyops-helm-kubeconfig-*.yaml")
+		if err != nil {
+			return "", fmt.Errorf("创建临时 kubeconfig 失败: %v", err)
+		}
+		if _, err := file.WriteString(kubeconfig); err != nil {
+			file.Close()
+			return "", fmt.Errorf("写入临时 kubeconfig 失败: %v", err)
+		}
+		file.Close()
+		return file.Name(), nil
+	}
+	return "", fmt.Errorf("集群认证信息不完整：请在该集群的 K8s 管理中配置 token 或 kubeconfig")
 }
 
 // applyK8sYAML 应用 K8s YAML 到集群
@@ -312,7 +645,7 @@ func (s *DeploymentService) applyK8sYAML(cluster *model.K8sCluster, namespace st
 	}
 
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout:   30 * time.Second,
 		Transport: &http.Transport{TLSClientConfig: tlsConfig},
 	}
 
@@ -394,4 +727,3 @@ func (s *DeploymentService) getAPIPath(kind, namespace string, name ...string) s
 	}
 	return basePath
 }
-

@@ -28,15 +28,17 @@ import (
 	permissionHandler "github.com/fisker086/keyops/internal/api/handler/permission"
 	// System handlers
 	systemHandler "github.com/fisker086/keyops/internal/api/handler/system"
-	// Jenkins handlers
-	jenkinsHandler "github.com/fisker086/keyops/internal/api/handler/jenkins"
 	// Audit handlers
 	auditHandler "github.com/fisker086/keyops/internal/api/handler/audit"
 	// DMS handlers
 	dmsHandler "github.com/fisker086/keyops/internal/api/handler/dms"
 	// Release (发布代码) handlers
-	releaseHandler "github.com/fisker086/keyops/internal/api/handler/release"
 	buildmasterHandler "github.com/fisker086/keyops/internal/api/handler/buildmaster"
+	releaseHandler "github.com/fisker086/keyops/internal/api/handler/release"
+	// DeployParam handlers
+	deployparamHandler "github.com/fisker086/keyops/internal/api/handler/deployparam"
+	// AppDeployParam handlers
+	appDeployParamHandler "github.com/fisker086/keyops/internal/api/handler/appdeployparam"
 )
 
 // Auth handlers
@@ -140,21 +142,16 @@ var NewRoleHandler = permissionHandler.NewRoleHandler
 type SettingHandler = systemHandler.SettingHandler
 type AssetSyncHandler = systemHandler.AssetSyncHandler
 type OrganizationHandler = systemHandler.OrganizationHandler
+type EnvironmentHandler = systemHandler.EnvironmentHandler
 type ApplicationHandler = systemHandler.ApplicationHandler
-type AppDeployBindingHandler = systemHandler.AppDeployBindingHandler
 type RegistryHandler = systemHandler.RegistryHandler
 
 var NewSettingHandler = systemHandler.NewSettingHandler
 var NewAssetSyncHandler = systemHandler.NewAssetSyncHandler
 var NewOrganizationHandler = systemHandler.NewOrganizationHandler
+var NewEnvironmentHandler = systemHandler.NewEnvironmentHandler
 var NewApplicationHandler = systemHandler.NewApplicationHandler
-var NewAppDeployBindingHandler = systemHandler.NewAppDeployBindingHandler
 var NewRegistryHandler = systemHandler.NewRegistryHandler
-
-// Jenkins handlers
-type JenkinsHandler = jenkinsHandler.JenkinsHandler
-
-var NewJenkinsHandler = jenkinsHandler.NewJenkinsHandler
 
 // Audit handlers
 type AuditHandler = auditHandler.AuditHandler
@@ -181,7 +178,17 @@ type BuildMasterHandler = buildmasterHandler.BuildMasterHandler
 
 var NewBuildMasterHandler = buildmasterHandler.NewBuildMasterHandler
 
+// DeployParam handlers
+type DeployParamHandler = deployparamHandler.DeployParamHandler
+
+var NewDeployParamHandler = deployparamHandler.NewDeployParamHandler
+
 // ApiKey handlers
 type ApiKeyHandler = apiKeyHandler.ApiKeyHandler
 
 var NewApiKeyHandler = apiKeyHandler.NewApiKeyHandler
+
+// AppDeployParam handlers
+type AppDeployParamHandler = appDeployParamHandler.AppDeployParamHandler
+
+var NewAppDeployParamHandler = appDeployParamHandler.NewAppDeployParamHandler

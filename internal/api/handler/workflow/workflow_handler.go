@@ -85,12 +85,12 @@ func (h *WorkflowHandler) UpdateWorkflow(c *gin.Context) {
 // 创建工作流
 func (h *WorkflowHandler) CreateWorkflow(c *gin.Context) {
 	var payload struct {
-		JobID        string              `json:"jobid"`
-		Title        string              `json:"title"`
-		WorkflowType string              `json:"workflow_type"`
-		Status       string              `json:"status"`
-		Comment      string              `json:"comment"`
-		Labels       datatypes.JSON      `json:"labels"`
+		JobID        string               `json:"jobid"`
+		Title        string               `json:"title"`
+		WorkflowType string               `json:"workflow_type"`
+		Status       string               `json:"status"`
+		Comment      string               `json:"comment"`
+		Labels       datatypes.JSON       `json:"labels"`
 		Steps        []model.WorkflowStep `json:"steps"`
 	}
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -343,10 +343,10 @@ func (h *WorkflowHandler) reassignStep(c *gin.Context, jobid, stepID, userID str
 // 更新基础信息（非 method 情况）
 func (h *WorkflowHandler) updateBase(c *gin.Context, req interface{}) {
 	var payload struct {
-		JobID string `json:"jobid"`
-		Title string `json:"title"`
+		JobID   string `json:"jobid"`
+		Title   string `json:"title"`
 		Comment string `json:"comment"`
-		Status string `json:"status"`
+		Status  string `json:"status"`
 	}
 	_ = mapToStruct(req, &payload)
 	if payload.JobID == "" {
@@ -394,11 +394,11 @@ func (h *WorkflowHandler) ListDrafts(c *gin.Context) {
 
 func (h *WorkflowHandler) SaveDraft(c *gin.Context) {
 	var payload struct {
-		JobID        string              `json:"jobid"`
-		Title        string              `json:"title"`
-		WorkflowType string              `json:"workflow_type"`
-		Comment      string              `json:"comment"`
-		Labels       datatypes.JSON      `json:"labels"`
+		JobID        string               `json:"jobid"`
+		Title        string               `json:"title"`
+		WorkflowType string               `json:"workflow_type"`
+		Comment      string               `json:"comment"`
+		Labels       datatypes.JSON       `json:"labels"`
 		Steps        []model.WorkflowStep `json:"steps"`
 	}
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -539,4 +539,3 @@ func mapToStruct(src interface{}, dst interface{}) error {
 	}
 	return json.Unmarshal(b, dst)
 }
-

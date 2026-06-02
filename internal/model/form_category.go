@@ -15,5 +15,3 @@ type FormCategory struct {
 func (FormCategory) TableName() string {
 	return "form_categories"
 }
-
-

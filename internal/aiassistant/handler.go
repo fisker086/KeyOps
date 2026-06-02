@@ -12,10 +12,10 @@ import (
 
 	"github.com/fisker086/keyops/internal/aiassistant/tools"
 	"github.com/fisker086/keyops/internal/repository"
-	"github.com/gin-gonic/gin"
 	"github.com/fisker086/keyops/pkg/distributed"
 	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/fisker086/keyops/pkg/redis"
+	"github.com/gin-gonic/gin"
 )
 
 // streamEvent 用于 SSE 推送
@@ -27,34 +27,34 @@ type streamEvent struct {
 // GetUserRoleIDsFunc 根据用户ID返回其所属平台角色ID列表，用于专家可见/可用校验
 type GetUserRoleIDsFunc func(userID string) ([]string, error)
 
-// Handler AI运维助手 HTTP + SSE
+// Handler AI巡检 HTTP + SSE
 type Handler struct {
 	sessionMgr      *SessionManager
 	scheduleMgr     *ScheduleManager
 	envMgr          *EnvManager
 	store           *Store // 可选：DB 存目标环境与专家，为 nil 时用 config/内置
-	streamHub        *streamHub
-	agentStarted     sync.Map // sessionID -> struct{}，保证每会话只启动一次 runAgent
-	jwtSecret        string
-	getUserRoleIDs   GetUserRoleIDsFunc       // 可选：非 nil 时按用户角色过滤专家列表并校验创建任务时的专家可用性
-	runners          map[string]tools.Runner   // 各工具集执行器（如 k8s），key 为工具集 ID
-	reportSender     InspectionReportSender   // 可选：巡检完成后将报告发送到告警渠道
-	scheduleStarter   ScheduleWorkflowStarter  // 可选：Temporal 等，触发时走工作流（原子 巡检+发报告）
-	settingRepo      repository.SettingRepository // 可选：用于从系统设置读取 LLM 配置
+	streamHub       *streamHub
+	agentStarted    sync.Map // sessionID -> struct{}，保证每会话只启动一次 runAgent
+	jwtSecret       string
+	getUserRoleIDs  GetUserRoleIDsFunc           // 可选：非 nil 时按用户角色过滤专家列表并校验创建任务时的专家可用性
+	runners         map[string]tools.Runner      // 各工具集执行器（如 k8s），key 为工具集 ID
+	reportSender    InspectionReportSender       // 可选：巡检完成后将报告发送到告警渠道
+	scheduleStarter ScheduleWorkflowStarter      // 可选：Temporal 等，触发时走工作流（原子 巡检+发报告）
+	settingRepo     repository.SettingRepository // 可选：用于从系统设置读取 LLM 配置
 }
 
 // NewHandler 创建。store 可选；getUserRoleIDs 可选；runners 为各工具集 ID 到 Runner 的映射；settingRepo 可选，用于从系统设置读取 LLM Key/URL。
 func NewHandler(sessionMgr *SessionManager, scheduleMgr *ScheduleManager, envMgr *EnvManager, store *Store, jwtSecret string, getUserRoleIDs GetUserRoleIDsFunc, runners map[string]tools.Runner, settingRepo repository.SettingRepository) *Handler {
 	return &Handler{
-		sessionMgr:    sessionMgr,
-		scheduleMgr:   scheduleMgr,
-		envMgr:        envMgr,
-		store:         store,
-		streamHub:     newStreamHub(),
-		jwtSecret:     jwtSecret,
+		sessionMgr:     sessionMgr,
+		scheduleMgr:    scheduleMgr,
+		envMgr:         envMgr,
+		store:          store,
+		streamHub:      newStreamHub(),
+		jwtSecret:      jwtSecret,
 		getUserRoleIDs: getUserRoleIDs,
-		runners:       runners,
-		settingRepo:   settingRepo,
+		runners:        runners,
+		settingRepo:    settingRepo,
 	}
 }
 
@@ -140,16 +140,16 @@ func (h *Handler) listModels(c *gin.Context) {
 		list, err := h.store.ListModels()
 		if err == nil && len(list) > 0 {
 			c.JSON(http.StatusOK, gin.H{
-				"models":          list,
-				"default_model":  list[0].ID,
+				"models":        list,
+				"default_model": list[0].ID,
 			})
 			return
 		}
 	}
 	models, defaultModel := GetAvailableModels(h.settingRepo)
 	c.JSON(http.StatusOK, gin.H{
-		"models":         models,
-		"default_model":  defaultModel,
+		"models":        models,
+		"default_model": defaultModel,
 	})
 }
 
@@ -365,10 +365,10 @@ func (h *Handler) continueSession(c *gin.Context) {
 }
 
 type createTaskReq struct {
-	Task     string `json:"task"`
-	EnvID    string `json:"env_id"`
-	Role     string `json:"role"`
-	ModelID  string `json:"model_id"` // 可选，模型配置 ID
+	Task    string `json:"task"`
+	EnvID   string `json:"env_id"`
+	Role    string `json:"role"`
+	ModelID string `json:"model_id"` // 可选，模型配置 ID
 }
 
 func (h *Handler) createTask(c *gin.Context) {
@@ -504,18 +504,18 @@ func (h *Handler) listSchedules(c *gin.Context) {
 }
 
 type scheduleReq struct {
-	Name                   string  `json:"name"`
-	EnvID                  string  `json:"env_id"`
-	ModelID                string  `json:"model_id"`
-	Cron                   string  `json:"cron"`
-	TaskPrompt             string  `json:"task_prompt"`
-	Role                   string  `json:"role"`
-	LarkBotID              string  `json:"lark_bot_id"`
-	LarkGroupName          string  `json:"lark_group_name"`
-	LarkFolderID           string  `json:"lark_folder_id"`
-	Enabled                *bool   `json:"enabled"`
-	ResponsibleUser        string  `json:"responsible_user"`
-	NotificationChannelIDs []uint  `json:"notification_channel_ids"` // 监控告警渠道 ID，巡检结果通知到这些渠道
+	Name                   string `json:"name"`
+	EnvID                  string `json:"env_id"`
+	ModelID                string `json:"model_id"`
+	Cron                   string `json:"cron"`
+	TaskPrompt             string `json:"task_prompt"`
+	Role                   string `json:"role"`
+	LarkBotID              string `json:"lark_bot_id"`
+	LarkGroupName          string `json:"lark_group_name"`
+	LarkFolderID           string `json:"lark_folder_id"`
+	Enabled                *bool  `json:"enabled"`
+	ResponsibleUser        string `json:"responsible_user"`
+	NotificationChannelIDs []uint `json:"notification_channel_ids"` // 监控告警渠道 ID，巡检结果通知到这些渠道
 }
 
 func (h *Handler) addSchedule(c *gin.Context) {
@@ -742,7 +742,7 @@ type environmentReq struct {
 	GrafToken      string                 `json:"graf_token"`
 	K8sClusterID   string                 `json:"k8s_cluster_id"` // 关联 K8s 集群 ID（来自 k8s 管理）
 	AllowedRoleIDs []string               `json:"allowed_role_ids"`
-	ExtraConfig    map[string]interface{} `json:"extra_config"`    // 扩展配置，如 K8s 安装节点（master/worker/etcd）
+	ExtraConfig    map[string]interface{} `json:"extra_config"` // 扩展配置，如 K8s 安装节点（master/worker/etcd）
 }
 
 func (h *Handler) addEnvironment(c *gin.Context) {
@@ -821,7 +821,7 @@ type expertReq struct {
 	Name           string   `json:"name"`
 	Description    string   `json:"description"`
 	SystemPrompt   string   `json:"system_prompt"`
-	SkillID        string   `json:"skill_id"`        // 关联技能（如 k8s-install），非空时前置注入
+	SkillID        string   `json:"skill_id"`         // 关联技能（如 k8s-install），非空时前置注入
 	AllowedRoleIDs []string `json:"allowed_role_ids"` // 允许使用该专家的平台角色ID列表，空表示所有角色可用
 }
 

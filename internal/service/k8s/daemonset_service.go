@@ -317,7 +317,7 @@ func (s *K8sService) GetDaemonSetDetail(clusterID string, clusterName string, na
 			selectorParts = append(selectorParts, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
-	
+
 	if len(selectorParts) > 0 {
 		labelSelector := strings.Join(selectorParts, ",")
 
@@ -935,4 +935,3 @@ func (s *K8sService) RollbackDaemonSet(clusterID string, clusterName string, nam
 
 	return nil
 }
-

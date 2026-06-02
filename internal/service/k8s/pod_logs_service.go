@@ -216,4 +216,3 @@ func (s *PodLogsService) StreamPodLogs(clusterID, clusterName, namespace, podNam
 		}
 	}
 }
-

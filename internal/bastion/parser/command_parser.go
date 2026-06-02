@@ -416,7 +416,7 @@ func containsPromptMarker(line string) bool {
 	// 通用检测：找到所有可能的 prompt 标记位置
 	// 检查标记前的内容是否看起来像 prompt（而不是命令的一部分）
 	promptMarkers := []string{"]# ", "]$ ", "# ", "$ "}
-	
+
 	for _, marker := range promptMarkers {
 		idx := strings.LastIndex(line, marker)
 		if idx >= 0 {
@@ -466,15 +466,15 @@ func looksLikePromptPrefix(s string) bool {
 
 	// 优先检查：包含 @ 符号通常是传统 prompt 格式（user@host:path）
 	hasAtSymbol := strings.Contains(s, "@")
-	
+
 	// 检查是否包含路径分隔符（: 或 /）
 	hasPathSeparator := strings.Contains(s, ":") || strings.Contains(s, "/")
-	
+
 	// 检查是否包含常见的标识符字符（字母、数字、连字符、下划线）
 	hasIdentifier := false
 	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || 
-		   (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
 			hasIdentifier = true
 			break
 		}
@@ -501,8 +501,8 @@ func looksLikePromptPrefix(s string) bool {
 		// 检查是否主要是标识符字符
 		identifierChars := 0
 		for _, r := range s {
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || 
-			   (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+				(r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
 				identifierChars++
 			}
 		}
@@ -535,13 +535,13 @@ func extractCommandFromLine(line string) string {
 			}
 			pos += idx
 			beforeMarker := line[:pos]
-			
+
 			// 使用通用的 prompt 检测方法
 			if looksLikePromptPrefix(beforeMarker) {
 				lastMarkerPos = pos
 				lastMarker = m
 			}
-			
+
 			idx = pos + len(m)
 		}
 	}

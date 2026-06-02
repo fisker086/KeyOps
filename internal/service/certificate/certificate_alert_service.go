@@ -14,11 +14,11 @@ import (
 
 // CertificateAlertService 证书告警服务
 type CertificateAlertService struct {
-	certRepo            repository.DomainCertificateRepository
-	templateRepo        repository.AlertTemplateRepository
-	channelRepo         repository.AlertChannelRepository
-	alertNotifier       *notification.AlertNotifier
-	db                  *gorm.DB
+	certRepo      repository.DomainCertificateRepository
+	templateRepo  repository.AlertTemplateRepository
+	channelRepo   repository.AlertChannelRepository
+	alertNotifier *notification.AlertNotifier
+	db            *gorm.DB
 }
 
 // NewCertificateAlertService 创建证书告警服务
@@ -136,12 +136,12 @@ func (s *CertificateAlertService) sendAlert(cert *model.DomainCertificate, daysL
 		logger.Infof("[CertificateAlertService] Template %d has no channels configured, skipping", template.ID)
 		return fmt.Errorf("template %d has no channels configured", template.ID)
 	}
-	
+
 	if err := json.Unmarshal(template.Channels, &channelsConfig); err != nil {
 		logger.Infof("[CertificateAlertService] Failed to parse template %d channels JSON: %v", template.ID, err)
 		return fmt.Errorf("failed to parse template channels: %w", err)
 	}
-	
+
 	// 检查是否有渠道配置
 	hasChannels := false
 	for _, channelIDsInterface := range channelsConfig {
@@ -150,7 +150,7 @@ func (s *CertificateAlertService) sendAlert(cert *model.DomainCertificate, daysL
 			break
 		}
 	}
-	
+
 	if !hasChannels {
 		logger.Infof("[CertificateAlertService] Template %d has no channels configured, skipping", template.ID)
 		return fmt.Errorf("template %d has no channels configured", template.ID)
@@ -219,7 +219,7 @@ func (s *CertificateAlertService) sendAlert(cert *model.DomainCertificate, daysL
 			logger.Infof("[CertificateAlertService] Failed to send alert via AlertNotifier: %v", err)
 			return err
 		}
-		
+
 		logger.Infof("[CertificateAlertService] Alert sent successfully for certificate %d (%s:%d), %d days remaining",
 			cert.ID, cert.Domain, cert.Port, daysLeft)
 	} else {

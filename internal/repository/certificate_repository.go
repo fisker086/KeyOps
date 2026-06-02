@@ -42,8 +42,8 @@ func (r *domainCertificateRepository) Update(cert *model.DomainCertificate) erro
 			"auto_update":         cert.AutoUpdate,
 			"connect_status":      cert.ConnectStatus,
 			"alert_days":          cert.AlertDays,
-			"alert_template_id":  cert.AlertTemplateID,
-			"last_alert_time":    cert.LastAlertTime,
+			"alert_template_id":   cert.AlertTemplateID,
+			"last_alert_time":     cert.LastAlertTime,
 			"comment":             cert.Comment,
 		}).Error
 }

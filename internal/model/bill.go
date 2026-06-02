@@ -50,12 +50,12 @@ type BillRecord struct {
 	Vendor         string          `gorm:"column:vendor; type:varchar(50)" json:"vendor" binding:"required"`    // 云厂商，tencent、huawei-langgemap、huawei-bjlg
 	Cycle          string          `gorm:"column:cycle; type:varchar(10)" json:"cycle" binding:"required"`      // 账单月份
 	InstanceID     string          `gorm:"column:instance_id; type:varchar(200)" json:"instance_id"`            // 资源ID
-	ResourceName   string          `gorm:"column:resource_name; type:text" json:"resource_name"`        // 资源名称
+	ResourceName   string          `gorm:"column:resource_name; type:text" json:"resource_name"`                // 资源名称
 	SpecDesc       string          `gorm:"column:spec_desc; type:text" json:"spec_desc"`                        // 资源配置
 	ConsumeAmount  decimal.Decimal `gorm:"column:consume_amount; type:decimal(25,15)" json:"consume_amount"`    // 费用
-	ResourceType   string          `gorm:"column:resource_type; type:text" json:"resource_type"`         // 资源类型
-	ResourceCode   string          `gorm:"column:resource_code; type:text" json:"resource_code"`         // 资源类型代码
-	ServiceType    string          `gorm:"column:service_type; type:text" json:"service_type,omitempty"` // 服务类型，腾讯云没有此字段
+	ResourceType   string          `gorm:"column:resource_type; type:text" json:"resource_type"`                // 资源类型
+	ResourceCode   string          `gorm:"column:resource_code; type:text" json:"resource_code"`                // 资源类型代码
+	ServiceType    string          `gorm:"column:service_type; type:text" json:"service_type,omitempty"`        // 服务类型，腾讯云没有此字段
 	ServiceCode    string          `gorm:"column:service_code; type:varchar(50)" json:"service_code,omitempty"` // 服务类型代码，腾讯云没有此字段
 	Region         string          `gorm:"column:region; type:varchar(50)" json:"region,omitempty"`             // 区域
 	AccountID      string          `gorm:"column:account_id; type:varchar(100)" json:"account_id,omitempty"`    // 云账户ID
@@ -111,19 +111,19 @@ func (BillPricing) TableName() string {
 // BillResource 云资源清单
 type BillResource struct {
 	ID             uint      `gorm:"column:id; primary_key; AUTO_INCREMENT" json:"id,omitempty"`
-	Vendor         string    `gorm:"column:vendor; type:varchar(50)" json:"vendor"`                // 云厂商
-	CloudAccountID uint      `gorm:"column:cloud_account_id" json:"cloud_account_id"`              // 系统云账户ID
-	AccountID      string    `gorm:"column:account_id; type:varchar(100)" json:"account_id"`       // 云厂商账户ID
-	ResourceID     string    `gorm:"column:resource_id; type:text" json:"resource_id"`     // 资源ID
-	ResourceType   string    `gorm:"column:resource_type; type:text" json:"resource_type"`  // 资源类型
-	ResourceName   string    `gorm:"column:resource_name; type:text" json:"resource_name"` // 资源名称
-	InstanceType   string    `gorm:"column:instance_type; type:text" json:"instance_type"`  // 实例类型
-	Region         string    `gorm:"column:region; type:varchar(50)" json:"region"`                // 区域
-	Zone           string    `gorm:"column:zone; type:varchar(50)" json:"zone"`                    // 可用区
-	Tags           string    `gorm:"column:tags; type:text" json:"tags"`                           // 标签JSON
-	Status         string    `gorm:"column:status; type:varchar(50)" json:"status"`                // 状态
-	FirstSeen      time.Time `gorm:"column:first_seen" json:"first_seen,omitempty"`                // 首次出现在账单中的时间
-	LastSeen       time.Time `gorm:"column:last_seen" json:"last_seen,omitempty"`                  // 最近出现在账单中的时间
+	Vendor         string    `gorm:"column:vendor; type:varchar(50)" json:"vendor"`          // 云厂商
+	CloudAccountID uint      `gorm:"column:cloud_account_id" json:"cloud_account_id"`        // 系统云账户ID
+	AccountID      string    `gorm:"column:account_id; type:varchar(100)" json:"account_id"` // 云厂商账户ID
+	ResourceID     string    `gorm:"column:resource_id; type:text" json:"resource_id"`       // 资源ID
+	ResourceType   string    `gorm:"column:resource_type; type:text" json:"resource_type"`   // 资源类型
+	ResourceName   string    `gorm:"column:resource_name; type:text" json:"resource_name"`   // 资源名称
+	InstanceType   string    `gorm:"column:instance_type; type:text" json:"instance_type"`   // 实例类型
+	Region         string    `gorm:"column:region; type:varchar(50)" json:"region"`          // 区域
+	Zone           string    `gorm:"column:zone; type:varchar(50)" json:"zone"`              // 可用区
+	Tags           string    `gorm:"column:tags; type:text" json:"tags"`                     // 标签JSON
+	Status         string    `gorm:"column:status; type:varchar(50)" json:"status"`          // 状态
+	FirstSeen      time.Time `gorm:"column:first_seen" json:"first_seen,omitempty"`          // 首次出现在账单中的时间
+	LastSeen       time.Time `gorm:"column:last_seen" json:"last_seen,omitempty"`            // 最近出现在账单中的时间
 	BaseModel
 }
 

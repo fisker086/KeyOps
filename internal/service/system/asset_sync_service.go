@@ -544,14 +544,14 @@ func (s *AssetSyncService) syncFromExcel(config *model.AssetSyncConfig) (int, er
 			logger.Infof("[AssetSync] Updated from Excel: %s (%s)", name, ip)
 		} else {
 			newHost := &model.Host{
-				ID:          uuid.New().String(),
-				Name:        name,
-				IP:          ip,
-				Port:        port,
-				DeviceType:  deviceType,
-				Status:      "unknown",
-				Tags:        tags,
-				Description: description,
+				ID:             uuid.New().String(),
+				Name:           name,
+				IP:             ip,
+				Port:           port,
+				DeviceType:     deviceType,
+				Status:         "unknown",
+				Tags:           tags,
+				Description:    description,
 				ConnectionMode: "auto",
 			}
 			if err := s.hostRepo.Create(newHost); err != nil {

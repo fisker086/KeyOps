@@ -167,7 +167,7 @@ func (p *DingTalkProvider) createApprovalInstanceWithCode(ctx context.Context, t
 	if userID == "" {
 		userID = approval.ApplicantID // 如果ApplicantName为空，fallback到ApplicantID
 	}
-	
+
 	// 如果userID看起来像UUID（36个字符且包含连字符），尝试查询用户名
 	if len(userID) == 36 && strings.Contains(userID, "-") {
 		var user model.User
@@ -175,7 +175,7 @@ func (p *DingTalkProvider) createApprovalInstanceWithCode(ctx context.Context, t
 			userID = user.Username
 		}
 	}
-	
+
 	deptID := "1" // 钉钉默认部门ID，可以根据需要调整
 
 	// 从配置中读取审批人列表，并转换为用户名

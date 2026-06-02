@@ -145,7 +145,7 @@ func (s *AuthService) getFeishuUserInfo(accessToken, userInfoURL string) (*SSOUs
 		UnionID:   userData.UnionID,
 		Email:     userData.Email,
 		Name:      userData.Name,
-		Mobile:   userData.Mobile,
+		Mobile:    userData.Mobile,
 		AvatarURL: userData.AvatarURL,
 	}
 

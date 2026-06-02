@@ -12,11 +12,9 @@ type DeploymentRepository interface {
 	GetByID(id string) (*model.Deployment, error)
 	Update(deployment *model.Deployment) error
 	UpdateStatus(id string, status string, duration *int, logPath string) error
+	UpdateBuildLog(id string, buildLog string) error
 	List(params *DeploymentListParams) ([]*model.Deployment, int64, error)
 	Delete(id string) error
-	SaveBuildLog(deploymentID string, buildLog string) error
-	GetBuildLog(deploymentID string) (string, error)
-	FindByJenkinsBuild(jobName string, buildNumber int) (*model.Deployment, error)
 }
 
 type deploymentRepository struct {
@@ -54,24 +52,24 @@ func (r *deploymentRepository) UpdateStatus(id string, status string, duration *
 	if err := r.db.Where("id = ?", id).First(&current).Error; err != nil {
 		return err
 	}
-	
+
 	updates := map[string]interface{}{
 		"status": status,
 	}
-	
+
 	if duration != nil {
 		updates["duration"] = *duration
 	}
 	if logPath != "" {
 		updates["log_path"] = logPath
 	}
-	
+
 	now := time.Now()
 	// 只在状态从非 running 变为 running 时设置 started_at
 	if status == model.DeploymentStatusRunning && current.Status != model.DeploymentStatusRunning {
 		updates["started_at"] = &now
 	}
-	
+
 	// 在状态变为最终状态时设置 completed_at
 	if status == model.DeploymentStatusSuccess || status == model.DeploymentStatusFailed || status == model.DeploymentStatusCancelled {
 		updates["completed_at"] = &now
@@ -81,17 +79,22 @@ func (r *deploymentRepository) UpdateStatus(id string, status string, duration *
 			updates["started_at"] = &startTime
 		}
 	}
-	
+
 	return r.db.Model(&model.Deployment{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// UpdateBuildLog 更新部署日志
+func (r *deploymentRepository) UpdateBuildLog(id string, buildLog string) error {
+	return r.db.Model(&model.Deployment{}).Where("id = ?", id).Update("build_log", buildLog).Error
 }
 
 // List 查询部署记录列表
 func (r *deploymentRepository) List(params *DeploymentListParams) ([]*model.Deployment, int64, error) {
 	var deployments []*model.Deployment
 	var total int64
-	
+
 	query := r.db.Model(&model.Deployment{})
-	
+
 	// 构建查询条件
 	if params.ProjectID != "" {
 		query = query.Where("project_id = ?", params.ProjectID)
@@ -101,6 +104,9 @@ func (r *deploymentRepository) List(params *DeploymentListParams) ([]*model.Depl
 	}
 	if params.EnvID != "" {
 		query = query.Where("env_id = ?", params.EnvID)
+	}
+	if params.EnvName != "" {
+		query = query.Where("env_name = ?", params.EnvName)
 	}
 	if params.ClusterID != "" {
 		query = query.Where("cluster_id = ?", params.ClusterID)
@@ -120,12 +126,12 @@ func (r *deploymentRepository) List(params *DeploymentListParams) ([]*model.Depl
 	if params.EndTime != nil {
 		query = query.Where("created_at <= ?", *params.EndTime)
 	}
-	
+
 	// 获取总数
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	// 排序和分页
 	// 验证分页参数
 	if params.Page < 1 {
@@ -137,7 +143,7 @@ func (r *deploymentRepository) List(params *DeploymentListParams) ([]*model.Depl
 	if params.PageSize > 100 {
 		params.PageSize = 100 // 限制最大页面大小
 	}
-	
+
 	// 安全的排序字段验证（防止SQL注入）
 	orderBy := "created_at DESC"
 	if params.OrderBy != "" {
@@ -154,12 +160,12 @@ func (r *deploymentRepository) List(params *DeploymentListParams) ([]*model.Depl
 			orderBy = params.OrderBy
 		}
 	}
-	
+
 	offset := (params.Page - 1) * params.PageSize
 	if err := query.Order(orderBy).Limit(params.PageSize).Offset(offset).Find(&deployments).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	return deployments, total, nil
 }
 
@@ -168,6 +174,7 @@ type DeploymentListParams struct {
 	ProjectID   string
 	ProjectName string
 	EnvID       string
+	EnvName     string
 	ClusterID   string
 	DeployType  string
 	Status      string
@@ -182,29 +189,4 @@ type DeploymentListParams struct {
 // Delete 删除部署记录
 func (r *deploymentRepository) Delete(id string) error {
 	return r.db.Delete(&model.Deployment{}, "id = ?", id).Error
-}
-
-// SaveBuildLog 保存Jenkins构建日志
-func (r *deploymentRepository) SaveBuildLog(deploymentID string, buildLog string) error {
-	return r.db.Model(&model.Deployment{}).Where("id = ?", deploymentID).Update("build_log", buildLog).Error
-}
-
-// GetBuildLog 获取Jenkins构建日志
-func (r *deploymentRepository) GetBuildLog(deploymentID string) (string, error) {
-	var deployment model.Deployment
-	err := r.db.Select("build_log").Where("id = ?", deploymentID).First(&deployment).Error
-	if err != nil {
-		return "", err
-	}
-	return deployment.BuildLog, nil
-}
-
-// FindByJenkinsBuild 根据Jenkins Job和Build Number查找部署记录
-func (r *deploymentRepository) FindByJenkinsBuild(jobName string, buildNumber int) (*model.Deployment, error) {
-	var deployment model.Deployment
-	err := r.db.Where("jenkins_job = ? AND jenkins_build_number = ?", jobName, buildNumber).First(&deployment).Error
-	if err != nil {
-		return nil, err
-	}
-	return &deployment, nil
 }

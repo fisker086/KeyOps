@@ -29,7 +29,8 @@ type ApprovalPlatform string
 
 const (
 	ApprovalPlatformInternal ApprovalPlatform = "internal" // 内部审批系统
-	ApprovalPlatformFeishu   ApprovalPlatform = "feishu"   // 飞书
+	ApprovalPlatformFeishu   ApprovalPlatform = "feishu"   // 飞书（中国版）
+	ApprovalPlatformLark     ApprovalPlatform = "lark"     // Lark（国际版）
 	ApprovalPlatformDingTalk ApprovalPlatform = "dingtalk" // 钉钉
 	ApprovalPlatformWeChat   ApprovalPlatform = "wechat"   // 企业微信
 	ApprovalPlatformCustom   ApprovalPlatform = "custom"   // 自定义
@@ -65,20 +66,30 @@ type Approval struct {
 	ExpiresAt   *time.Time  `json:"expires_at"`                   // 过期时间
 
 	// 审批详情
-	Reason       string `json:"reason"`        // 申请理由
-	ApprovalNote string `json:"approval_note"` // 审批备注
-	RejectReason string `json:"reject_reason"` // 拒绝原因
+	Reason       string `json:"reason"`                                          // 申请理由
+	ApprovalNote string `json:"approval_note"`                                   // 审批备注
+	RejectReason string `json:"reject_reason"`                                   // 拒绝原因
 	Priority     string `json:"priority" gorm:"type:varchar(20);default:normal"` // 优先级: low/normal/high/urgent
 
 	// 第三方平台信息
 	ExternalID   string `json:"external_id"`                    // 第三方平台审批单ID
 	ExternalURL  string `json:"external_url"`                   // 第三方平台审批单链接
 	ExternalData string `json:"external_data" gorm:"type:text"` // 第三方平台额外数据(JSON)
-	
+
 	// 发布相关字段（当Type为deployment时使用）
-	DeployConfig string `json:"deploy_config" gorm:"type:text"` // 发布配置(JSON格式，存储Jenkins等发布方式的配置)
+	DeployConfig string `json:"deploy_config" gorm:"type:text"` // 发布配置(JSON格式)
 	DeploymentID string `json:"deployment_id"`                  // 关联的部署记录ID（发布成功后创建）
 	Deployed     bool   `json:"deployed" gorm:"default:false"`  // 是否已发布
+
+	// 回调来源标识（用于区分不同业务场景的回调）
+	CallbackSource string `json:"callback_source" gorm:"column:callback_source;type:varchar(20)"` // 回调来源: ticket/release/...
+
+	// 回调令牌（嵌入审批表单数据，回调时可据此直接匹配工单，不依赖第三方 external_id）
+	CallbackToken string `json:"callback_token" gorm:"column:callback_token;type:varchar(36);index"` // 回调令牌(UUID)
+
+	// 关联工单信息（当从工单创建时）
+	TicketID     uint   `json:"ticket_id" gorm:"column:ticket_id;index"`                    // 关联的工单ID
+	TicketNumber string `json:"ticket_number" gorm:"column:ticket_number;type:varchar(50)"` // 工单编号
 
 	// 时间信息
 	CreatedAt  time.Time  `json:"created_at"`

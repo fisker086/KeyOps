@@ -54,11 +54,11 @@ func (Role) TableName() string {
 
 // RoleMember 角色成员关系
 type RoleMember struct {
-	ID          uint      `json:"id" gorm:"primaryKey;autoIncrement"`
-	RoleID      string    `json:"roleId" gorm:"type:varchar(36);not null;index"`
-	UserID      string    `json:"userId" gorm:"type:varchar(36);not null;index"`
-	AddedBy     string    `json:"addedBy,omitempty" gorm:"type:varchar(36)"`
-	AddedAt     time.Time `json:"addedAt" gorm:"autoCreateTime"`
+	ID      uint      `json:"id" gorm:"primaryKey;autoIncrement"`
+	RoleID  string    `json:"roleId" gorm:"type:varchar(36);not null;index"`
+	UserID  string    `json:"userId" gorm:"type:varchar(36);not null;index"`
+	AddedBy string    `json:"addedBy,omitempty" gorm:"type:varchar(36)"`
+	AddedAt time.Time `json:"addedAt" gorm:"autoCreateTime"`
 }
 
 func (RoleMember) TableName() string {
@@ -75,7 +75,7 @@ type PermissionRule struct {
 
 	// 资产范围
 	HostGroupID *string `json:"hostGroupId,omitempty" gorm:"type:varchar(36);index"` // NULL = 所有主机
-	HostIDs     string  `json:"hostIds,omitempty" gorm:"type:text"`                   // JSON数组，指定主机ID列表
+	HostIDs     string  `json:"hostIds,omitempty" gorm:"type:text"`                  // JSON数组，指定主机ID列表
 
 	// 系统用户
 	SystemUserID *string `json:"systemUserId,omitempty" gorm:"type:varchar(36);index"`
@@ -127,17 +127,17 @@ type PermissionRuleDetail struct {
 
 // PermissionExpirationLog 授权过期日志
 type PermissionExpirationLog struct {
-	ID            uint       `json:"id" gorm:"primaryKey;autoIncrement"`
-	RuleID        string     `json:"ruleId" gorm:"type:varchar(36);not null;index"`
-	RuleName      string     `json:"ruleName" gorm:"type:varchar(200);not null"`
-	RoleID        string     `json:"roleId" gorm:"type:varchar(36);not null;index"`
-	RoleName      string     `json:"roleName" gorm:"type:varchar(100)"`
-	Action        string     `json:"action" gorm:"type:varchar(50);not null;index"` // warning_sent, expired, disabled, renewed
-	ValidTo       *time.Time `json:"validTo" gorm:"type:timestamp"`
-	NewValidTo    *time.Time `json:"newValidTo" gorm:"type:timestamp"`
-	Reason        string     `json:"reason" gorm:"type:text"`
-	PerformedBy   string     `json:"performedBy" gorm:"type:varchar(36)"` // Admin user ID
-	CreatedAt     time.Time  `json:"createdAt" gorm:"autoCreateTime;index"`
+	ID          uint       `json:"id" gorm:"primaryKey;autoIncrement"`
+	RuleID      string     `json:"ruleId" gorm:"type:varchar(36);not null;index"`
+	RuleName    string     `json:"ruleName" gorm:"type:varchar(200);not null"`
+	RoleID      string     `json:"roleId" gorm:"type:varchar(36);not null;index"`
+	RoleName    string     `json:"roleName" gorm:"type:varchar(100)"`
+	Action      string     `json:"action" gorm:"type:varchar(50);not null;index"` // warning_sent, expired, disabled, renewed
+	ValidTo     *time.Time `json:"validTo" gorm:"type:timestamp"`
+	NewValidTo  *time.Time `json:"newValidTo" gorm:"type:timestamp"`
+	Reason      string     `json:"reason" gorm:"type:text"`
+	PerformedBy string     `json:"performedBy" gorm:"type:varchar(36)"` // Admin user ID
+	CreatedAt   time.Time  `json:"createdAt" gorm:"autoCreateTime;index"`
 }
 
 func (PermissionExpirationLog) TableName() string {

@@ -34,9 +34,9 @@ func NewOnCallNotificationService(
 ) *OnCallNotificationService {
 	return &OnCallNotificationService{
 		db:            db,
-		shiftRepo:    shiftRepo,
-		scheduleRepo: scheduleRepo,
-		stopChan:     make(chan struct{}),
+		shiftRepo:     shiftRepo,
+		scheduleRepo:  scheduleRepo,
+		stopChan:      make(chan struct{}),
 		checkInterval: 1 * time.Minute, // 默认每分钟检查一次
 	}
 }
@@ -135,7 +135,7 @@ func (s *OnCallNotificationService) performCheck(ctx context.Context) {
 		} else {
 			// 更新班次的更新时间，标记为已处理（避免重复发送）
 			s.db.Model(&shift).Update("updated_at", now)
-			logger.Infof("Notification sent for shift %d (user: %s, start: %s)", 
+			logger.Infof("Notification sent for shift %d (user: %s, start: %s)",
 				shift.ID, shift.UserID, shift.StartTime.Format("2006-01-02 15:04:05"))
 		}
 	}
@@ -263,4 +263,3 @@ func (s *OnCallNotificationService) sendWebhookNotification(webhookURL, title, c
 func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
-

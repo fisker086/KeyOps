@@ -59,8 +59,8 @@ func (l *LDAPAuthenticator) Authenticate(username, password string) (*LDAPUser, 
 	}
 
 	// 验证 UserFilter 格式（支持 %s, {0}, {username}）
-	if !strings.Contains(l.config.UserFilter, "%s") && 
-		!strings.Contains(l.config.UserFilter, "{0}") && 
+	if !strings.Contains(l.config.UserFilter, "%s") &&
+		!strings.Contains(l.config.UserFilter, "{0}") &&
 		!strings.Contains(l.config.UserFilter, "{username}") {
 		return nil, fmt.Errorf("UserFilter must contain %%s, {0} or {username} placeholder, got: %s", l.config.UserFilter)
 	}
@@ -379,4 +379,3 @@ type LDAPUserInfo struct {
 	Email    string
 	FullName string
 }
-

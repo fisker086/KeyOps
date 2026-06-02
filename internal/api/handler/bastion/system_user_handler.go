@@ -115,7 +115,7 @@ func (h *SystemUserHandler) CreateSystemUser(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	if systemUser.AuthType == "both" && systemUser.Password == "" && systemUser.PrivateKey == "" {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Code:    http.StatusBadRequest,
@@ -198,7 +198,7 @@ func (h *SystemUserHandler) UpdateSystemUser(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	if systemUser.AuthType == "both" && systemUser.Password == "" && systemUser.PrivateKey == "" {
 		c.JSON(http.StatusBadRequest, model.Response{
 			Code:    http.StatusBadRequest,

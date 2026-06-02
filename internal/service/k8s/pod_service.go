@@ -123,4 +123,3 @@ func (s *K8sService) GetPodList(clusterID string, clusterName string, nodeID uin
 
 	return pods, nil
 }
-

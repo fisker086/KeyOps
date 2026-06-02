@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	cronLeaderLockKey   = "ai_assistant:cron_leader"
-	cronLeaderLockTTL   = 2 * time.Minute
-	cronTickInterval    = 1 * time.Minute
-	lastRunRedisPrefix  = "ai_assistant:last_cron_run:"
+	cronLeaderLockKey  = "ai_assistant:cron_leader"
+	cronLeaderLockTTL  = 2 * time.Minute
+	cronTickInterval   = 1 * time.Minute
+	lastRunRedisPrefix = "ai_assistant:last_cron_run:"
 )
 
 // CronScheduler 按 cron 表达式定时触发任务；多实例下仅持有 Redis 锁的实例执行 tick，保证只触发一次

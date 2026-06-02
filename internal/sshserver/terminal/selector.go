@@ -175,17 +175,16 @@ func (s *HostSelector) GetHostInfo(hostID string) (*types.HostInfo, error) {
 }
 
 // convertToHostInfo 转换为HostInfo
+// 注意：Username/Password 在后续系统用户选择后由 handler 回填
 func (s *HostSelector) convertToHostInfo(host *model.Host) types.HostInfo {
 	return types.HostInfo{
 		ID:         host.ID,
 		Name:       host.Name,
 		IP:         host.IP,
 		Port:       host.Port,
-		Username:   "",         // TODO: 从 SystemUser 获取
-		Password:   "",         // TODO: 从 SystemUser 获取
-		Tags:       []string{}, // TODO: 添加标签支持
+		Tags:       []string{},
 		DeviceType: host.DeviceType,
-		Status:     host.Status, // 主机状态
+		Status:     host.Status,
 	}
 }
 

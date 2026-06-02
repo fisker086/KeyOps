@@ -16,9 +16,9 @@ type ToolSet struct {
 }
 
 var (
-	mu       sync.Mutex
-	byName   = make(map[string]string)   // tool name -> toolSet ID
-	byID     = make(map[string]*ToolSet) // id -> ToolSet
+	mu     sync.Mutex
+	byName = make(map[string]string)   // tool name -> toolSet ID
+	byID   = make(map[string]*ToolSet) // id -> ToolSet
 )
 
 // Register 注册一个工具集。应在各工具包子包的 init() 中调用。

@@ -14,9 +14,9 @@ type mockReleaseRunRepo struct {
 	run *model.ReleaseRun
 }
 
-func (m *mockReleaseRunRepo) Create(run *model.ReleaseRun) error { return nil }
+func (m *mockReleaseRunRepo) Create(run *model.ReleaseRun) error           { return nil }
 func (m *mockReleaseRunRepo) GetByID(id string) (*model.ReleaseRun, error) { return m.run, nil }
-func (m *mockReleaseRunRepo) Update(run *model.ReleaseRun) error { return nil }
+func (m *mockReleaseRunRepo) Update(run *model.ReleaseRun) error           { return nil }
 func (m *mockReleaseRunRepo) UpdateStatus(id string, status string, startedAt, completedAt *time.Time) error {
 	return nil
 }

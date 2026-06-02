@@ -55,10 +55,9 @@ type HandlerSet struct {
 	BillDashboard    *handler.BillDashboardHandler
 	Monitor          *handler.MonitorHandler
 	Organization     *handler.OrganizationHandler
+	Environment      *handler.EnvironmentHandler
 	Application      *handler.ApplicationHandler
-	AppDeployBinding *handler.AppDeployBindingHandler
 	Registry         *handler.RegistryHandler
-	Jenkins          *handler.JenkinsHandler
 	Audit            *handler.AuditHandler
 	Alert            *handler.AlertHandler
 	OnCall           *handler.OnCallHandler
@@ -68,6 +67,8 @@ type HandlerSet struct {
 	DMSPermission    *handler.DMSPermissionHandler
 	Release          *handler.ReleaseHandler
 	BuildMaster      *handler.BuildMasterHandler
+	DeployParam      *handler.DeployParamHandler
+	AppDeployParam   *handler.AppDeployParamHandler
 	AiAssistant      *aiassistant.Handler
 }
 

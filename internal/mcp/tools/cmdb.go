@@ -10,11 +10,11 @@ import (
 )
 
 type CmdbToolContext struct {
-	HostRepo         repository.HostRepository
-	AppRepo          repository.ApplicationRepository
-	DBInstanceRepo   repository.DBInstanceRepository
-	CertRepo         repository.DomainCertificateRepository
-	K8sClusterRepo   repository.K8sClusterRepository
+	HostRepo       repository.HostRepository
+	AppRepo        repository.ApplicationRepository
+	DBInstanceRepo repository.DBInstanceRepository
+	CertRepo       repository.DomainCertificateRepository
+	K8sClusterRepo repository.K8sClusterRepository
 }
 
 func RegisterCmdbTools(registry *mcp.Registry, ctx *CmdbToolContext) {
@@ -425,13 +425,13 @@ func handleListK8sClusters(args json.RawMessage, ctx *CmdbToolContext) *mcp.Call
 	var items []map[string]any
 	for _, c := range clusters {
 		items = append(items, map[string]any{
-			"id":              c.ID,
-			"name":            c.Name,
-			"description":     c.Description,
-			"version":         c.Version,
-			"region":          c.Region,
-			"environment":     c.Environment,
-			"status":          c.Status,
+			"id":               c.ID,
+			"name":             c.Name,
+			"description":      c.Description,
+			"version":          c.Version,
+			"region":           c.Region,
+			"environment":      c.Environment,
+			"status":           c.Status,
 			"defaultNamespace": c.DefaultNamespace,
 		})
 	}

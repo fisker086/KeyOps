@@ -17,10 +17,10 @@ var ErrDatasourceNotFound = errors.New("datasource not found")
 type DatasourceSyncScheduler struct {
 	ruleSourceRepo repository.AlertRuleSourceRepository
 	alertService   DatasourceSyncService // 同步服务接口
-	tasks          map[uint]*syncTask     // 数据源ID -> 定时任务
+	tasks          map[uint]*syncTask    // 数据源ID -> 定时任务
 	tasksMu        sync.RWMutex          // 保护 tasks 的并发访问
 	stopChan       chan struct{}         // 全局停止信号
-	wg             sync.WaitGroup         // 等待所有 goroutine 退出
+	wg             sync.WaitGroup        // 等待所有 goroutine 退出
 }
 
 // DatasourceSyncService 同步服务接口，由 AlertService 实现
@@ -250,4 +250,3 @@ func (s *DatasourceSyncScheduler) GetRunningTasks() []uint {
 	}
 	return sourceIDs
 }
-

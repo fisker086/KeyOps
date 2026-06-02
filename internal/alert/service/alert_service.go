@@ -157,9 +157,13 @@ func (s *AlertService) ProcessPrometheusAlert(alert *model.PrometheusAlert, sour
 			// 更新注解和标签
 			if annotationsJSON, err := json.Marshal(alertItem.Annotations); err == nil {
 				existing.Annotations = annotationsJSON
+			} else {
+				log.Printf("[AlertService] Failed to marshal annotations for alert ID=%d: %v", existing.ID, err)
 			}
 			if tagsJSON, err := json.Marshal(alertItem.Labels); err == nil {
 				existing.Tags = tagsJSON
+			} else {
+				log.Printf("[AlertService] Failed to marshal labels for alert ID=%d: %v", existing.ID, err)
 			}
 			if err := s.eventRepo.Update(existing); err != nil {
 				log.Printf("[AlertService] Failed to update existing alert ID=%d: %v", existing.ID, err)
@@ -196,8 +200,14 @@ func (s *AlertService) ProcessPrometheusAlert(alert *model.PrometheusAlert, sour
 			description = alertItem.Annotations["message"]
 		}
 
-		annotationsJSON, _ := json.Marshal(alertItem.Annotations)
-		tagsJSON, _ := json.Marshal(alertItem.Labels)
+		annotationsJSON, err := json.Marshal(alertItem.Annotations)
+		if err != nil {
+			log.Printf("[AlertService] Failed to marshal annotations for new alert: %v", err)
+		}
+		tagsJSON, err := json.Marshal(alertItem.Labels)
+		if err != nil {
+			log.Printf("[AlertService] Failed to marshal labels for new alert: %v", err)
+		}
 
 		// 从标签中提取部门ID（如果存在）
 		departmentID := ""
@@ -290,6 +300,11 @@ func (s *AlertService) ProcessPrometheusAlert(alert *model.PrometheusAlert, sour
 			if err == nil && len(strategies) > 0 {
 				// 延迟通知处理
 				go func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("[AlertService] Panic in notification goroutine: %v", r)
+						}
+					}()
 					for _, strategy := range strategies {
 						if strategy.Delay > 0 {
 							log.Printf("[AlertService] Delaying notification for strategy %d by %d seconds", strategy.ID, strategy.Delay)
@@ -875,6 +890,10 @@ func (s *AlertService) GetStrategy(id uint) (*model.AlertStrategy, error) {
 	return s.strategyRepo.FindByID(id)
 }
 
+func (s *AlertService) GetStrategiesByIDs(ids []uint) ([]model.AlertStrategy, error) {
+	return s.strategyRepo.FindByIDs(ids)
+}
+
 func (s *AlertService) CreateStrategy(strategy *model.AlertStrategy) (*model.AlertStrategy, error) {
 	if err := s.strategyRepo.Create(strategy); err != nil {
 		return nil, err
@@ -907,25 +926,7 @@ func (s *AlertService) GetLevels() ([]model.AlertLevel, error) {
 // ==================== 告警静默服务方法 ====================
 
 func (s *AlertService) GetSilences(departmentID string, page, pageSize int) (int64, []model.AlertSilence, error) {
-	if departmentID != "" {
-		silences, err := s.silenceRepo.ListByDepartment(departmentID)
-		if err != nil {
-			return 0, nil, err
-		}
-		total := int64(len(silences))
-		// 简单分页
-		start := (page - 1) * pageSize
-		end := start + pageSize
-		if start >= len(silences) {
-			return total, []model.AlertSilence{}, nil
-		}
-		if end > len(silences) {
-			end = len(silences)
-		}
-		return total, silences[start:end], nil
-	}
-	// 如果没有 departmentID，使用通用 List 方法
-	return s.silenceRepo.List(page, pageSize)
+	return s.silenceRepo.List(departmentID, page, pageSize)
 }
 
 func (s *AlertService) GetSilence(id uint) (*model.AlertSilence, error) {

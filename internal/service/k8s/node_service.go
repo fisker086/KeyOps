@@ -154,4 +154,3 @@ func (s *K8sService) GetNodeList(clusterID string, clusterName string, nodeID ui
 
 	return nodes, nil
 }
-

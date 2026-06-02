@@ -185,9 +185,9 @@ func (a *TencentAdapter) streamResourceSummary(ctx context.Context, month string
 				"service_name":  productName,
 
 				// For display name resolution
-				"ProductName":   productName,
-				"product_name":  productName,
-				"ProductDetail": productDetail,
+				"ProductName":    productName,
+				"product_name":   productName,
+				"ProductDetail":  productDetail,
 				"product_detail": productDetail,
 
 				// For extra metadata
@@ -296,5 +296,3 @@ func f64Val(s *string) float64 {
 	}
 	return f
 }
-
-

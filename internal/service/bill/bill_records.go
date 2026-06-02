@@ -1,7 +1,5 @@
 package bill
 
-
-
 // GetRecords 获取账单明细列表
 func (s *BillService) GetRecords(vendor, month, resourceCode, serviceCode string, page, pageSize int, queryRemote, withAmount bool) (interface{}, error) {
 	// TODO: 如果 queryRemote 为 true，需要调用云厂商API

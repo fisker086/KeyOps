@@ -71,7 +71,7 @@ func getAPIDescription(method, path string) string {
 	var api struct {
 		Description string
 	}
-	
+
 	// 清理路径，移除路径参数（如 :id）
 	cleanPath := path
 	// 简单的路径匹配：移除 /api 前缀后查询
@@ -79,17 +79,17 @@ func getAPIDescription(method, path string) string {
 	if len(queryPath) > 4 && queryPath[:4] == "/api" {
 		queryPath = queryPath[4:]
 	}
-	
+
 	// 尝试精确匹配
 	err := database.DB.Table("apis").
 		Where("method = ? AND path = ?", method, queryPath).
 		Select("description").
 		First(&api).Error
-	
+
 	if err == nil && api.Description != "" {
 		return api.Description
 	}
-	
+
 	// 如果精确匹配失败，尝试模式匹配（移除路径参数）
 	// 例如：/api/v1/kube/pod/:id -> /api/v1/kube/pod
 	patternPath := queryPath
@@ -102,18 +102,18 @@ func getAPIDescription(method, path string) string {
 			break
 		}
 		patternPath = patternPath[:lastSlash+1] + "%"
-		
+
 		err := database.DB.Table("apis").
 			Where("method = ? AND path LIKE ?", method, patternPath).
 			Select("description").
 			First(&api).Error
-		
+
 		if err == nil && api.Description != "" {
 			return api.Description
 		}
 		break
 	}
-	
+
 	// 默认描述映射（K8s 相关）
 	descriptions := map[string]string{
 		"POST /v1/kube/scale":     "扩缩容副本",

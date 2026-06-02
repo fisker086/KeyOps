@@ -36,8 +36,8 @@ func Setup(d Deps) *gin.Engine {
 			h.AssetSync,
 			h.SystemUser,
 			h.Organization,
+			h.Environment,
 			h.Application,
-			h.AppDeployBinding,
 			h.Role,
 			h.PermissionRule,
 			h.Permission,
@@ -46,6 +46,7 @@ func Setup(d Deps) *gin.Engine {
 			h.Ticket,
 			h.TicketDraft,
 			h.Workflow,
+			h.AppDeployParam,
 		)
 		registerPlatform(
 			authenticated,
@@ -56,9 +57,9 @@ func Setup(d Deps) *gin.Engine {
 			h.Deployment,
 			h.Release,
 			h.BuildMaster,
+			h.DeployParam,
 			h.Registry,
 			h.Monitor,
-			h.Jenkins,
 			h.Audit,
 			h.DMSInstance,
 			h.DMSQuery,
@@ -67,6 +68,7 @@ func Setup(d Deps) *gin.Engine {
 			h.AiAssistant,
 			s.K8sPermission,
 			d.RoleRepo,
+			h.AppDeployParam,
 		)
 		registerAlert(api, authenticated, h.Alert, h.OnCall)
 		registerBill(authenticated, h.Bill, h.ExpensesMap, h.CloudAccount, h.Resources, h.BillDashboard)

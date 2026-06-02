@@ -35,9 +35,9 @@ func (h *K8sHandler) GetResourceYaml(c *gin.Context) {
 	// PV 和 StorageClass 是集群级别的资源，不需要 namespace
 	resourceTypeLower := strings.ToLower(resourceType)
 	clusterLevelResources := map[string]bool{
-		"pv":            true,
-		"storageclass":  true,
-		"sc":            true,
+		"pv":           true,
+		"storageclass": true,
+		"sc":           true,
 	}
 
 	// 对于需要 namespace 的资源，检查 namespace 参数

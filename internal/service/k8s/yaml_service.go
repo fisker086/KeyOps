@@ -121,7 +121,7 @@ func (s *K8sService) DeleteResource(clusterID string, clusterName string, namesp
 // getResourceAPIPath 根据资源类型获取 API 路径
 func (s *K8sService) getResourceAPIPath(resourceType string, namespace string, resourceName string, cluster *model.K8sCluster) (string, error) {
 	resourceType = strings.ToLower(resourceType)
-	
+
 	// 获取命名空间（如果需要）
 	var ns string
 	if namespace != "" {
@@ -132,7 +132,7 @@ func (s *K8sService) getResourceAPIPath(resourceType string, namespace string, r
 			ns = namespace
 		}
 	}
-	
+
 	switch resourceType {
 	case "pod":
 		if ns == "" {
@@ -240,7 +240,7 @@ func (s *K8sService) UpdateResourceYaml(clusterID string, clusterName string, na
 		}
 		// 确保资源名称正确
 		metadata["name"] = resourceName
-		
+
 		// 对于需要namespace的资源，确保namespace正确设置
 		resourceTypeLower := strings.ToLower(resourceType)
 		clusterLevelResources := map[string]bool{
@@ -358,7 +358,7 @@ func (s *K8sService) DryRunResourceYaml(clusterID string, clusterName string, na
 			actualResourceName = resourceName
 			metadata["name"] = resourceName
 		}
-		
+
 		// 对于需要namespace的资源，确保namespace正确设置
 		resourceTypeLower := strings.ToLower(resourceType)
 		clusterLevelResources := map[string]bool{
@@ -382,7 +382,7 @@ func (s *K8sService) DryRunResourceYaml(clusterID string, clusterName string, na
 	// 设置认证信息（需要在创建请求前设置）
 	var tlsConfig *tls.Config
 	var authHeader string
-	
+
 	if cluster.AuthType == "token" && cluster.Token != "" {
 		authHeader = "Bearer " + cluster.Token
 		tlsConfig = &tls.Config{InsecureSkipVerify: true}
@@ -515,7 +515,7 @@ func (s *K8sService) DryRunResourceYaml(clusterID string, clusterName string, na
 // getResourceAPIPathForDryRun 获取用于 dry-run 的资源 API 路径（集合端点）
 func (s *K8sService) getResourceAPIPathForDryRun(resourceType string, namespace string, cluster *model.K8sCluster) (string, error) {
 	resourceType = strings.ToLower(resourceType)
-	
+
 	var ns string
 	if namespace != "" {
 		if cluster != nil {
@@ -524,7 +524,7 @@ func (s *K8sService) getResourceAPIPathForDryRun(resourceType string, namespace 
 			ns = namespace
 		}
 	}
-	
+
 	switch resourceType {
 	case "pod":
 		if ns == "" {

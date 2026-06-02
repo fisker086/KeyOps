@@ -112,7 +112,7 @@ func TestCreateHost(t *testing.T) {
 				assert.Equal(t, "test-host", host.Name)
 				assert.Equal(t, "192.168.1.1", host.IP)
 				assert.Equal(t, 22, host.Port)
-				assert.Equal(t, "unknown", host.Status) // default status override
+				assert.Equal(t, "unknown", host.Status)    // default status override
 				assert.Equal(t, "server", host.DeviceType) // default device type
 			},
 		},

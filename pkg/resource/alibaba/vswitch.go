@@ -40,10 +40,10 @@ func (p *Provider) createVSwitch(ctx context.Context, r *resource.Resource) (*re
 	}
 
 	props, _ := json.Marshal(map[string]interface{}{
-		"vswitch_id":  response.VSwitchId,
-		"vpc_id":      request.VpcId,
-		"cidr_block":  request.CidrBlock,
-		"zone_id":     request.ZoneId,
+		"vswitch_id":   response.VSwitchId,
+		"vpc_id":       request.VpcId,
+		"cidr_block":   request.CidrBlock,
+		"zone_id":      request.ZoneId,
 		"vswitch_name": request.VSwitchName,
 	})
 

@@ -23,4 +23,3 @@ func GenerateFingerprint(labels map[string]string) string {
 	hash := md5.Sum([]byte(strings.Join(parts, ",")))
 	return fmt.Sprintf("%x", hash)
 }
-

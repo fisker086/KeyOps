@@ -8,17 +8,17 @@ import (
 
 // Workflow 表示工单/工作流，草稿与正式工单共用此表，通过 status 区分
 type Workflow struct {
-	ID           uint           `gorm:"primaryKey" json:"id"`
-	JobID        string         `gorm:"type:varchar(40);uniqueIndex" json:"jobid"`
-	Title        string         `gorm:"type:varchar(200);not null" json:"title"`
-	WorkflowType string         `gorm:"type:varchar(50);not null" json:"workflow_type"`
-	Status       string         `gorm:"type:varchar(20);default:draft;index" json:"status"`
-	Comment      string         `gorm:"type:text" json:"comment"`
-	Labels       datatypes.JSON `gorm:"type:json" json:"labels"`
-	ApplicantID  string         `gorm:"type:varchar(50);index" json:"applicant_id"`
-	ApplicantName string        `gorm:"type:varchar(100)" json:"applicant_name"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
+	ID            uint           `gorm:"primaryKey" json:"id"`
+	JobID         string         `gorm:"type:varchar(40);uniqueIndex" json:"jobid"`
+	Title         string         `gorm:"type:varchar(200);not null" json:"title"`
+	WorkflowType  string         `gorm:"type:varchar(50);not null" json:"workflow_type"`
+	Status        string         `gorm:"type:varchar(20);default:draft;index" json:"status"`
+	Comment       string         `gorm:"type:text" json:"comment"`
+	Labels        datatypes.JSON `gorm:"type:json" json:"labels"`
+	ApplicantID   string         `gorm:"type:varchar(50);index" json:"applicant_id"`
+	ApplicantName string         `gorm:"type:varchar(100)" json:"applicant_name"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
 
 	Steps []WorkflowStep `gorm:"foreignKey:JobID;references:JobID" json:"steps"`
 }
@@ -63,4 +63,3 @@ type WorkflowComment struct {
 func (WorkflowComment) TableName() string {
 	return "workflow_comments"
 }
-

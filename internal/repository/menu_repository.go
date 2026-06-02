@@ -309,7 +309,7 @@ func (r *menuRepository) GetMenusByUserID(userID string) ([]model.Menu, error) {
 func (r *menuRepository) GetMenusByRole(role string) ([]model.Menu, error) {
 	var menus []model.Menu
 	roleID := "role:" + role
-	
+
 	// 先获取有权限的菜单（排除特殊标记 __empty__）
 	err := r.db.Table("menus").
 		Select("DISTINCT menus.*").

@@ -29,7 +29,7 @@ func (s *K8sService) RestartPod(clusterID string, clusterName string, nodeID uin
 
 	// 重启 Pod 通过删除 Pod 实现（Deployment/StatefulSet 会自动重建）
 	podURL := strings.TrimSuffix(cluster.APIServer, "/") + "/api/v1/namespaces/" + ns + "/pods/" + podName
-	
+
 	// 创建 DELETE 请求
 	httpReq, err := http.NewRequest("DELETE", podURL, nil)
 	if err != nil {
@@ -149,4 +149,3 @@ func (s *K8sService) DownloadContainerLogs(clusterID string, clusterName string,
 
 	return string(body), nil
 }
-

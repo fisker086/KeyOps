@@ -10,10 +10,10 @@ import (
 
 // SkillID 技能标识，与目标环境配置对应
 const (
-	SkillPrometheus  = "prometheus"
-	SkillGrafana     = "grafana"
-	SkillK8s         = "k8s"
-	SkillK8sInstall  = "k8s-install"
+	SkillPrometheus = "prometheus"
+	SkillGrafana    = "grafana"
+	SkillK8s        = "k8s"
+	SkillK8sInstall = "k8s-install"
 )
 
 // GetEnabledSkills 根据环境配置返回已启用的技能列表，供 UI 展示

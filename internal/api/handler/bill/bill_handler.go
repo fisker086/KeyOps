@@ -222,8 +222,6 @@ func (h *BillHandler) GetVM(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Success(result))
 }
 
-
-
 // GetResource 获取我的资源列表
 // @Summary 获取我的资源列表
 // @Description 获取我的资源列表
@@ -442,5 +440,3 @@ func (h *BillHandler) TriggerSync(c *gin.Context) {
 	h.service.SyncCloudBillingAsync(uint(cloudAccountID), billingDate)
 	c.JSON(http.StatusOK, model.Success(gin.H{"async": true, "message": "sync triggered successfully"}))
 }
-
-

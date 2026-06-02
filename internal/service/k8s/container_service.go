@@ -103,4 +103,3 @@ func (s *K8sService) GetContainersList(clusterID string, clusterName string, nod
 
 	return containers, nil
 }
-

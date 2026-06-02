@@ -6,6 +6,7 @@ import (
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/util"
 )
 
 // SilenceProcessor 静默处理器
@@ -86,13 +87,13 @@ func (p *SilenceProcessor) matchSilenceFilters(tags map[string]string, alertTitl
 	for _, filter := range filters {
 		if filter.Tag == "alertname" || filter.Tag == "__alertname__" {
 			// 匹配告警名称
-			if !contains(filter.Values, alertTitle) {
+			if !util.Contains(filter.Values, alertTitle) {
 				return false
 			}
 		} else {
 			// 匹配标签
 			tagValue, exists := tags[filter.Tag]
-			if !exists || !contains(filter.Values, tagValue) {
+			if !exists || !util.Contains(filter.Values, tagValue) {
 				return false
 			}
 		}
@@ -129,7 +130,7 @@ func (p *SilenceProcessor) isInWeekTime(weeks []int, times []string, now time.Ti
 
 	// 检查星期
 	weekDay := int(now.Weekday())
-	if !containsInt(weeks, weekDay) {
+	if !util.ContainsInt(weeks, weekDay) {
 		return false
 	}
 
@@ -158,25 +159,5 @@ func (p *SilenceProcessor) isInTimeRange(times []string, now time.Time) bool {
 	finalEndTime := time.Date(now.Year(), now.Month(), now.Day(), endTime.Hour(), endTime.Minute(), endTime.Second(), 0, loc)
 
 	return !now.Before(finalStartTime) && !now.After(finalEndTime)
-}
-
-// contains 检查字符串是否在切片中
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-// containsInt 检查整数是否在切片中
-func containsInt(slice []int, item int) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
 

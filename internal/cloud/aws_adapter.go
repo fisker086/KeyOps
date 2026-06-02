@@ -162,7 +162,7 @@ func (a *AWSAdapter) getSession() (*session.Session, error) {
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12}},
 			Timeout:   30 * time.Minute,
 		},
-		MaxRetries: aws.Int(3),
+		MaxRetries:       aws.Int(3),
 		S3ForcePathStyle: aws.Bool(false),
 	})
 	if err != nil {
@@ -550,14 +550,14 @@ func (a *AWSAdapter) GetPricing() ([]map[string]interface{}, error) {
 						for currency, priceStr := range pricePerUnit {
 							price, _ := strconv.ParseFloat(fmt.Sprintf("%v", priceStr), 64)
 							priceEntry := map[string]interface{}{
-								"cloud_type":    "aws",
-								"service_code":  serviceCode,
-								"instance_type": instanceType,
-								"region":        region,
+								"cloud_type":     "aws",
+								"service_code":   serviceCode,
+								"instance_type":  instanceType,
+								"region":         region,
 								"price_per_unit": price,
-								"currency":      currency,
-								"unit":          unit,
-								"sku":           sku,
+								"currency":       currency,
+								"unit":           unit,
+								"sku":            sku,
 							}
 							allPrices = append(allPrices, priceEntry)
 						}

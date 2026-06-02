@@ -183,7 +183,7 @@ func (s *Server) setupSSHConfig() error {
 			if s.config.BannerMessage != "" {
 				return s.config.BannerMessage
 			}
-			return "Welcome to ZJump SSH Gateway\n"
+			return "Welcome to KeyOps SSH Gateway\n"
 		}(),
 		// 使用密码与公钥认证，避免Keyboard Interactive的客户端提示问题
 		PasswordHandler:  s.handlePasswordAuth,

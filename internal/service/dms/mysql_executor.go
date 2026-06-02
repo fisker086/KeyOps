@@ -201,7 +201,7 @@ func (e *MySQLExecutor) ExecuteQuery(ctx context.Context, databaseName, query st
 	} else if sqlSize > 100*1024 { // 大于100KB
 		timeout = 120 * time.Second // 2分钟
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -272,7 +272,7 @@ func (e *MySQLExecutor) ExecuteUpdate(ctx context.Context, databaseName, query s
 	} else if sqlSize > 100*1024 { // 大于100KB
 		timeout = 120 * time.Second // 2分钟
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

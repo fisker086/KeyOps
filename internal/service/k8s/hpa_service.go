@@ -117,4 +117,3 @@ func (s *K8sService) GetHPAList(clusterID string, clusterName string, nodeID uin
 
 	return hpas, nil
 }
-

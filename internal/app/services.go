@@ -17,6 +17,7 @@ import (
 	billService "github.com/fisker086/keyops/internal/service/bill"
 	certificateService "github.com/fisker086/keyops/internal/service/certificate"
 	"github.com/fisker086/keyops/internal/service/dms"
+	k8sService "github.com/fisker086/keyops/internal/service/k8s"
 	"github.com/fisker086/keyops/internal/service/registry"
 	release "github.com/fisker086/keyops/internal/service/release"
 	"github.com/fisker086/keyops/pkg/config"
@@ -39,7 +40,6 @@ type Services struct {
 	Deployment    *service.DeploymentService
 	Bill          *service.BillService
 	Monitor       *service.MonitorService
-	Jenkins       *service.JenkinsService
 	Alert         *service.AlertService
 	OnCall        *service.OnCallService
 	DMSInstance   *dms.InstanceService
@@ -47,7 +47,7 @@ type Services struct {
 	DMSPermission *dms.PermissionService
 	Release       *release.Service
 	Registry      *registry.Service
-	MongoClient         *mongodb.Client
+	MongoClient   *mongodb.Client
 }
 
 // InitializeServices 初始化所有 Service
@@ -78,7 +78,6 @@ func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mo
 
 	monitorService := service.NewMonitorService(repos.Monitor)
 	cryptoService := crypto.NewCrypto(cfg.Security.JWTSecret)
-	jenkinsService := service.NewJenkinsService(repos.Jenkins, repos.Deployment, cryptoService)
 	// 规则文件目录：不设则仅在本系统内记录规则/规则组（DB），不写本地文件、不触发 Prometheus 挂载；若需写文件可设置 ALERT_RULE_DIR
 	ruleDir := os.Getenv("ALERT_RULE_DIR")
 	alertService := service.NewAlertService(
@@ -118,8 +117,9 @@ func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mo
 	dmsQueryService := dms.NewQueryService(repos.DBInstance, repos.QueryLog, dmsPermissionService, cryptoService)
 
 	releaseService := release.NewService(repos.ReleaseRun)
-	releaseService.SetDependencies(database.DB, repos.Application, repos.AppDeployBinding, jenkinsService)
 	releaseService.SetSettingRepository(repos.Setting)
+	releaseService.SetDB(database.DB)
+	releaseService.SetAppRepo(repos.Application)
 
 	registryService := registry.NewService(repos.Setting)
 
@@ -132,6 +132,7 @@ func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mo
 	k8sClusterService := service.NewK8sClusterService(repos.K8sCluster)
 	k8sPermissionService := service.NewK8sPermissionService()
 	deploymentService := service.NewDeploymentService(repos.Deployment, kubedogService, k8sService, repos.K8sCluster, cfg)
+	releaseService.SetDeploymentService(deploymentService)
 	assetSyncService := service.NewAssetSyncService(repos.AssetSync, repos.Host)
 
 	approvalFactory := approval.NewFactory()
@@ -149,7 +150,6 @@ func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mo
 		Deployment:    deploymentService,
 		Bill:          billSvc,
 		Monitor:       monitorService,
-		Jenkins:       jenkinsService,
 		Alert:         alertService,
 		OnCall:        onCallSvc,
 		DMSInstance:   dmsInstanceService,
@@ -157,7 +157,7 @@ func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mo
 		DMSPermission: dmsPermissionService,
 		Release:       releaseService,
 		Registry:      registryService,
-		MongoClient:         mongoClient,
+		MongoClient:   mongoClient,
 	}
 }
 
@@ -169,10 +169,11 @@ type BackgroundServices struct {
 	CertificateAlert       *certificateService.CertificateAlertService
 	InspectionReportSender aiassistant.InspectionReportSender // AI 巡检报告发往告警渠道（可选）
 	BillSync               *billService.SyncScheduler
+	DeploymentRecovery     *k8sService.DeploymentRecoveryWorker
 }
 
 // InitializeBackgroundServices 初始化后台服务
-func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notificationMgr *notification.NotificationManager, alertService *service.AlertService, billSvc *billService.BillService) *BackgroundServices {
+func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notificationMgr *notification.NotificationManager, alertService *service.AlertService, billSvc *billService.BillService, deploymentSvc *service.DeploymentService) *BackgroundServices {
 	// Proxy monitor (仅在启用Proxy时启动)
 	var proxyMonitor *service.ProxyMonitor
 	if cfg.Proxy.Enabled {
@@ -255,6 +256,13 @@ func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notif
 	billSvc.SetSyncScheduler(billSyncScheduler)
 	go billSyncScheduler.Start()
 
+	// Deployment recovery worker: 恢复重启后遗留的 pending 部署
+	var deploymentRecoveryWorker *k8sService.DeploymentRecoveryWorker
+	if deploymentSvc != nil && database.DB != nil {
+		deploymentRecoveryWorker = k8sService.NewDeploymentRecoveryWorker(database.DB, deploymentSvc)
+		go deploymentRecoveryWorker.Start(context.Background())
+	}
+
 	return &BackgroundServices{
 		ProxyMonitor:           proxyMonitor,
 		Expiration:             expirationService,
@@ -262,5 +270,6 @@ func InitializeBackgroundServices(repos *Repositories, cfg *config.Config, notif
 		CertificateAlert:       certificateAlertService,
 		InspectionReportSender: inspectionReportSender,
 		BillSync:               billSyncScheduler,
+		DeploymentRecovery:     deploymentRecoveryWorker,
 	}
 }

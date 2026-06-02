@@ -9,19 +9,21 @@ import (
 )
 
 type Config struct {
-	Server         ServerConfig         `yaml:"server"`
-	Database       DatabaseConfig       `yaml:"database"`
-	MongoDB        MongoDBConfig        `yaml:"mongodb"`
-	Redis          RedisConfig          `yaml:"redis"`
-	Security       SecurityConfig       `yaml:"security"`
-	Logging        LoggingConfig        `yaml:"logging"`
-	SSH            SSHConfig            `yaml:"ssh"`
-	Proxy          ProxyConfig          `yaml:"proxy"`
-	Sync           SyncConfig           `yaml:"sync"`
+	Server   ServerConfig   `yaml:"server"`
+	Database DatabaseConfig `yaml:"database"`
+	MongoDB  MongoDBConfig  `yaml:"mongodb"`
+	Redis    RedisConfig    `yaml:"redis"`
+	Security SecurityConfig `yaml:"security"`
+	Logging  LoggingConfig  `yaml:"logging"`
+	SSH      SSHConfig      `yaml:"ssh"`
+	Proxy    ProxyConfig    `yaml:"proxy"`
+	Sync     SyncConfig     `yaml:"sync"`
 	// Pulumi removed, replaced by pkg/resource engine
 	Deploy         DeployConfig         `yaml:"deploy"`
+	Helm           HelmConfig           `yaml:"helm"`
 	BastionStorage BastionStorageConfig `yaml:"bastion_storage"`
 	BillStorage    BillStorageConfig    `yaml:"bill_storage"`
+	Sites          []string             `yaml:"sites"`
 }
 
 // BastionStorageConfig 堡垒机存储配置
@@ -99,6 +101,73 @@ func (c *BillStorageConfig) GetURI() string {
 // DeployConfig 非容器部署相关配置（Git 拉取 Playbook 等）
 type DeployConfig struct {
 	Git DeployGitConfig `yaml:"git"`
+}
+
+// HelmConfig Helm Chart 配置
+type HelmConfig struct {
+	// Source Chart 来源：local（本地目录）/ remote（远程仓库）
+	Source string `yaml:"source"`
+
+	// LocalPath 本地 Chart 路径（source=local 时使用）
+	// 支持绝对路径或相对路径（相对于项目根目录）
+	LocalPath string `yaml:"local_path"`
+
+	// DefaultChartName 默认 Chart 名称（当应用未指定时使用）
+	// 适用于多个应用共用一个模板的场景
+	DefaultChartName string `yaml:"default_chart_name"`
+
+	// DefaultChartVersion 默认 Chart 版本（当应用未指定时使用）
+	// 仅在使用远程仓库时生效，本地 Chart 不需要版本号
+	// 留空则使用最新版本
+	DefaultChartVersion string `yaml:"default_chart_version"`
+
+	// RemoteRepo 远程仓库配置（source=remote 时使用）
+	RemoteRepo HelmRemoteRepoConfig `yaml:"remote_repo"`
+}
+
+// HelmRemoteRepoConfig 远程 Helm 仓库配置
+type HelmRemoteRepoConfig struct {
+	// URL 仓库地址
+	// 支持格式：
+	//   - HTTP/HTTPS: https://charts.bitnami.com/bitnami
+	//   - OCI: oci://registry-1.docker.io/bitnamicharts
+	//   - Harbor: https://harbor.company.com/chartrepo/library
+	URL string `yaml:"url"`
+
+	// Username 仓库用户名（私有仓库需要）
+	Username string `yaml:"username"`
+
+	// Password 仓库密码或 Token（私有仓库需要）
+	Password string `yaml:"password"`
+
+	// InsecureSkipTLSVerify 是否跳过 TLS 验证（自签名证书时使用）
+	InsecureSkipTLSVerify bool `yaml:"insecure_skip_tls_verify"`
+}
+
+// SetDefaults 设置 Helm 配置默认值
+func (c *HelmConfig) SetDefaults() {
+	if c.Source == "" {
+		c.Source = "local" // 默认使用本地目录
+	}
+	if c.LocalPath == "" {
+		c.LocalPath = "./charts/standard-app" // 默认本地路径
+	}
+	if c.DefaultChartName == "" {
+		c.DefaultChartName = "standard-app" // 默认 Chart 名称
+	}
+}
+
+// GetChartPath 获取 Chart 路径（根据配置返回本地路径或空字符串）
+func (c *HelmConfig) GetChartPath() string {
+	if c.Source == "local" {
+		return c.LocalPath
+	}
+	return "" // remote 模式返回空，由数据库配置决定
+}
+
+// IsRemote 是否使用远程仓库
+func (c *HelmConfig) IsRemote() bool {
+	return c.Source == "remote"
 }
 
 // DeployGitConfig Git 拉取认证与缓存
@@ -337,6 +406,7 @@ func Load(configPath string) (*Config, error) {
 	config.Security.SetDefaults()
 	config.Proxy.SetDefaults()
 	config.Deploy.SetDefaults()
+	config.Helm.SetDefaults()
 	config.MongoDB.SetDefaults()
 	config.BastionStorage.SetDefaults()
 	config.BillStorage.SetDefaults()
@@ -448,6 +518,23 @@ func Load(configPath string) (*Config, error) {
 	}
 	if v := os.Getenv("DEPLOY_GIT_CACHE_DIR"); v != "" {
 		config.Deploy.Git.CacheDir = v
+	}
+
+	// Helm 配置环境变量覆盖
+	if v := os.Getenv("HELM_SOURCE"); v != "" {
+		config.Helm.Source = v
+	}
+	if v := os.Getenv("HELM_LOCAL_PATH"); v != "" {
+		config.Helm.LocalPath = v
+	}
+	if v := os.Getenv("HELM_REMOTE_URL"); v != "" {
+		config.Helm.RemoteRepo.URL = v
+	}
+	if v := os.Getenv("HELM_REMOTE_USERNAME"); v != "" {
+		config.Helm.RemoteRepo.Username = v
+	}
+	if v := os.Getenv("HELM_REMOTE_PASSWORD"); v != "" {
+		config.Helm.RemoteRepo.Password = v
 	}
 
 	// ADMIN_WHITELIST：与 admin_whitelist 相同（逗号分隔完整邮箱，见 SecurityConfig.AdminWhitelist）

@@ -63,17 +63,17 @@ func (m *SessionManager) IsValidSessionID(sessionID string) bool {
 func (m *SessionManager) CreateSession(task, envID, role, modelID, modelName, scheduleID, createdBy string) (string, error) {
 	sessionID := m.GenerateSessionID()
 	s := Session{
-		SessionID:   sessionID,
-		Task:        task,
-		EnvID:       envID,
-		Role:        role,
-		ModelID:     modelID,
-		ModelName:   modelName,
-		ScheduleID:  scheduleID,
-		CreatedBy:   createdBy,
-		Status:      "running",
-		StartTime:   time.Now().Format(time.RFC3339),
-		Steps:       []SessionStep{},
+		SessionID:  sessionID,
+		Task:       task,
+		EnvID:      envID,
+		Role:       role,
+		ModelID:    modelID,
+		ModelName:  modelName,
+		ScheduleID: scheduleID,
+		CreatedBy:  createdBy,
+		Status:     "running",
+		StartTime:  time.Now().Format(time.RFC3339),
+		Steps:      []SessionStep{},
 	}
 	return sessionID, m.SaveSession(sessionID, &s)
 }

@@ -313,7 +313,7 @@ func (s *K8sService) GetStatefulSetDetail(clusterID string, clusterName string, 
 			selectorParts = append(selectorParts, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
-	
+
 	if len(selectorParts) > 0 {
 		labelSelector := strings.Join(selectorParts, ",")
 
@@ -917,4 +917,3 @@ func (s *K8sService) RollbackStatefulSet(clusterID string, clusterName string, n
 
 	return nil
 }
-

@@ -185,4 +185,3 @@ func (m *RuleFileManager) ReloadDatasource(source *model.AlertRuleSource) error 
 	}
 	return client.Reload()
 }
-

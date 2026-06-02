@@ -341,4 +341,3 @@ func (h *AuditHandler) GetPodCommandLogs(c *gin.Context) {
 		TotalPages: int((total + int64(req.PageSize) - 1) / int64(req.PageSize)),
 	}))
 }
-

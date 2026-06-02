@@ -7,6 +7,7 @@ import (
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/util"
 )
 
 // StrategyMatcher 策略匹配器
@@ -44,7 +45,7 @@ func (m *StrategyMatcher) Match(event *model.AlertEvent, departmentID string) ([
 			}
 		}
 	}
-	
+
 	log.Printf("[StrategyMatcher] Total matched strategies: %d", len(matchedStrategies))
 	return matchedStrategies, nil
 }
@@ -79,7 +80,7 @@ func (m *StrategyMatcher) matchStrategyFilters(strategy model.AlertStrategy, tag
 			// 检查周期
 			if len(item.TimeSlot.Weeks) > 0 {
 				weekDay := int(now.Weekday())
-				if !containsInt(item.TimeSlot.Weeks, weekDay) {
+				if !util.ContainsInt(item.TimeSlot.Weeks, weekDay) {
 					continue
 				}
 			}
@@ -116,7 +117,7 @@ func (m *StrategyMatcher) matchStrategyFilters(strategy model.AlertStrategy, tag
 // matchFilter 匹配单个过滤器
 func (m *StrategyMatcher) matchFilter(tag string, values []string, tags map[string]string, alertTitle string) bool {
 	if tag == "alertname" || tag == "__alertname__" {
-		return contains(values, alertTitle)
+		return util.Contains(values, alertTitle)
 	}
 
 	tagValue, exists := tags[tag]
@@ -124,7 +125,7 @@ func (m *StrategyMatcher) matchFilter(tag string, values []string, tags map[stri
 		return false
 	}
 
-	return contains(values, tagValue)
+	return util.Contains(values, tagValue)
 }
 
 // isInTimeRange 检查时间是否在当天的范围内
@@ -148,25 +149,5 @@ func (m *StrategyMatcher) isInTimeRange(times []string, now time.Time) bool {
 	finalEndTime := time.Date(now.Year(), now.Month(), now.Day(), endTime.Hour(), endTime.Minute(), endTime.Second(), 0, loc)
 
 	return !now.Before(finalStartTime) && !now.After(finalEndTime)
-}
-
-// contains 检查字符串是否在切片中
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-// containsInt 检查整数是否在切片中
-func containsInt(slice []int, item int) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
 

@@ -17,21 +17,22 @@ import (
 	"gorm.io/gorm"
 )
 
-// FeishuProvider 飞书审批提供者
+// FeishuProvider 飞书/Lark审批提供者
 type FeishuProvider struct {
-	config   *model.ApprovalConfig
-	baseURL  string
-	client   *http.Client
-	db       *gorm.DB
-	hostRepo repository.HostRepository
+	config       *model.ApprovalConfig
+	baseURL      string
+	client       *http.Client
+	db           *gorm.DB
+	hostRepo     repository.HostRepository
+	platformType model.ApprovalPlatform
 }
 
-// NewFeishuProvider 创建飞书审批提供者
-func NewFeishuProvider(config *model.ApprovalConfig, db *gorm.DB) *FeishuProvider {
-	// 使用用户配置的API基础URL，如果没有配置则使用默认值
+// NewFeishuProvider 创建飞书/Lark审批提供者
+// platformType 为 feishu 或 lark，用于区分中国版和国际版
+func NewFeishuProvider(config *model.ApprovalConfig, db *gorm.DB, platformType model.ApprovalPlatform) *FeishuProvider {
 	baseURL := config.APIBaseURL
 	if baseURL == "" {
-		baseURL = "https://open.larksuite.com/open-apis" // 默认值
+		baseURL = DefaultBaseURLForPlatform(platformType)
 	}
 
 	return &FeishuProvider{
@@ -40,14 +41,15 @@ func NewFeishuProvider(config *model.ApprovalConfig, db *gorm.DB) *FeishuProvide
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		db:       db,
-		hostRepo: repository.NewHostRepository(db),
+		db:           db,
+		hostRepo:     repository.NewHostRepository(db),
+		platformType: platformType,
 	}
 }
 
 // GetName 获取平台名称
 func (p *FeishuProvider) GetName() string {
-	return "feishu"
+	return string(p.platformType)
 }
 
 // getTenantAccessToken 获取租户访问令牌
@@ -354,6 +356,93 @@ func (p *FeishuProvider) getHostIPByName(hostName string) string {
 	return hosts[0].IP
 }
 
+// resolveApplicantEmail 从审批申请人信息解析用户邮箱（飞书 batch_get_id 入参）
+func (p *FeishuProvider) resolveApplicantEmail(approval *model.Approval) string {
+	candidates := []string{approval.ApplicantID, approval.ApplicantName}
+	for _, c := range candidates {
+		if strings.Contains(c, "@") {
+			return strings.TrimSpace(c)
+		}
+	}
+
+	for _, c := range candidates {
+		if c == "" {
+			continue
+		}
+		var user model.User
+		if len(c) == 36 && strings.Contains(c, "-") {
+			if err := p.db.Where("id = ?", c).First(&user).Error; err == nil && user.Email != "" {
+				return user.Email
+			}
+			continue
+		}
+		if err := p.db.Where("username = ? OR email = ?", c, c).First(&user).Error; err == nil && user.Email != "" {
+			return user.Email
+		}
+	}
+
+	if approval.ApplicantName != "" {
+		return approval.ApplicantName
+	}
+	return approval.ApplicantID
+}
+
+// getFeishuUserIDByEmail 通过邮箱换取飞书 user_id（与 hashcheck checklist 一致）
+func (p *FeishuProvider) getFeishuUserIDByEmail(ctx context.Context, token, email string) (string, error) {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return "", fmt.Errorf("申请人邮箱为空")
+	}
+
+	url := fmt.Sprintf("%s/contact/v3/users/batch_get_id?user_id_type=user_id", p.baseURL)
+	reqBody := map[string]interface{}{
+		"emails": []string{email},
+	}
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var result struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+		Data struct {
+			UserList []struct {
+				UserID string `json:"user_id"`
+				Email  string `json:"email"`
+			} `json:"user_list"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return "", fmt.Errorf("解析飞书用户ID响应失败: %v", err)
+	}
+	if result.Code != 0 {
+		return "", fmt.Errorf("获取飞书用户ID失败 [%d]: %s", result.Code, result.Msg)
+	}
+	if len(result.Data.UserList) == 0 || result.Data.UserList[0].UserID == "" {
+		return "", fmt.Errorf("飞书未找到邮箱对应用户: %s", email)
+	}
+	return result.Data.UserList[0].UserID, nil
+}
+
 // createApprovalViaHTTP 使用HTTP请求创建审批
 func (p *FeishuProvider) createApprovalViaHTTP(ctx context.Context, token, formContent string, approval *model.Approval) (string, error) {
 	return p.createApprovalViaHTTPWithCode(ctx, token, p.config.ApprovalCode, formContent, approval)
@@ -368,33 +457,20 @@ func (p *FeishuProvider) createApprovalViaHTTPWithCode(ctx context.Context, toke
 	}
 	url := fmt.Sprintf("%s%s", p.baseURL, apiPath)
 
-	// 飞书API需要的是用户名（username），而不是系统内部的UUID
-	// ApplicantName 应该已经是用户名了（在创建审批记录时已设置）
-	userID := approval.ApplicantName
-	if userID == "" {
-		userID = approval.ApplicantID // 如果ApplicantName为空，fallback到ApplicantID
-		logger.Warnf("Feishu approval: ApplicantName is empty, fallback to ApplicantID: %s", userID)
+	email := p.resolveApplicantEmail(approval)
+	feishuUserID, err := p.getFeishuUserIDByEmail(ctx, token, email)
+	if err != nil {
+		return "", fmt.Errorf("解析飞书申请人 user_id 失败: %w", err)
 	}
-	
-	// 如果userID看起来像UUID（36个字符且包含连字符），尝试查询用户名
-	if len(userID) == 36 && strings.Contains(userID, "-") {
-		logger.Warnf("Feishu approval: applicant id looks like UUID, attempting username lookup: %s", userID)
-		var user model.User
-		if err := p.db.Where("id = ?", userID).First(&user).Error; err == nil {
-			userID = user.Username
-			logger.Infof("Feishu approval: resolved applicant username: %s", userID)
-		} else {
-			logger.Warnf("Feishu approval: failed to resolve applicant username from UUID: %v; fallback to UUID", err)
-		}
-	}
-	
-	logger.Infof("Feishu approval: using user_id=%s (raw applicant_id=%s applicant_name=%s)", userID, approval.ApplicantID, approval.ApplicantName)
-	openID := userID // 对于飞书，OpenID通常与UserID相同
+
+	logger.Infof(
+		"Feishu approval: using user_id=%s (email=%s raw applicant_id=%s applicant_name=%s)",
+		feishuUserID, email, approval.ApplicantID, approval.ApplicantName,
+	)
 
 	reqBody := map[string]interface{}{
 		"approval_code": approvalCode,
-		"user_id":       userID,
-		"open_id":       openID,
+		"user_id":       feishuUserID,
 		"form":          formContent,
 	}
 
@@ -521,21 +597,21 @@ func (p *FeishuProvider) buildFormContentFromConfig(approval *model.Approval, fi
 	// 旧格式：{ fieldName: "字段名", keyword: "关键字" } 或 { widgetId: "widgetId", keyword: "关键字" }
 	widgetIdToKeyword := make(map[string]string)
 	fieldNameToKeyword := make(map[string]string) // 用于兼容旧格式：通过字段名称匹配
-	
+
 	if len(fieldMappings) > 0 {
 		for _, mapping := range fieldMappings {
 			var widgetId, fieldName, keyword string
-			
+
 			// 获取字段名称
 			if fName, ok := mapping["fieldName"].(string); ok && fName != "" {
 				fieldName = fName
 			}
-			
+
 			// 获取 Widget ID
 			if wId, ok := mapping["widgetId"].(string); ok && wId != "" {
 				widgetId = wId
 			}
-			
+
 			// 获取关键字（新格式：字段名称就是关键字；旧格式：有单独的 keyword 字段）
 			if k, ok := mapping["keyword"].(string); ok && k != "" {
 				keyword = k
@@ -543,11 +619,11 @@ func (p *FeishuProvider) buildFormContentFromConfig(approval *model.Approval, fi
 				// 新格式：如果没有 keyword，使用字段名称作为关键字
 				keyword = fieldName
 			}
-			
+
 			if widgetId != "" && keyword != "" {
 				widgetIdToKeyword[widgetId] = keyword
 			}
-			
+
 			// 兼容旧格式：通过字段名称匹配
 			if fieldName != "" && keyword != "" {
 				fieldNameToKeyword[fieldName] = keyword
@@ -577,12 +653,12 @@ func (p *FeishuProvider) buildFormContentFromConfig(approval *model.Approval, fi
 		if len(widgetIdToKeyword) > 0 || len(fieldNameToKeyword) > 0 {
 			var keyword string
 			var exists bool
-			
+
 			// 优先使用 Widget ID 匹配（新格式）
 			if widgetId != "" {
 				keyword, exists = widgetIdToKeyword[widgetId]
 			}
-			
+
 			// 如果 Widget ID 匹配失败，尝试使用字段名称匹配（兼容旧格式）
 			if !exists && fieldName != "" {
 				keyword, exists = fieldNameToKeyword[fieldName]
@@ -592,7 +668,7 @@ func (p *FeishuProvider) buildFormContentFromConfig(approval *model.Approval, fi
 					exists = true
 				}
 			}
-			
+
 			if exists && keyword != "" {
 				// 使用关键字从工单数据或审批对象中获取值
 				formItem["value"] = p.getValueByKeyword(approval, ticketFormData, keyword, field)

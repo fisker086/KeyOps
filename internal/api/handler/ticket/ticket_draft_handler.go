@@ -252,28 +252,28 @@ func (h *TicketDraftHandler) UpdateDraft(c *gin.Context) {
 		ticket.Priority = updateData.Priority
 	}
 
-		if err := h.db.Save(&ticket).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "更新草稿失败",
-				"error":   err.Error(),
-			})
-			return
-		}
-
-		// 如果 template_id 不为空，预加载模板
-		if ticket.TemplateID != nil && *ticket.TemplateID > 0 {
-			h.db.Preload("Template").First(&ticket, ticket.ID)
-		} else {
-			h.db.First(&ticket, ticket.ID)
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"code":    0,
-			"message": "success",
-			"data":    ticket,
+	if err := h.db.Save(&ticket).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "更新草稿失败",
+			"error":   err.Error(),
 		})
+		return
 	}
+
+	// 如果 template_id 不为空，预加载模板
+	if ticket.TemplateID != nil && *ticket.TemplateID > 0 {
+		h.db.Preload("Template").First(&ticket, ticket.ID)
+	} else {
+		h.db.First(&ticket, ticket.ID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data":    ticket,
+	})
+}
 
 // DeleteDraft 删除草稿
 func (h *TicketDraftHandler) DeleteDraft(c *gin.Context) {

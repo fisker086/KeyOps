@@ -26,7 +26,7 @@ type MongoDBExecutor struct {
 func NewMongoDBExecutor(instance *model.DBInstance, crypto *crypto.Crypto) (*MongoDBExecutor, error) {
 	var password string
 	var err error
-	
+
 	// 如果密码为空，直接使用空字符串（支持无密码的 MongoDB）
 	if instance.Password == "" {
 		password = ""
@@ -209,7 +209,7 @@ func (e *MongoDBExecutor) ExecuteQuery(ctx context.Context, databaseName, query 
 	} else if sqlSize > 100*1024 { // 大于100KB
 		timeout = 120 * time.Second // 2分钟
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -226,7 +226,7 @@ func (e *MongoDBExecutor) ExecuteQuery(ctx context.Context, databaseName, query 
 	}
 
 	collection := db.Collection(collectionName)
-	
+
 	// 调试：检查集合是否存在（可选，不影响查询）
 	collections, _ := db.ListCollectionNames(ctx, bson.M{"name": collectionName})
 	if len(collections) == 0 {
@@ -355,7 +355,7 @@ func convertJSObjectToJSON(jsStr string) string {
 	// Go 的 regexp 包支持 Unicode 属性类，使用 \p{L} 匹配所有字母（包括中文）
 	// 或者使用 [\p{L}\p{N}_$] 来匹配字母、数字、下划线和美元符号
 	re := regexp.MustCompile(`([{,]\s*)([a-zA-Z_$\p{L}][a-zA-Z0-9_$\p{L}\p{N}]*)\s*:`)
-	
+
 	result := re.ReplaceAllStringFunc(jsStr, func(match string) string {
 		// 提取键名部分（去掉前面的 { 或 , 和空格）
 		parts := re.FindStringSubmatch(match)
@@ -366,7 +366,7 @@ func convertJSObjectToJSON(jsStr string) string {
 		}
 		return match
 	})
-	
+
 	return result
 }
 
@@ -375,20 +375,20 @@ func isValidJSIdentifier(s string) bool {
 	if len(s) == 0 {
 		return false
 	}
-	
+
 	// 第一个字符必须是字母、下划线、$ 或 Unicode 字符
 	first := rune(s[0])
 	if !unicode.IsLetter(first) && first != '_' && first != '$' && !(first >= 0x4E00 && first <= 0x9FFF) {
 		return false
 	}
-	
+
 	// 后续字符可以是字母、数字、下划线、$ 或 Unicode 字符
 	for _, r := range s[1:] {
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' && !(r >= 0x4E00 && r <= 0x9FFF) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -401,7 +401,7 @@ func extractMongoArgs(query string, methodName string) (collectionName string, a
 	if methodIdx == -1 {
 		return "", nil, fmt.Errorf("无法找到方法调用 %s，查询: %s", methodCall, query)
 	}
-	
+
 	// 提取集合名：从 db. 到方法调用之间的部分
 	dbIdx := strings.LastIndex(query[:methodIdx], "db.")
 	if dbIdx == -1 {
@@ -411,19 +411,19 @@ func extractMongoArgs(query string, methodName string) (collectionName string, a
 	if collectionName == "" {
 		return "", nil, fmt.Errorf("集合名为空")
 	}
-	
+
 	// 找到参数开始位置（方法调用后的第一个字符）
 	argsStartIdx := methodIdx + len(methodCall)
-	
+
 	// 提取括号内的内容（处理嵌套括号）
 	argsStr := extractNestedParens(query[argsStartIdx-1:]) // 包含左括号
 	if argsStr == "" {
 		return collectionName, []string{}, nil
 	}
-	
+
 	// 分割参数（考虑嵌套括号和对象）
 	args = splitMongoArgs(argsStr)
-	
+
 	return collectionName, args, nil
 }
 
@@ -433,12 +433,12 @@ func extractNestedParens(s string) string {
 	if len(s) == 0 {
 		return ""
 	}
-	
+
 	// 如果第一个字符不是 '('，说明已经去掉了外层括号，直接返回
 	if s[0] != '(' {
 		return s
 	}
-	
+
 	depth := 0
 	start := 0
 	for i, r := range s {
@@ -454,12 +454,12 @@ func extractNestedParens(s string) string {
 			}
 		}
 	}
-	
+
 	// 如果没有找到匹配的右括号，返回去掉第一个左括号后的内容
 	if start > 0 {
 		return strings.TrimSpace(s[start:])
 	}
-	
+
 	return strings.TrimSpace(s)
 }
 
@@ -468,23 +468,23 @@ func findObjectEnd(s string) int {
 	depth := 0
 	inString := false
 	escapeNext := false
-	
+
 	for i, r := range s {
 		if escapeNext {
 			escapeNext = false
 			continue
 		}
-		
+
 		if r == '\\' {
 			escapeNext = true
 			continue
 		}
-		
+
 		if r == '"' || r == '\'' {
 			inString = !inString
 			continue
 		}
-		
+
 		if !inString {
 			if r == '{' {
 				depth++
@@ -496,7 +496,7 @@ func findObjectEnd(s string) int {
 			}
 		}
 	}
-	
+
 	return -1
 }
 
@@ -507,26 +507,26 @@ func splitMongoArgs(argsStr string) []string {
 	depth := 0
 	inString := false
 	escapeNext := false
-	
+
 	for _, r := range argsStr {
 		if escapeNext {
 			current.WriteRune(r)
 			escapeNext = false
 			continue
 		}
-		
+
 		if r == '\\' {
 			escapeNext = true
 			current.WriteRune(r)
 			continue
 		}
-		
+
 		if r == '"' || r == '\'' {
 			inString = !inString
 			current.WriteRune(r)
 			continue
 		}
-		
+
 		if !inString {
 			if r == '{' || r == '[' || r == '(' {
 				depth++
@@ -547,12 +547,12 @@ func splitMongoArgs(argsStr string) []string {
 			current.WriteRune(r)
 		}
 	}
-	
+
 	arg := strings.TrimSpace(current.String())
 	if arg != "" {
 		args = append(args, arg)
 	}
-	
+
 	return args
 }
 
@@ -577,7 +577,7 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("解析失败: %v，查询: %s", err, query)}, nil
 		}
-		
+
 		if len(args) == 0 {
 			// 尝试直接提取第一个对象
 			methodCall := ".insertOne("
@@ -592,11 +592,11 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 				}
 			}
 		}
-		
+
 		if len(args) == 0 {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("insertOne 需要至少一个参数，提取到的参数数量: %d，查询: %s", len(args), query)}, nil
 		}
-		
+
 		// 第一个参数是文档，第二个参数（如果存在）是选项，我们忽略选项
 		docStr := args[0]
 		doc, err := parseMongoObject(docStr)
@@ -624,11 +624,11 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("解析失败: %v", err)}, nil
 		}
-		
+
 		if len(args) == 0 {
 			return &QueryResult{Success: false, Error: "insertMany 需要至少一个参数"}, nil
 		}
-		
+
 		// 第一个参数是文档数组
 		docsStr := args[0]
 		// 尝试解析为数组
@@ -659,11 +659,11 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("解析失败: %v", err)}, nil
 		}
-		
+
 		if len(args) < 2 {
 			return &QueryResult{Success: false, Error: "updateOne 需要两个参数：过滤条件和更新文档"}, nil
 		}
-		
+
 		filterStr := args[0]
 		updateStr := args[1]
 
@@ -671,7 +671,7 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("无法解析过滤条件: %v", err)}, nil
 		}
-		
+
 		update, err := parseMongoObject(updateStr)
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("无法解析更新文档: %v", err)}, nil
@@ -695,11 +695,11 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("解析失败: %v", err)}, nil
 		}
-		
+
 		if len(args) < 2 {
 			return &QueryResult{Success: false, Error: "updateMany 需要两个参数：过滤条件和更新文档"}, nil
 		}
-		
+
 		filterStr := args[0]
 		updateStr := args[1]
 
@@ -707,7 +707,7 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("无法解析过滤条件: %v", err)}, nil
 		}
-		
+
 		update, err := parseMongoObject(updateStr)
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("无法解析更新文档: %v", err)}, nil
@@ -731,11 +731,11 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("解析失败: %v", err)}, nil
 		}
-		
+
 		if len(args) == 0 {
 			return &QueryResult{Success: false, Error: "deleteOne 需要至少一个参数"}, nil
 		}
-		
+
 		filterStr := args[0]
 		filter, err := parseMongoObject(filterStr)
 		if err != nil {
@@ -760,11 +760,11 @@ func (e *MongoDBExecutor) ExecuteUpdate(ctx context.Context, databaseName, query
 		if err != nil {
 			return &QueryResult{Success: false, Error: fmt.Sprintf("解析失败: %v", err)}, nil
 		}
-		
+
 		if len(args) == 0 {
 			return &QueryResult{Success: false, Error: "deleteMany 需要至少一个参数"}, nil
 		}
-		
+
 		filterStr := args[0]
 		filter, err := parseMongoObject(filterStr)
 		if err != nil {
@@ -795,14 +795,14 @@ func (e *MongoDBExecutor) parseMongoQuery(query string) (collectionName string, 
 	// 移除换行符和多余空格
 	query = strings.ReplaceAll(query, "\n", " ")
 	query = regexp.MustCompile(`\s+`).ReplaceAllString(query, " ")
-	
+
 	// 支持多种 MongoDB 查询格式：
 	// 1. db.collection.find()
 	// 2. db.collection.find({})
 	// 3. db.collection.find({key: "value"})
 	// 4. db.collection.findOne()
 	// 5. db.collection.findOne({})
-	
+
 	// 匹配 db.collection.find(...) 或 db.collection.findOne(...)
 	// 使用更宽松的匹配，支持集合名包含下划线等字符
 	re := regexp.MustCompile(`db\.([a-zA-Z0-9_]+)\.(find|findOne)\(([^)]*)\)`)

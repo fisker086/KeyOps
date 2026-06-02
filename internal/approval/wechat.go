@@ -167,7 +167,7 @@ func (p *WeChatProvider) createApprovalInstanceWithCode(ctx context.Context, tok
 	if userID == "" {
 		userID = approval.ApplicantID // 如果ApplicantName为空，fallback到ApplicantID
 	}
-	
+
 	// 如果userID看起来像UUID（36个字符且包含连字符），尝试查询用户名
 	if len(userID) == 36 && strings.Contains(userID, "-") {
 		var user model.User

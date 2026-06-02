@@ -17,202 +17,6 @@
     "host": "localhost:8080",
     "basePath": "/api",
     "paths": {
-        "/api/app-deploy-bindings": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "app-deploy-bindings"
-                ],
-                "summary": "获取应用-发布绑定列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "应用ID",
-                        "name": "applicationId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "发布类型: jenkins, argocd",
-                        "name": "deployType",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "环境: dev, test, qa, staging, prod",
-                        "name": "environment",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "是否启用",
-                        "name": "enabled",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "每页数量",
-                        "name": "pageSize",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "app-deploy-bindings"
-                ],
-                "summary": "创建应用-发布绑定",
-                "parameters": [
-                    {
-                        "description": "绑定信息",
-                        "name": "binding",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/app-deploy-bindings/applications": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "app-deploy-bindings"
-                ],
-                "summary": "获取可用于发布的应用列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "发布类型: jenkins, argocd",
-                        "name": "deployType",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "环境: dev, test, qa, staging, prod",
-                        "name": "environment",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "应用名称关键字",
-                        "name": "keyword",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/app-deploy-bindings/{id}": {
-            "put": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "app-deploy-bindings"
-                ],
-                "summary": "更新应用-发布绑定",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "绑定ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "绑定信息",
-                        "name": "binding",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "app-deploy-bindings"
-                ],
-                "summary": "删除应用-发布绑定",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "绑定ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/applications": {
             "get": {
                 "produces": [
@@ -470,155 +274,6 @@
                 }
             }
         },
-        "/api/bill/budgets": {
-            "get": {
-                "description": "获取所有预算及当前状态",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "获取预算列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "创建新的预算",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "创建预算",
-                "parameters": [
-                    {
-                        "description": "预算信息",
-                        "name": "budget",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Budget"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/budgets/:id": {
-            "put": {
-                "description": "更新预算信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "更新预算",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "预算ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "预算信息",
-                        "name": "budget",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Budget"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "删除指定的预算",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "删除预算",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "预算ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/check-budget-alerts": {
-            "get": {
-                "description": "手动检查所有预算的告警状态",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "手动检查预算告警",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/bill/cloud-accounts": {
             "get": {
                 "description": "获取云账户列表，含资源数、最近导入与状态等详情",
@@ -862,384 +517,6 @@
                     "bill"
                 ],
                 "summary": "获取费用 Dashboard 数据",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/policies": {
-            "get": {
-                "description": "获取所有策略（TTL、电源管理等）",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "获取策略列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "创建新的策略",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "创建策略",
-                "parameters": [
-                    {
-                        "description": "策略信息",
-                        "name": "policy",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Policy"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/policies/:id": {
-            "put": {
-                "description": "更新策略信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "更新策略",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "策略ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "策略信息",
-                        "name": "policy",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Policy"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "删除指定的策略",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "删除策略",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "策略ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/pools": {
-            "get": {
-                "description": "获取所有资源池及费用信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "获取资源池列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "创建新的资源池",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "创建资源池",
-                "parameters": [
-                    {
-                        "description": "资源池信息",
-                        "name": "pool",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Pool"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/pools/:id": {
-            "put": {
-                "description": "更新资源池信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "更新资源池",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "资源池ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "资源池信息",
-                        "name": "pool",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Pool"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "删除指定的资源池",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "删除资源池",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "资源池ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/price": {
-            "get": {
-                "description": "获取单价管理列表",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "获取单价列表",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "创建单价配置",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "创建单价",
-                "parameters": [
-                    {
-                        "description": "单价信息",
-                        "name": "price",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.BillPrice"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bill/price/:id": {
-            "put": {
-                "description": "更新单价配置",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "更新单价",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "单价ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "单价信息",
-                        "name": "price",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.BillPrice"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "删除单价配置",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "bill"
-                ],
-                "summary": "删除单价",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "单价ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1851,7 +1128,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "部署类型: jenkins, k8s",
+                        "description": "部署类型: k8s",
                         "name": "deploy_type",
                         "in": "query"
                     },
@@ -2978,58 +2255,25 @@
                 }
             }
         },
-        "/api/jenkins/servers": {
+        "/api/environments": {
             "get": {
-                "description": "获取所有配置的Jenkins服务器",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Jenkins"
+                    "environments"
                 ],
-                "summary": "获取Jenkins服务器列表",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "每页数量",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
+                "summary": "获取环境列表",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerListResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
             },
             "post": {
-                "description": "创建新的Jenkins服务器配置",
                 "consumes": [
                     "application/json"
                 ],
@@ -3037,17 +2281,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Jenkins"
+                    "environments"
                 ],
-                "summary": "创建Jenkins服务器",
+                "summary": "创建环境",
                 "parameters": [
                     {
-                        "description": "服务器信息",
-                        "name": "server",
+                        "description": "Environment",
+                        "name": "environment",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.CreateEnvironmentRequest"
                         }
                     }
                 ],
@@ -3055,41 +2299,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServer"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
             }
         },
-        "/api/jenkins/servers/{id}": {
+        "/api/environments/{id}": {
             "get": {
-                "description": "根据服务器ID获取Jenkins服务器详情",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Jenkins"
+                    "environments"
                 ],
-                "summary": "获取Jenkins服务器详情",
+                "summary": "获取单个环境",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "服务器ID",
+                        "type": "string",
+                        "description": "Environment ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -3099,25 +2327,12 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
                         }
                     }
                 }
             },
             "put": {
-                "description": "更新Jenkins服务器配置",
                 "consumes": [
                     "application/json"
                 ],
@@ -3125,24 +2340,24 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Jenkins"
+                    "environments"
                 ],
-                "summary": "更新Jenkins服务器",
+                "summary": "更新环境",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "服务器ID",
+                        "type": "string",
+                        "description": "Environment ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "服务器信息",
-                        "name": "server",
+                        "description": "Environment",
+                        "name": "environment",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest"
+                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.UpdateEnvironmentRequest"
                         }
                     }
                 ],
@@ -3156,21 +2371,17 @@
                 }
             },
             "delete": {
-                "description": "删除Jenkins服务器配置",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Jenkins"
+                    "environments"
                 ],
-                "summary": "删除Jenkins服务器",
+                "summary": "删除环境",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "服务器ID",
+                        "type": "string",
+                        "description": "Environment ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -3181,526 +2392,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/test-connection": {
-            "post": {
-                "description": "测试Jenkins服务器连接是否正常",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "测试Jenkins连接",
-                "parameters": [
-                    {
-                        "description": "连接测试请求",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/jobs": {
-            "get": {
-                "description": "获取指定Jenkins服务器的所有任务",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "获取Jenkins任务列表",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/jobs/search": {
-            "get": {
-                "description": "根据关键词模糊搜索指定Jenkins服务器的任务",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "搜索Jenkins任务",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "搜索关键词",
-                        "name": "keyword",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/jobs/{jobName}": {
-            "get": {
-                "description": "获取指定任务的详细信息和构建历史",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "获取Jenkins任务详情",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "任务名称",
-                        "name": "jobName",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}": {
-            "get": {
-                "description": "获取指定构建的详细信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "获取Jenkins构建详情",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "任务名称",
-                        "name": "jobName",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "构建编号",
-                        "name": "buildNumber",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}/log": {
-            "get": {
-                "description": "获取指定构建的日志信息，支持分页获取",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "获取Jenkins构建日志",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "任务名称",
-                        "name": "jobName",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "构建编号",
-                        "name": "buildNumber",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "开始位置",
-                        "name": "start",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.GetBuildLogResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}/stop": {
-            "post": {
-                "description": "停止指定的Jenkins构建任务",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "停止Jenkins构建",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "任务名称",
-                        "name": "jobName",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "构建编号",
-                        "name": "buildNumber",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.StopBuildResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/jobs/{jobName}/start": {
-            "post": {
-                "description": "启动指定的Jenkins任务，支持带参数构建",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "启动Jenkins任务",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "任务名称",
-                        "name": "jobName",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "启动任务请求",
-                        "name": "request",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.StartJobRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.StartJobResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/queue": {
-            "get": {
-                "description": "获取指定Jenkins服务器的构建队列信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "获取Jenkins队列信息",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueue"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/jenkins/{serverId}/system-info": {
-            "get": {
-                "description": "获取指定Jenkins服务器的系统信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Jenkins"
-                ],
-                "summary": "获取Jenkins系统信息",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "服务器ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo"
-                                        }
-                                    }
-                                }
-                            ]
                         }
                     }
                 }
@@ -9281,6 +7972,14 @@
                         "type": "string"
                     }
                 },
+                "callback_source": {
+                    "description": "回调来源标识（用于区分不同业务场景的回调）",
+                    "type": "string"
+                },
+                "callback_token": {
+                    "description": "回调令牌（嵌入审批表单数据，回调时可据此直接匹配工单，不依赖第三方 external_id）",
+                    "type": "string"
+                },
                 "created_at": {
                     "description": "时间信息",
                     "type": "string"
@@ -9385,6 +8084,14 @@
                         }
                     ]
                 },
+                "ticket_id": {
+                    "description": "关联工单信息（当从工单创建时）",
+                    "type": "integer"
+                },
+                "ticket_number": {
+                    "description": "工单编号",
+                    "type": "string"
+                },
                 "title": {
                     "description": "标题",
                     "type": "string"
@@ -9407,6 +8114,7 @@
             "enum": [
                 "internal",
                 "feishu",
+                "lark",
                 "dingtalk",
                 "wechat",
                 "custom"
@@ -9414,13 +8122,15 @@
             "x-enum-comments": {
                 "ApprovalPlatformCustom": "自定义",
                 "ApprovalPlatformDingTalk": "钉钉",
-                "ApprovalPlatformFeishu": "飞书",
+                "ApprovalPlatformFeishu": "飞书（中国版）",
                 "ApprovalPlatformInternal": "内部审批系统",
+                "ApprovalPlatformLark": "Lark（国际版）",
                 "ApprovalPlatformWeChat": "企业微信"
             },
             "x-enum-descriptions": [
                 "内部审批系统",
-                "飞书",
+                "飞书（中国版）",
+                "Lark（国际版）",
                 "钉钉",
                 "企业微信",
                 "自定义"
@@ -9428,6 +8138,7 @@
             "x-enum-varnames": [
                 "ApprovalPlatformInternal",
                 "ApprovalPlatformFeishu",
+                "ApprovalPlatformLark",
                 "ApprovalPlatformDingTalk",
                 "ApprovalPlatformWeChat",
                 "ApprovalPlatformCustom"
@@ -9486,106 +8197,6 @@
                 "ApprovalTypeHostGroupAccess",
                 "ApprovalTypeDeployment"
             ]
-        },
-        "github_com_fisker086_keyops_internal_model.BillPrice": {
-            "type": "object",
-            "required": [
-                "vendor"
-            ],
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "currency": {
-                    "description": "货币：USD, CNY",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "描述",
-                    "type": "string"
-                },
-                "effective_date": {
-                    "description": "生效日期",
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "region": {
-                    "description": "区域",
-                    "type": "string"
-                },
-                "resource_type": {
-                    "description": "资源类型",
-                    "type": "string"
-                },
-                "spec": {
-                    "description": "规格，如 1:2, 1:4 (对应scale)",
-                    "type": "string"
-                },
-                "unit": {
-                    "description": "单位：GB, Hour",
-                    "type": "string"
-                },
-                "unit_price": {
-                    "description": "单价 (对应price)",
-                    "type": "number"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "vendor": {
-                    "description": "云厂商",
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.Budget": {
-            "type": "object",
-            "properties": {
-                "alert_channel_ids": {
-                    "description": "JSON数组：[1,2,3]",
-                    "type": "string"
-                },
-                "alert_threshold": {
-                    "description": "告警阈值百分比",
-                    "type": "number"
-                },
-                "amount": {
-                    "type": "number"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "end_date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "org_id": {
-                    "type": "string"
-                },
-                "owner": {
-                    "type": "string"
-                },
-                "period": {
-                    "description": "monthly/quarterly/yearly",
-                    "type": "string"
-                },
-                "start_date": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
         },
         "github_com_fisker086_keyops_internal_model.CloudAccount": {
             "type": "object",
@@ -9646,69 +8257,6 @@
                 }
             }
         },
-        "github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest": {
-            "type": "object",
-            "required": [
-                "applicationId",
-                "deployConfigId",
-                "deployType",
-                "environment"
-            ],
-            "properties": {
-                "applicationId": {
-                    "type": "string"
-                },
-                "argocdApplication": {
-                    "description": "当 deployType=argocd 时必填",
-                    "type": "string"
-                },
-                "deployConfigId": {
-                    "type": "string"
-                },
-                "deployConfigName": {
-                    "type": "string"
-                },
-                "deployStrategy": {
-                    "description": "rolling, blue_green, canary, multi_lane",
-                    "type": "string"
-                },
-                "deployType": {
-                    "type": "string",
-                    "enum": [
-                        "jenkins",
-                        "argocd"
-                    ]
-                },
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "environment": {
-                    "type": "string",
-                    "enum": [
-                        "dev",
-                        "test",
-                        "qa",
-                        "staging",
-                        "prod"
-                    ]
-                },
-                "jenkinsJob": {
-                    "description": "当 deployType=jenkins 时必填",
-                    "type": "string"
-                },
-                "pipelineId": {
-                    "description": "流水线定义 ID，空则默认",
-                    "type": "string"
-                },
-                "strategyOptions": {
-                    "description": "JSON",
-                    "type": "string"
-                }
-            }
-        },
         "github_com_fisker086_keyops_internal_model.CreateApplicationRequest": {
             "type": "object",
             "required": [
@@ -9722,6 +8270,9 @@
                 "description": {
                     "type": "string"
                 },
+                "devLanguage": {
+                    "type": "string"
+                },
                 "devOwners": {
                     "type": "array",
                     "items": {
@@ -9733,12 +8284,6 @@
                 },
                 "isCritical": {
                     "type": "boolean"
-                },
-                "jenkinsJobName": {
-                    "type": "string"
-                },
-                "jenkinsServerId": {
-                    "type": "integer"
                 },
                 "lineOfBiz": {
                     "type": "string"
@@ -9781,34 +8326,32 @@
                 }
             }
         },
-        "github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest": {
+        "github_com_fisker086_keyops_internal_model.CreateEnvironmentRequest": {
             "type": "object",
             "required": [
-                "alias",
-                "password",
-                "url",
-                "username"
+                "code",
+                "name"
             ],
             "properties": {
-                "alias": {
-                    "type": "string"
+                "code": {
+                    "type": "string",
+                    "example": "dev"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "开发环境"
                 },
-                "enabled": {
-                    "type": "boolean"
+                "isActive": {
+                    "type": "boolean",
+                    "example": true
                 },
-                "password": {
-                    "description": "密码或API Token",
-                    "type": "string"
+                "name": {
+                    "type": "string",
+                    "example": "开发"
                 },
-                "url": {
-                    "description": "Jenkins服务器URL（格式：http://host:port 或 https://host:port）",
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
+                "sortOrder": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -9937,7 +8480,7 @@
                     "type": "string"
                 },
                 "deploy_type": {
-                    "description": "jenkins, k8s, gitops, argocd, helm",
+                    "description": "k8s, gitops, helm",
                     "type": "string"
                 },
                 "description": {
@@ -9954,14 +8497,6 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
-                },
-                "jenkins_build_number": {
-                    "description": "向后兼容字段",
-                    "type": "integer"
-                },
-                "jenkins_job": {
-                    "description": "向后兼容字段",
                     "type": "string"
                 },
                 "k8s_kind": {
@@ -10003,476 +8538,6 @@
                     "type": "integer"
                 },
                 "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.GetBuildLogResponse": {
-            "type": "object",
-            "properties": {
-                "buildNumber": {
-                    "type": "integer"
-                },
-                "hasMore": {
-                    "type": "boolean"
-                },
-                "jobName": {
-                    "type": "string"
-                },
-                "log": {
-                    "type": "string"
-                },
-                "moreData": {
-                    "type": "boolean"
-                },
-                "server": {
-                    "type": "string"
-                },
-                "textSize": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsBuild": {
-            "type": "object",
-            "properties": {
-                "building": {
-                    "type": "boolean"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "displayName": {
-                    "type": "string"
-                },
-                "duration": {
-                    "type": "integer"
-                },
-                "estimatedDuration": {
-                    "type": "integer"
-                },
-                "fullDisplayName": {
-                    "type": "string"
-                },
-                "keepLog": {
-                    "type": "boolean"
-                },
-                "number": {
-                    "type": "integer"
-                },
-                "queueId": {
-                    "type": "integer"
-                },
-                "result": {
-                    "description": "SUCCESS/FAILURE/UNSTABLE/ABORTED",
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "integer"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse": {
-            "type": "object",
-            "properties": {
-                "build": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
-                },
-                "server": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsComputer": {
-            "type": "object",
-            "properties": {
-                "displayName": {
-                    "type": "string"
-                },
-                "executors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor"
-                    }
-                },
-                "icon": {
-                    "type": "string"
-                },
-                "iconClassName": {
-                    "type": "string"
-                },
-                "idle": {
-                    "type": "boolean"
-                },
-                "jnlpAgent": {
-                    "type": "boolean"
-                },
-                "launchSupported": {
-                    "type": "boolean"
-                },
-                "loadStatistics": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics"
-                },
-                "manualLaunchAllowed": {
-                    "type": "boolean"
-                },
-                "monitorData": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "numExecutors": {
-                    "type": "integer"
-                },
-                "offline": {
-                    "type": "boolean"
-                },
-                "offlineCause": {},
-                "oneOffExecutors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor"
-                    }
-                },
-                "temporarilyOffline": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsExecutor": {
-            "type": "object",
-            "properties": {
-                "currentExecutable": {},
-                "currentWorkUnit": {},
-                "idle": {
-                    "type": "boolean"
-                },
-                "likelyStuck": {
-                    "type": "boolean"
-                },
-                "number": {
-                    "type": "integer"
-                },
-                "progress": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsJob": {
-            "type": "object",
-            "properties": {
-                "_class": {
-                    "type": "string"
-                },
-                "buildable": {
-                    "type": "boolean"
-                },
-                "color": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "displayName": {
-                    "type": "string"
-                },
-                "lastBuild": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
-                },
-                "lastFailedBuild": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
-                },
-                "lastStableBuild": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
-                },
-                "lastSuccessfulBuild": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse": {
-            "type": "object",
-            "properties": {
-                "builds": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild"
-                    }
-                },
-                "job": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob"
-                },
-                "server": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsJobListResponse": {
-            "type": "object",
-            "properties": {
-                "jobs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob"
-                    }
-                },
-                "server": {
-                    "type": "string"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsLabel": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics": {
-            "type": "object",
-            "properties": {
-                "busyExecutors": {
-                    "type": "integer"
-                },
-                "idleExecutors": {
-                    "type": "integer"
-                },
-                "queueLength": {
-                    "type": "integer"
-                },
-                "totalExecutors": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsQueue": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueueItem"
-                    }
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsQueueItem": {
-            "type": "object",
-            "properties": {
-                "actions": {
-                    "type": "array",
-                    "items": {}
-                },
-                "blocked": {
-                    "type": "boolean"
-                },
-                "buildable": {
-                    "type": "boolean"
-                },
-                "buildableStartMilliseconds": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "inQueueSince": {
-                    "type": "integer"
-                },
-                "params": {
-                    "type": "string"
-                },
-                "stuck": {
-                    "type": "boolean"
-                },
-                "task": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsTask"
-                },
-                "url": {
-                    "type": "string"
-                },
-                "why": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsServer": {
-            "type": "object",
-            "properties": {
-                "alias": {
-                    "description": "别名(服务器名称)",
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "description": "描述",
-                    "type": "string"
-                },
-                "enabled": {
-                    "description": "是否启用",
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "url": {
-                    "description": "Jenkins服务器URL（格式：http://host:port 或 https://host:port）",
-                    "type": "string"
-                },
-                "username": {
-                    "description": "用户名",
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsServerInfo": {
-            "type": "object",
-            "properties": {
-                "alias": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsServerListResponse": {
-            "type": "object",
-            "properties": {
-                "list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo"
-                    }
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsSystemInfo": {
-            "type": "object",
-            "properties": {
-                "assignedLabels": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLabel"
-                    }
-                },
-                "computers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsComputer"
-                    }
-                },
-                "mode": {
-                    "type": "string"
-                },
-                "nodeDescription": {
-                    "type": "string"
-                },
-                "nodeName": {
-                    "type": "string"
-                },
-                "numExecutors": {
-                    "type": "integer"
-                },
-                "overallLoad": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "primaryView": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView"
-                },
-                "unlabeledLoad": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "useCrumbs": {
-                    "type": "boolean"
-                },
-                "useSecurity": {
-                    "type": "boolean"
-                },
-                "version": {
-                    "type": "string"
-                },
-                "views": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView"
-                    }
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsTask": {
-            "type": "object",
-            "properties": {
-                "color": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.JenkinsView": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "jobs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "url": {
                     "type": "string"
                 }
             }
@@ -10567,86 +8632,6 @@
                     "type": "string"
                 },
                 "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.Policy": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "description": "stop/terminate/tag",
-                    "type": "string"
-                },
-                "conditions": {
-                    "description": "JSON条件",
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "schedule": {
-                    "description": "cron表达式",
-                    "type": "string"
-                },
-                "target_resources": {
-                    "description": "目标资源筛选",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "ttl/power_off/tag",
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.Pool": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "limit_amount": {
-                    "description": "费用限制",
-                    "type": "number"
-                },
-                "members": {
-                    "description": "JSON数组",
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "org_id": {
-                    "type": "string"
-                },
-                "owner": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "updatedAt": {
                     "type": "string"
                 }
             }
@@ -10761,63 +8746,6 @@
                 }
             }
         },
-        "github_com_fisker086_keyops_internal_model.StartJobRequest": {
-            "type": "object",
-            "properties": {
-                "parameters": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "reason": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.StartJobResponse": {
-            "type": "object",
-            "properties": {
-                "buildNumber": {
-                    "type": "integer"
-                },
-                "jobName": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "queueId": {
-                    "type": "integer"
-                },
-                "server": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.StopBuildResponse": {
-            "type": "object",
-            "properties": {
-                "buildNumber": {
-                    "type": "integer"
-                },
-                "jobName": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "server": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
         "github_com_fisker086_keyops_internal_model.SystemUser": {
             "type": "object",
             "properties": {
@@ -10871,85 +8799,6 @@
                 }
             }
         },
-        "github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "url",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "description": "密码或API Token",
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                },
-                "systemInfo": {
-                    "$ref": "#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo"
-                }
-            }
-        },
-        "github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest": {
-            "type": "object",
-            "properties": {
-                "argocdApplication": {
-                    "type": "string"
-                },
-                "deployConfigId": {
-                    "type": "string"
-                },
-                "deployConfigName": {
-                    "type": "string"
-                },
-                "deployStrategy": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "environment": {
-                    "type": "string",
-                    "enum": [
-                        "dev",
-                        "test",
-                        "qa",
-                        "staging",
-                        "prod"
-                    ]
-                },
-                "jenkinsJob": {
-                    "type": "string"
-                },
-                "pipelineId": {
-                    "type": "string"
-                },
-                "strategyOptions": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_fisker086_keyops_internal_model.UpdateApplicationRequest": {
             "type": "object",
             "required": [
@@ -10963,6 +8812,9 @@
                 "description": {
                     "type": "string"
                 },
+                "devLanguage": {
+                    "type": "string"
+                },
                 "devOwners": {
                     "type": "array",
                     "items": {
@@ -10974,12 +8826,6 @@
                 },
                 "isCritical": {
                     "type": "boolean"
-                },
-                "jenkinsJobName": {
-                    "type": "string"
-                },
-                "jenkinsServerId": {
-                    "type": "integer"
                 },
                 "lineOfBiz": {
                     "type": "string"
@@ -11022,28 +8868,28 @@
                 }
             }
         },
-        "github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest": {
+        "github_com_fisker086_keyops_internal_model.UpdateEnvironmentRequest": {
             "type": "object",
             "properties": {
-                "alias": {
-                    "type": "string"
+                "code": {
+                    "type": "string",
+                    "example": "test"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "测试环境"
                 },
-                "enabled": {
-                    "type": "boolean"
+                "isActive": {
+                    "type": "boolean",
+                    "example": true
                 },
-                "password": {
-                    "description": "密码或API Token（如果为空则不更新）",
-                    "type": "string"
+                "name": {
+                    "type": "string",
+                    "example": "测试"
                 },
-                "url": {
-                    "description": "Jenkins服务器URL（格式：http://host:port 或 https://host:port）",
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
+                "sortOrder": {
+                    "type": "integer",
+                    "example": 2
                 }
             }
         },
@@ -11766,8 +9612,12 @@
                 "cluster_name": {
                     "type": "string"
                 },
+                "deploy_config": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "deploy_type": {
-                    "description": "jenkins, k8s",
+                    "description": "k8s",
                     "type": "string"
                 },
                 "description": {
@@ -11777,9 +9627,6 @@
                     "type": "string"
                 },
                 "env_name": {
-                    "type": "string"
-                },
-                "jenkins_job": {
                     "type": "string"
                 },
                 "k8s_kind": {

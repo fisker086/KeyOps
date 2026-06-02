@@ -65,9 +65,9 @@ func StartServer(
 	httpServer := &http.Server{
 		Addr:           addr,
 		Handler:        r,
-		ReadTimeout:    300 * time.Second,  // 5分钟读取超时（支持大SQL传输）
-		WriteTimeout:   300 * time.Second,   // 5分钟写入超时（支持大结果返回）
-		MaxHeaderBytes: 1 << 20,            // 1MB 请求头大小限制
+		ReadTimeout:    300 * time.Second, // 5分钟读取超时（支持大SQL传输）
+		WriteTimeout:   300 * time.Second, // 5分钟写入超时（支持大结果返回）
+		MaxHeaderBytes: 1 << 20,           // 1MB 请求头大小限制
 	}
 
 	// Print startup banner
@@ -158,7 +158,7 @@ func StartServer(
 func printStartupBanner(cfg *config.Config) {
 	logger.Infof("")
 	logger.Infof("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	logger.Infof("ZJump Unified Server v2.0 - Intelligent Routing Architecture")
+	logger.Infof("KeyOps Unified Server v2.0 - Intelligent Routing Architecture")
 	logger.Infof("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	logger.Infof("")
 	logger.Infof("Features:")
@@ -186,4 +186,3 @@ func printStartupBanner(cfg *config.Config) {
 	logger.Infof("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	logger.Infof("")
 }
-

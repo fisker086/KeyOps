@@ -22,16 +22,16 @@ type StepCallback func(stepType string, data map[string]interface{})
 
 // Engine Agent 执行引擎
 type Engine struct {
-	client       *openai.Client
-	model        string
-	maxSteps     int
-	prom         *PrometheusClient
-	graf         *GrafanaClient
-	env          *Environment
-	promHistory  []interface{}          // 本轮会话内真实 execute_promql_query 结果（用于分析工具防幻觉）
-	runners  map[string]tools.Runner // 各工具集执行器（如 k8s），由 app 注入
-	baseURL  string                 // 用于错误时日志
-	apiKey   string                 // 用于错误时日志（401 时 key 错误，打印无妨）
+	client      *openai.Client
+	model       string
+	maxSteps    int
+	prom        *PrometheusClient
+	graf        *GrafanaClient
+	env         *Environment
+	promHistory []interface{}           // 本轮会话内真实 execute_promql_query 结果（用于分析工具防幻觉）
+	runners     map[string]tools.Runner // 各工具集执行器（如 k8s），由 app 注入
+	baseURL     string                  // 用于错误时日志
+	apiKey      string                  // 用于错误时日志（401 时 key 错误，打印无妨）
 }
 
 // NewEngine 从 LLM 配置创建引擎，llmConfig 须由数据库模型配置传入。
@@ -67,13 +67,13 @@ func NewEngine(env *Environment, runners map[string]tools.Runner, llmConfig *LLM
 		runners = make(map[string]tools.Runner)
 	}
 	e := &Engine{
-		client:       client,
-		model:        model,
-		maxSteps:     maxSteps,
-		env:          env,
-		runners:      runners,
-		baseURL: baseURL,
-		apiKey:  apiKey,
+		client:   client,
+		model:    model,
+		maxSteps: maxSteps,
+		env:      env,
+		runners:  runners,
+		baseURL:  baseURL,
+		apiKey:   apiKey,
 	}
 	if env != nil && env.PromURL != "" {
 		e.prom = NewPrometheusClient(env.PromURL, true)
@@ -344,8 +344,8 @@ func newProxyHTTPClient(proxyURL string) *http.Client {
 	return &http.Client{
 		Timeout: 60 * time.Second,
 		Transport: &http.Transport{
-			Proxy:             http.ProxyURL(u),
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: false},
+			Proxy:           http.ProxyURL(u),
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
 		},
 	}
 }

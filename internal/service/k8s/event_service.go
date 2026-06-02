@@ -26,7 +26,7 @@ func (s *K8sService) GetEventList(clusterID string, clusterName string, nodeID u
 		ns := s.getNamespace(cluster, namespace)
 		eventsURL = strings.TrimSuffix(cluster.APIServer, "/") + "/api/v1/namespaces/" + ns + "/events"
 	}
-	
+
 	// 如果指定了对象名称和类型，添加过滤参数
 	if objectName != "" && objectKind != "" {
 		separator := "?"
@@ -35,7 +35,7 @@ func (s *K8sService) GetEventList(clusterID string, clusterName string, nodeID u
 		}
 		eventsURL += separator + "fieldSelector=involvedObject.name=" + objectName + ",involvedObject.kind=" + objectKind
 	}
-	
+
 	httpReq, client, err := s.createK8sHTTPClient(cluster, eventsURL)
 	if err != nil {
 		return nil, err
@@ -103,4 +103,3 @@ func (s *K8sService) GetEventList(clusterID string, clusterName string, nodeID u
 
 	return events, nil
 }
-

@@ -109,26 +109,30 @@ func (s *OnCallService) GetOnCallScheduleForTime(departmentID string, startTime,
 		return nil, err
 	}
 
-	var allShifts []model.OnCallShift
+	var scheduleIDs []uint
 	for _, schedule := range schedules {
-		if !schedule.Enabled {
-			continue
+		if schedule.Enabled {
+			scheduleIDs = append(scheduleIDs, schedule.ID)
 		}
-		shifts, err := s.shiftRepo.ListBySchedule(schedule.ID)
-		if err != nil {
-			continue
-		}
-		// 过滤时间范围
-		for _, shift := range shifts {
-			if shift.Status == "active" &&
-				shift.StartTime.Before(endTime) &&
-				shift.EndTime.After(startTime) {
-				allShifts = append(allShifts, shift)
-			}
+	}
+	if len(scheduleIDs) == 0 {
+		return nil, nil
+	}
+
+	allShifts, err := s.shiftRepo.ListByScheduleIDs(scheduleIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 过滤时间范围
+	var filtered []model.OnCallShift
+	for _, shift := range allShifts {
+		if shift.StartTime.Before(endTime) && shift.EndTime.After(startTime) {
+			filtered = append(filtered, shift)
 		}
 	}
 
-	return allShifts, nil
+	return filtered, nil
 }
 
 // ==================== 告警分配 ====================
@@ -163,7 +167,7 @@ func (s *OnCallService) ManualAssignAlert(alertID uint64, userID string, assigne
 	assignment := &model.OnCallAssignment{
 		AlertID:      alertID,
 		UserID:       userID,
-		ShiftID:       shiftID,
+		ShiftID:      shiftID,
 		AssignedAt:   time.Now(),
 		AssignedBy:   assignedBy,
 		AutoAssigned: false,
@@ -186,4 +190,3 @@ func (s *OnCallService) ListAssignmentsByUser(userID string, page, pageSize int)
 func (s *OnCallService) ListAssignmentsByAlert(alertID uint64) ([]model.OnCallAssignment, error) {
 	return s.assignmentRepo.ListByAlert(alertID)
 }
-

@@ -33,7 +33,7 @@ func (h *TwoFactorHandler) GetGlobalConfig(c *gin.Context) {
 		// 如果不存在，创建默认配置
 		config = model.TwoFactorConfig{
 			Enabled: false,
-			Issuer:  "ZJump",
+			Issuer:  "KeyOps",
 		}
 		h.db.Create(&config)
 	}
@@ -52,7 +52,7 @@ func (h *TwoFactorHandler) GetGlobalStatus(c *gin.Context) {
 		// 如果不存在，返回默认配置
 		config = model.TwoFactorConfig{
 			Enabled: false,
-			Issuer:  "ZJump",
+			Issuer:  "KeyOps",
 		}
 	}
 

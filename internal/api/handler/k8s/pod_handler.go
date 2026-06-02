@@ -113,12 +113,12 @@ func (h *K8sHandler) GetContainersList(c *gin.Context) {
 
 // RestartPodRequest 重启 Pod 请求
 type RestartPodRequest struct {
-	ClusterID string `json:"cluster_id"`
+	ClusterID   string `json:"cluster_id"`
 	ClusterName string `json:"cluster_name"`
-	NodeID    uint   `json:"node_id"`
-	EnvID     uint   `json:"env_id"`
-	Namespace string `json:"namespace"`
-	PodName   string `json:"pod_name" binding:"required"`
+	NodeID      uint   `json:"node_id"`
+	EnvID       uint   `json:"env_id"`
+	Namespace   string `json:"namespace"`
+	PodName     string `json:"pod_name" binding:"required"`
 }
 
 // RestartPod 重启 Pod

@@ -366,6 +366,7 @@ type AlertEventRepository interface {
 	Close(id uint64, uid string) error
 	Open(id uint64) error
 	ListUnclosed() ([]model.AlertEvent, error)
+	ListUnclosedRecent(since time.Time, limit int) ([]model.AlertEvent, error)
 	GetStatistics(timeRange string) (map[string]interface{}, error)
 	GetTrendStatistics(timeRange string) ([]map[string]interface{}, error)
 	GetTopAlerts(timeRange string, limit int) ([]map[string]interface{}, error)
@@ -504,24 +505,39 @@ func (r *alertEventRepository) ListUnclosed() ([]model.AlertEvent, error) {
 	return events, err
 }
 
+// ListUnclosedRecent 获取指定时间范围内未关闭的告警事件（带 limit 限制）
+func (r *alertEventRepository) ListUnclosedRecent(since time.Time, limit int) ([]model.AlertEvent, error) {
+	var events []model.AlertEvent
+	query := r.db.Where("is_recovered = ? AND trigger_time >= ?", false, since)
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	err := query.Order("trigger_time DESC").Find(&events).Error
+	return events, err
+}
+
+// parseTimeRange 解析时间范围字符串，返回起始时间（所有分支共享）
+func parseTimeRange(timeRange string) time.Time {
+	now := time.Now()
+	switch timeRange {
+	case "24h":
+		return now.Add(-24 * time.Hour)
+	case "7d":
+		return now.Add(-7 * 24 * time.Hour)
+	case "30d":
+		return now.Add(-30 * 24 * time.Hour)
+	default:
+		return now.Add(-24 * time.Hour)
+	}
+}
+
 // GetStatistics 获取告警统计信息
 func (r *alertEventRepository) GetStatistics(timeRange string) (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 
-	// 计算时间范围
 	var startTime time.Time
 	if timeRange != "" {
-		now := time.Now()
-		switch timeRange {
-		case "24h":
-			startTime = now.Add(-24 * time.Hour)
-		case "7d":
-			startTime = now.Add(-7 * 24 * time.Hour)
-		case "30d":
-			startTime = now.Add(-30 * 24 * time.Hour)
-		default:
-			startTime = now.Add(-24 * time.Hour)
-		}
+		startTime = parseTimeRange(timeRange)
 	}
 
 	query := r.db.Model(&model.AlertEvent{})
@@ -602,18 +618,7 @@ func (r *alertEventRepository) GetStatistics(timeRange string) (map[string]inter
 
 // GetTrendStatistics 获取告警趋势统计（按日期）
 func (r *alertEventRepository) GetTrendStatistics(timeRange string) ([]map[string]interface{}, error) {
-	var startTime time.Time
-	now := time.Now()
-	switch timeRange {
-	case "24h":
-		startTime = now.Add(-24 * time.Hour)
-	case "7d":
-		startTime = now.Add(-7 * 24 * time.Hour)
-	case "30d":
-		startTime = now.Add(-30 * 24 * time.Hour)
-	default:
-		startTime = now.Add(-7 * 24 * time.Hour)
-	}
+	startTime := parseTimeRange(timeRange)
 
 	var results []struct {
 		Date  string
@@ -660,18 +665,7 @@ func (r *alertEventRepository) GetTrendStatistics(timeRange string) ([]map[strin
 
 // GetTopAlerts 获取Top N告警（按触发次数）
 func (r *alertEventRepository) GetTopAlerts(timeRange string, limit int) ([]map[string]interface{}, error) {
-	var startTime time.Time
-	now := time.Now()
-	switch timeRange {
-	case "24h":
-		startTime = now.Add(-24 * time.Hour)
-	case "7d":
-		startTime = now.Add(-7 * 24 * time.Hour)
-	case "30d":
-		startTime = now.Add(-30 * 24 * time.Hour)
-	default:
-		startTime = now.Add(-7 * 24 * time.Hour)
-	}
+	startTime := parseTimeRange(timeRange)
 
 	if limit <= 0 {
 		limit = 10
@@ -725,6 +719,7 @@ type AlertStrategyRepository interface {
 	Update(strategy *model.AlertStrategy) error
 	Delete(id uint) error
 	FindByID(id uint) (*model.AlertStrategy, error)
+	FindByIDs(ids []uint) ([]model.AlertStrategy, error)
 	List(departmentID string, status string, page, pageSize int) (total int64, strategies []model.AlertStrategy, err error)
 	Toggle(id uint, status string) error
 }
@@ -777,6 +772,15 @@ func (r *alertStrategyRepository) FindByID(id uint) (*model.AlertStrategy, error
 	var strategy model.AlertStrategy
 	err := r.db.Where("id = ?", id).First(&strategy).Error
 	return &strategy, err
+}
+
+func (r *alertStrategyRepository) FindByIDs(ids []uint) ([]model.AlertStrategy, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var strategies []model.AlertStrategy
+	err := r.db.Where("id IN ?", ids).Find(&strategies).Error
+	return strategies, err
 }
 
 func (r *alertStrategyRepository) List(departmentID string, status string, page, pageSize int) (total int64, strategies []model.AlertStrategy, err error) {
@@ -897,7 +901,7 @@ type AlertSilenceRepository interface {
 	Delete(id uint) error
 	FindByID(id uint) (*model.AlertSilence, error)
 	ListByDepartment(departmentID string) ([]model.AlertSilence, error)
-	List(page, pageSize int) (int64, []model.AlertSilence, error)
+	List(departmentID string, page, pageSize int) (int64, []model.AlertSilence, error)
 }
 
 // AlertSilenceRepository 告警静默仓库
@@ -947,10 +951,13 @@ func (r *alertSilenceRepository) ListByDepartment(departmentID string) ([]model.
 	return silences, err
 }
 
-func (r *alertSilenceRepository) List(page, pageSize int) (int64, []model.AlertSilence, error) {
+func (r *alertSilenceRepository) List(departmentID string, page, pageSize int) (int64, []model.AlertSilence, error) {
 	var silences []model.AlertSilence
 	var total int64
 	query := r.db.Model(&model.AlertSilence{})
+	if departmentID != "" {
+		query = query.Where("department_id = ?", departmentID)
+	}
 	err := query.Count(&total).Offset((page - 1) * pageSize).Limit(pageSize).Find(&silences).Error
 	return total, silences, err
 }

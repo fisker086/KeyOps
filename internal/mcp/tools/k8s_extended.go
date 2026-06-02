@@ -269,15 +269,15 @@ func nodeLister(cs kubernetes.Interface, ns string, args map[string]any) ([]map[
 	var items []map[string]any
 	for _, n := range nodes.Items {
 		items = append(items, map[string]any{
-			"name":             n.Name,
-			"status":           nodeReadyStatus(n.Status.Conditions),
-			"version":          n.Status.NodeInfo.KubeletVersion,
-			"os_image":         n.Status.NodeInfo.OSImage,
-			"architecture":     n.Status.NodeInfo.Architecture,
-			"cpu_capacity":     n.Status.Capacity.Cpu().String(),
-			"memory_capacity":  n.Status.Capacity.Memory().String(),
-			"pod_capacity":     n.Status.Capacity.Pods().Value(),
-			"age":              n.CreationTimestamp.Format("2006-01-02"),
+			"name":            n.Name,
+			"status":          nodeReadyStatus(n.Status.Conditions),
+			"version":         n.Status.NodeInfo.KubeletVersion,
+			"os_image":        n.Status.NodeInfo.OSImage,
+			"architecture":    n.Status.NodeInfo.Architecture,
+			"cpu_capacity":    n.Status.Capacity.Cpu().String(),
+			"memory_capacity": n.Status.Capacity.Memory().String(),
+			"pod_capacity":    n.Status.Capacity.Pods().Value(),
+			"age":             n.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 	return items, nil
@@ -292,12 +292,12 @@ func serviceLister(cs kubernetes.Interface, ns string, args map[string]any) ([]m
 	var items []map[string]any
 	for _, s := range svcs.Items {
 		items = append(items, map[string]any{
-			"name":        s.Name,
-			"type":        string(s.Spec.Type),
-			"cluster_ip":  s.Spec.ClusterIP,
-			"ports":       servicePorts(s.Spec.Ports),
-			"selector":    s.Spec.Selector,
-			"age":         s.CreationTimestamp.Format("2006-01-02"),
+			"name":       s.Name,
+			"type":       string(s.Spec.Type),
+			"cluster_ip": s.Spec.ClusterIP,
+			"ports":      servicePorts(s.Spec.Ports),
+			"selector":   s.Spec.Selector,
+			"age":        s.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 	return items, nil
@@ -312,12 +312,12 @@ func daemonsetLister(cs kubernetes.Interface, ns string, args map[string]any) ([
 	var items []map[string]any
 	for _, d := range list.Items {
 		items = append(items, map[string]any{
-			"name":            d.Name,
-			"desired":         d.Status.DesiredNumberScheduled,
-			"current":         d.Status.CurrentNumberScheduled,
-			"ready":           d.Status.NumberReady,
-			"up_to_date":      d.Status.UpdatedNumberScheduled,
-			"age":             d.CreationTimestamp.Format("2006-01-02"),
+			"name":       d.Name,
+			"desired":    d.Status.DesiredNumberScheduled,
+			"current":    d.Status.CurrentNumberScheduled,
+			"ready":      d.Status.NumberReady,
+			"up_to_date": d.Status.UpdatedNumberScheduled,
+			"age":        d.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 	return items, nil
@@ -332,11 +332,11 @@ func statefulsetLister(cs kubernetes.Interface, ns string, args map[string]any) 
 	var items []map[string]any
 	for _, s := range list.Items {
 		items = append(items, map[string]any{
-			"name":      s.Name,
-			"replicas":  s.Status.Replicas,
-			"ready":     s.Status.ReadyReplicas,
-			"service":   s.Spec.ServiceName,
-			"age":       s.CreationTimestamp.Format("2006-01-02"),
+			"name":     s.Name,
+			"replicas": s.Status.Replicas,
+			"ready":    s.Status.ReadyReplicas,
+			"service":  s.Spec.ServiceName,
+			"age":      s.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 	return items, nil
@@ -351,10 +351,10 @@ func jobLister(cs kubernetes.Interface, ns string, args map[string]any) ([]map[s
 	var items []map[string]any
 	for _, j := range list.Items {
 		items = append(items, map[string]any{
-			"name":      j.Name,
+			"name":        j.Name,
 			"completions": jobCompletions(j),
-			"status":   jobStatus(j),
-			"age":      j.CreationTimestamp.Format("2006-01-02"),
+			"status":      jobStatus(j),
+			"age":         j.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 	return items, nil
@@ -369,12 +369,12 @@ func cronjobLister(cs kubernetes.Interface, ns string, args map[string]any) ([]m
 	var items []map[string]any
 	for _, c := range list.Items {
 		items = append(items, map[string]any{
-			"name":     c.Name,
-			"schedule": c.Spec.Schedule,
-			"suspend":  c.Spec.Suspend != nil && *c.Spec.Suspend,
-			"active":   c.Status.Active,
+			"name":          c.Name,
+			"schedule":      c.Spec.Schedule,
+			"suspend":       c.Spec.Suspend != nil && *c.Spec.Suspend,
+			"active":        c.Status.Active,
 			"last_schedule": fmtMetav1Time(c.Status.LastScheduleTime),
-			"age":      c.CreationTimestamp.Format("2006-01-02"),
+			"age":           c.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 	return items, nil
@@ -393,11 +393,11 @@ func ingressLister(cs kubernetes.Interface, ns string, args map[string]any) ([]m
 			hosts = append(hosts, r.Host)
 		}
 		items = append(items, map[string]any{
-			"name":   ing.Name,
-			"hosts":  hosts,
-			"tls":    len(ing.Spec.TLS) > 0,
-			"class":  ingressClass(ing),
-			"age":    ing.CreationTimestamp.Format("2006-01-02"),
+			"name":  ing.Name,
+			"hosts": hosts,
+			"tls":   len(ing.Spec.TLS) > 0,
+			"class": ingressClass(ing),
+			"age":   ing.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 	return items, nil
@@ -421,11 +421,11 @@ func eventLister(cs kubernetes.Interface, ns string, args map[string]any) ([]map
 	var items []map[string]any
 	for _, e := range list.Items {
 		items = append(items, map[string]any{
-			"type":     e.Type,
-			"reason":   e.Reason,
-			"message":  e.Message,
-			"count":    e.Count,
-			"object":   fmt.Sprintf("%s/%s", e.InvolvedObject.Kind, e.InvolvedObject.Name),
+			"type":       e.Type,
+			"reason":     e.Reason,
+			"message":    e.Message,
+			"count":      e.Count,
+			"object":     fmt.Sprintf("%s/%s", e.InvolvedObject.Kind, e.InvolvedObject.Name),
 			"first_seen": fmtTimestamp(e.FirstTimestamp.Time),
 			"last_seen":  fmtTimestamp(e.LastTimestamp.Time),
 		})
@@ -820,13 +820,13 @@ func handleInspectPod(args json.RawMessage, ctx *K8sExtendedToolContext) *mcp.Ca
 		return errorResult("get pod error: " + err.Error())
 	}
 	result["pod"] = map[string]any{
-		"name":      pod.Name,
-		"namespace": pod.Namespace,
-		"node":      pod.Spec.NodeName,
-		"status":    pod.Status.Phase,
-		"ip":        pod.Status.PodIP,
-		"host_ip":   pod.Status.HostIP,
-		"qos_class": pod.Status.QOSClass,
+		"name":       pod.Name,
+		"namespace":  pod.Namespace,
+		"node":       pod.Spec.NodeName,
+		"status":     pod.Status.Phase,
+		"ip":         pod.Status.PodIP,
+		"host_ip":    pod.Status.HostIP,
+		"qos_class":  pod.Status.QOSClass,
 		"containers": containerStatuses(pod.Status.ContainerStatuses),
 		"conditions": podConditions(pod.Status.Conditions),
 	}
@@ -917,12 +917,12 @@ func handleRolloutHistory(args json.RawMessage, ctx *K8sExtendedToolContext) *mc
 	for _, rs := range rss.Items {
 		rev := rs.Annotations["deployment.kubernetes.io/revision"]
 		revisions = append(revisions, map[string]any{
-			"revision":    rev,
-			"replicaset":  rs.Name,
-			"desired":     rs.Status.Replicas,
-			"available":   rs.Status.AvailableReplicas,
-			"image":       rs.Spec.Template.Spec.Containers[0].Image,
-			"created_at":  rs.CreationTimestamp.Format("2006-01-02 15:04"),
+			"revision":   rev,
+			"replicaset": rs.Name,
+			"desired":    rs.Status.Replicas,
+			"available":  rs.Status.AvailableReplicas,
+			"image":      rs.Spec.Template.Spec.Containers[0].Image,
+			"created_at": rs.CreationTimestamp.Format("2006-01-02 15:04"),
 		})
 	}
 
@@ -931,10 +931,10 @@ func handleRolloutHistory(args json.RawMessage, ctx *K8sExtendedToolContext) *mc
 	}
 
 	data, _ := json.MarshalIndent(map[string]any{
-		"deployment":    params.DeploymentName,
-		"namespace":     ns,
+		"deployment":       params.DeploymentName,
+		"namespace":        ns,
 		"current_revision": deploy.Annotations["deployment.kubernetes.io/revision"],
-		"revisions":     revisions,
+		"revisions":        revisions,
 	}, "", "  ")
 	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
 }
@@ -1127,10 +1127,10 @@ func containerStatuses(statuses []corev1.ContainerStatus) []map[string]any {
 			state = "terminated"
 		}
 		res = append(res, map[string]any{
-			"name":   s.Name,
-			"ready":  s.Ready,
-			"state":  state,
-			"image":  s.Image,
+			"name":     s.Name,
+			"ready":    s.Ready,
+			"state":    state,
+			"image":    s.Image,
 			"restarts": s.RestartCount,
 		})
 	}
@@ -1151,11 +1151,11 @@ func podConditions(conds []corev1.PodCondition) []map[string]any {
 
 func unstructuredSummary(obj unstructured.Unstructured) map[string]any {
 	summary := map[string]any{
-		"name":      obj.GetName(),
-		"namespace": obj.GetNamespace(),
+		"name":       obj.GetName(),
+		"namespace":  obj.GetNamespace(),
 		"apiVersion": obj.GetAPIVersion(),
-		"kind":      obj.GetKind(),
-		"age":       obj.GetCreationTimestamp().Format("2006-01-02"),
+		"kind":       obj.GetKind(),
+		"age":        obj.GetCreationTimestamp().Format("2006-01-02"),
 	}
 	if labels := obj.GetLabels(); len(labels) > 0 {
 		summary["labels"] = labels

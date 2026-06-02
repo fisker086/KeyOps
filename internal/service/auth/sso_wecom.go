@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	defaultWeComGetTokenURL    = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
-	weComAuthGetUserInfoPath   = "https://qyapi.weixin.qq.com/cgi-bin/auth/getuserinfo"
-	weComUserGetPath          = "https://qyapi.weixin.qq.com/cgi-bin/user/get"
+	defaultWeComGetTokenURL  = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
+	weComAuthGetUserInfoPath = "https://qyapi.weixin.qq.com/cgi-bin/auth/getuserinfo"
+	weComUserGetPath         = "https://qyapi.weixin.qq.com/cgi-bin/user/get"
 )
 
 func (s *AuthService) exchangeWeComCorpToken(clientID, clientSecret, tokenURL string) (string, error) {
@@ -46,9 +46,9 @@ func (s *AuthService) exchangeWeComCorpToken(clientID, clientSecret, tokenURL st
 	}
 	var out struct {
 		ErrCode     int    `json:"errcode"`
-		ErrMsg     string `json:"errmsg"`
+		ErrMsg      string `json:"errmsg"`
 		AccessToken string `json:"access_token"`
-		ExpiresIn  int    `json:"expires_in"`
+		ExpiresIn   int    `json:"expires_in"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return "", fmt.Errorf("解析企业微信 gettoken 失败: %w", err)
@@ -140,7 +140,7 @@ func (s *AuthService) getWeComUserInfo(corpAccessToken, oauthCode, agentID strin
 		Sub:       detail.UserID,
 		Name:      detail.Name,
 		Email:     detail.Email,
-		Mobile:   detail.Mobile,
+		Mobile:    detail.Mobile,
 		AvatarURL: detail.Avatar,
 	}
 	if ui.Email != "" {

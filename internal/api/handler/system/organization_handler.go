@@ -331,4 +331,3 @@ func (h *OrganizationHandler) GetOrganizationTree(c *gin.Context) {
 		Data:    tree,
 	})
 }
-

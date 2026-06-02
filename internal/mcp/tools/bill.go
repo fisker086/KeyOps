@@ -10,7 +10,7 @@ import (
 )
 
 type BillToolContext struct {
-	BillRepo    repository.BillRepository
+	BillRepo     repository.BillRepository
 	CloudAccRepo repository.CloudAccountRepository
 }
 
@@ -244,14 +244,14 @@ func handleListCloudAccounts(args json.RawMessage, ctx *BillToolContext) *mcp.Ca
 		return errorResult("query error: " + err.Error())
 	}
 	type safeAccount struct {
-		ID       uint   `json:"id"`
-		Name     string `json:"name"`
-		CloudType string `json:"cloud_type"`
-		Region   string `json:"region"`
-		AccountID string `json:"account_id"`
-		Status   string `json:"status"`
+		ID           uint   `json:"id"`
+		Name         string `json:"name"`
+		CloudType    string `json:"cloud_type"`
+		Region       string `json:"region"`
+		AccountID    string `json:"account_id"`
+		Status       string `json:"status"`
 		LastImportAt string `json:"last_import_at,omitempty"`
-		SyncCron string `json:"sync_cron,omitempty"`
+		SyncCron     string `json:"sync_cron,omitempty"`
 	}
 	var safe []safeAccount
 	for _, a := range accounts {
@@ -260,14 +260,14 @@ func handleListCloudAccounts(args json.RawMessage, ctx *BillToolContext) *mcp.Ca
 			lastImport = a.LastImportAt.Format("2006-01-02 15:04:05")
 		}
 		safe = append(safe, safeAccount{
-			ID:       a.ID,
-			Name:     a.Name,
-			CloudType: a.CloudType,
-			Region:   a.Region,
-			AccountID: a.AccountID,
-			Status:   a.Status,
+			ID:           a.ID,
+			Name:         a.Name,
+			CloudType:    a.CloudType,
+			Region:       a.Region,
+			AccountID:    a.AccountID,
+			Status:       a.Status,
 			LastImportAt: lastImport,
-			SyncCron: a.SyncCron,
+			SyncCron:     a.SyncCron,
 		})
 	}
 	data, _ := json.MarshalIndent(safe, "", "  ")
@@ -407,8 +407,8 @@ func handleGetRecommendations(_ json.RawMessage, ctx *BillToolContext) *mcp.Call
 		return errorResult("query large resources error: " + err.Error())
 	}
 	result := map[string]any{
-		"idle_resources":  idleResources,
-		"rightsizing":     largeResources,
+		"idle_resources": idleResources,
+		"rightsizing":    largeResources,
 	}
 	data, _ := json.MarshalIndent(result, "", "  ")
 	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}

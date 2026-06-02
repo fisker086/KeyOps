@@ -46,21 +46,21 @@ func (s *InstanceService) CreateInstance(req *CreateInstanceRequest, createdBy s
 	}
 
 	instance := &model.DBInstance{
-		Name:            req.Name,
-		DBType:          req.DBType,
-		Host:            req.Host,
-		Port:            req.Port,
-		Username:        req.Username,
-		Password:        encryptedPassword,
-		DatabaseName:    req.DatabaseName,
-		AuthDatabase:    req.AuthDatabase,
-		Charset:         req.Charset,
+		Name:             req.Name,
+		DBType:           req.DBType,
+		Host:             req.Host,
+		Port:             req.Port,
+		Username:         req.Username,
+		Password:         encryptedPassword,
+		DatabaseName:     req.DatabaseName,
+		AuthDatabase:     req.AuthDatabase,
+		Charset:          req.Charset,
 		ConnectionString: req.ConnectionString,
-		SSLEnabled:      req.SSLEnabled,
-		SSLCert:         req.SSLCert,
-		Description:     req.Description,
-		IsEnabled:       true,
-		CreatedBy:       createdBy,
+		SSLEnabled:       req.SSLEnabled,
+		SSLCert:          req.SSLCert,
+		Description:      req.Description,
+		IsEnabled:        true,
+		CreatedBy:        createdBy,
 	}
 
 	if err := s.instanceRepo.Create(instance); err != nil {
@@ -200,33 +200,33 @@ func (s *InstanceService) TestConnectionWithRequest(req *CreateInstanceRequest) 
 }
 
 type CreateInstanceRequest struct {
-	Name            string `json:"name" binding:"required"`
-	DBType          string `json:"dbType" binding:"required,oneof=mysql postgresql mongodb redis"`
-	Host            string `json:"host" binding:"required"`
-	Port            int    `json:"port" binding:"required"`
-	Username        string `json:"username"`
-	Password        string `json:"password"` // Redis 类型密码可选，其他类型在 handler 中验证
-	DatabaseName    string `json:"databaseName"`
-	AuthDatabase    string `json:"authDatabase"`
-	Charset         string `json:"charset"`
+	Name             string `json:"name" binding:"required"`
+	DBType           string `json:"dbType" binding:"required,oneof=mysql postgresql mongodb redis"`
+	Host             string `json:"host" binding:"required"`
+	Port             int    `json:"port" binding:"required"`
+	Username         string `json:"username"`
+	Password         string `json:"password"` // Redis 类型密码可选，其他类型在 handler 中验证
+	DatabaseName     string `json:"databaseName"`
+	AuthDatabase     string `json:"authDatabase"`
+	Charset          string `json:"charset"`
 	ConnectionString string `json:"connectionString"`
-	SSLEnabled      bool   `json:"sslEnabled"`
-	SSLCert         string `json:"sslCert"`
-	Description     string `json:"description"`
+	SSLEnabled       bool   `json:"sslEnabled"`
+	SSLCert          string `json:"sslCert"`
+	Description      string `json:"description"`
 }
 
 type UpdateInstanceRequest struct {
-	Name            string `json:"name"`
-	Host            string `json:"host"`
-	Port            int    `json:"port"`
-	Username        string `json:"username"`
-	Password        string `json:"password"` // 可选，如果提供则更新
-	DatabaseName    string `json:"databaseName"`
-	AuthDatabase    string `json:"authDatabase"`
-	Charset         string `json:"charset"`
+	Name             string `json:"name"`
+	Host             string `json:"host"`
+	Port             int    `json:"port"`
+	Username         string `json:"username"`
+	Password         string `json:"password"` // 可选，如果提供则更新
+	DatabaseName     string `json:"databaseName"`
+	AuthDatabase     string `json:"authDatabase"`
+	Charset          string `json:"charset"`
 	ConnectionString string `json:"connectionString"`
-	SSLEnabled      bool   `json:"sslEnabled"`
-	SSLCert         string `json:"sslCert"`
-	Description     string `json:"description"`
-	IsEnabled       bool   `json:"isEnabled"`
+	SSLEnabled       bool   `json:"sslEnabled"`
+	SSLCert          string `json:"sslCert"`
+	Description      string `json:"description"`
+	IsEnabled        bool   `json:"isEnabled"`
 }

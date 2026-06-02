@@ -10,12 +10,12 @@ type LoginRecord struct {
 	HostID     string     `json:"hostId" gorm:"type:varchar(36);not null;index" bson:"host_id"`
 	HostName   string     `json:"hostName" gorm:"type:varchar(255)" bson:"host_name"`
 	HostIP     string     `json:"hostIp" gorm:"type:varchar(45)" bson:"host_ip"`
-	Username   string     `json:"username" gorm:"type:varchar(100);index" bson:"username"` // 平台登录用户（admin等，来自users表）
-	LoginIP    string     `json:"loginIp" gorm:"type:varchar(45)" bson:"login_ip,omitempty"` // 登录IP
+	Username   string     `json:"username" gorm:"type:varchar(100);index" bson:"username"`        // 平台登录用户（admin等，来自users表）
+	LoginIP    string     `json:"loginIp" gorm:"type:varchar(45)" bson:"login_ip,omitempty"`      // 登录IP
 	UserAgent  string     `json:"userAgent" gorm:"type:varchar(255)" bson:"user_agent,omitempty"` // 用户代理
 	LoginTime  time.Time  `json:"loginTime" gorm:"type:timestamp;not null;index" bson:"login_time"`
 	LogoutTime *time.Time `json:"logoutTime" gorm:"type:timestamp" bson:"logout_time,omitempty"`
-	Duration   *int       `json:"duration" bson:"duration,omitempty"`                                              // 秒
+	Duration   *int       `json:"duration" bson:"duration,omitempty"`                                  // 秒
 	Status     string     `json:"status" gorm:"type:varchar(20);default:'active';index" bson:"status"` // active, completed, failed
 	SessionID  string     `json:"sessionId" gorm:"type:varchar(100)" bson:"session_id"`
 	CreatedAt  time.Time  `json:"createdAt" gorm:"autoCreateTime" bson:"created_at,omitempty"`
@@ -51,8 +51,8 @@ type SessionRecording struct {
 	ID             string     `json:"id" gorm:"primaryKey;type:varchar(36)" bson:"id"`
 	SessionID      string     `json:"sessionId" gorm:"type:varchar(100);uniqueIndex;not null" bson:"session_id"`
 	ConnectionType string     `json:"connectionType" gorm:"type:varchar(20);default:'webshell';index" bson:"connection_type"` // webshell, ssh_client
-	ProxyID        string     `json:"proxyId" gorm:"type:varchar(100);index" bson:"proxy_id"`                          // Proxy ID (webshell使用)
-	UserID         string     `json:"userId" gorm:"type:varchar(36);index" bson:"user_id"`                            // 用户ID（关联users表）
+	ProxyID        string     `json:"proxyId" gorm:"type:varchar(100);index" bson:"proxy_id"`                                 // Proxy ID (webshell使用)
+	UserID         string     `json:"userId" gorm:"type:varchar(36);index" bson:"user_id"`                                    // 用户ID（关联users表）
 	HostID         string     `json:"hostId" gorm:"type:varchar(36);not null;index" bson:"host_id"`
 	HostName       string     `json:"hostName" gorm:"type:varchar(255)" bson:"host_name"`
 	HostIP         string     `json:"hostIp" gorm:"type:varchar(45)" bson:"host_ip"`
@@ -62,7 +62,7 @@ type SessionRecording struct {
 	Duration       string     `json:"duration" gorm:"type:varchar(50)" bson:"duration,omitempty"`
 	CommandCount   int        `json:"commandCount" gorm:"default:0" bson:"command_count"`
 	Status         string     `json:"status" gorm:"type:varchar(20);default:'active'" bson:"status"` // active, closed
-	Recording      string     `json:"recording" gorm:"type:longtext" bson:"recording,omitempty"`                  // asciinema 格式的录制数据
+	Recording      string     `json:"recording" gorm:"type:longtext" bson:"recording,omitempty"`     // asciinema 格式的录制数据
 	TerminalCols   int        `json:"terminalCols" gorm:"default:80" bson:"terminal_cols"`
 	TerminalRows   int        `json:"terminalRows" gorm:"default:24" bson:"terminal_rows"`
 	CreatedAt      time.Time  `json:"createdAt" gorm:"autoCreateTime" bson:"created_at,omitempty"`

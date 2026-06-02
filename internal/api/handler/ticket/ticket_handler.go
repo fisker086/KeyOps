@@ -11,8 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 
 	"github.com/fisker086/keyops/internal/approval"
 	"github.com/fisker086/keyops/internal/model"
@@ -34,35 +34,6 @@ func NewTicketHandler(db *gorm.DB) *TicketHandler {
 // generateTicketNumber 生成工单编号
 func generateTicketNumber() string {
 	return fmt.Sprintf("TKT-%s", time.Now().Format("20060102150405")+uuid.New().String()[:8])
-}
-
-// DeploymentWithJenkinsInfo 包含Jenkins服务器信息的部署记录
-type DeploymentWithJenkinsInfo struct {
-	model.Deployment
-	JenkinsServerURL string `json:"jenkins_server_url,omitempty"` // Jenkins服务器URL（如果部署类型是Jenkins）
-}
-
-// buildDeploymentWithJenkinsInfo 构建包含Jenkins服务器信息的部署记录
-func buildDeploymentWithJenkinsInfo(db *gorm.DB, deployment model.Deployment) DeploymentWithJenkinsInfo {
-	deploymentWithInfo := DeploymentWithJenkinsInfo{
-		Deployment: deployment,
-	}
-
-	// 如果是Jenkins部署，查询Jenkins服务器URL
-	if deployment.DeployType == "jenkins" && deployment.DeployConfig != "" {
-		var deployConfig map[string]interface{}
-		if err := json.Unmarshal([]byte(deployment.DeployConfig), &deployConfig); err == nil {
-			if serverID, ok := deployConfig["jenkins_server_id"].(float64); ok {
-				var jenkinsServer model.JenkinsServer
-				if err := db.First(&jenkinsServer, uint(serverID)).Error; err == nil {
-					// 直接使用 URL 字段
-					deploymentWithInfo.JenkinsServerURL = jenkinsServer.URL
-				}
-			}
-		}
-	}
-
-	return deploymentWithInfo
 }
 
 // ListTickets 获取工单列表
@@ -196,7 +167,7 @@ func (h *TicketHandler) ListTickets(c *gin.Context) {
 						// 如果审批记录只有ID没有名称，尝试转换为名称
 						for _, approverID := range approval.ApproverIDs {
 							var user model.User
-							if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+							if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 								approverNamesFromApproval = append(approverNamesFromApproval, user.Username)
 							} else {
 								approverNamesFromApproval = append(approverNamesFromApproval, approverID)
@@ -228,7 +199,7 @@ func (h *TicketHandler) ListTickets(c *gin.Context) {
 						for _, approverIDInterface := range approverUserIDs {
 							approverID := fmt.Sprintf("%v", approverIDInterface)
 							var user model.User
-							if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+							if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 								approverNamesFromConfig = append(approverNamesFromConfig, user.Username)
 							} else {
 								approverNamesFromConfig = append(approverNamesFromConfig, approverID)
@@ -254,7 +225,7 @@ func (h *TicketHandler) ListTickets(c *gin.Context) {
 						var approverNamesFromConfig []string
 						for _, approverID := range approverIDs {
 							var user model.User
-							if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+							if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 								approverNamesFromConfig = append(approverNamesFromConfig, user.Username)
 							} else {
 								approverNamesFromConfig = append(approverNamesFromConfig, approverID)
@@ -311,21 +282,21 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 	// 查询关联的审批和部署信息
 	type TicketDetailResponse struct {
 		model.Ticket
-		ApplicantUsername string                      `json:"applicant_username"` // 申请人用户名
-		ApprovalStatus    string                      `json:"approval_status"`
-		DeploymentID      string                      `json:"deployment_id"`
-		DeploymentStatus  string                      `json:"deployment_status"`
-		Deployments       []DeploymentWithJenkinsInfo `json:"deployments"` // 关联的部署列表
+		ApplicantUsername string             `json:"applicant_username"` // 申请人用户名
+		ApprovalStatus    string             `json:"approval_status"`
+		DeploymentID      string             `json:"deployment_id"`
+		DeploymentStatus  string             `json:"deployment_status"`
+		Deployments       []model.Deployment `json:"deployments"` // 关联的部署列表
 	}
 
 	response := TicketDetailResponse{
-		Ticket:           ticket,
+		Ticket:            ticket,
 		ApplicantUsername: applicantUsername,
-		Deployments:      []DeploymentWithJenkinsInfo{}, // 初始化为空数组
+		Deployments:       []model.Deployment{}, // 初始化为空数组
 	}
 
 	// 查询关联的审批和部署信息
-	var foundDeployments []DeploymentWithJenkinsInfo
+	var foundDeployments []model.Deployment
 
 	// 方式1: 如果工单有审批实例ID，通过审批实例ID查找
 	if ticket.ApprovalInstanceID != "" {
@@ -346,7 +317,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 				// 如果审批记录只有ID没有名称，尝试转换为名称
 				for _, approverID := range approval.ApproverIDs {
 					var user model.User
-					if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+					if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 						approverNamesFromApproval = append(approverNamesFromApproval, user.Username)
 					} else {
 						approverNamesFromApproval = append(approverNamesFromApproval, approverID)
@@ -375,7 +346,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 							var approverNamesFromConfig []string
 							for _, approverID := range approverIDs {
 								var user model.User
-								if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+								if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 									approverNamesFromConfig = append(approverNamesFromConfig, user.Username)
 								} else {
 									approverNamesFromConfig = append(approverNamesFromConfig, approverID)
@@ -410,7 +381,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 					// 如果只有ID，转换为名称
 					for _, approverID := range approval.ApproverIDs {
 						var user model.User
-						if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+						if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 							approverNamesForSteps = append(approverNamesForSteps, user.Username)
 						} else {
 							approverNamesForSteps = append(approverNamesForSteps, approverID)
@@ -426,7 +397,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 							if err := json.Unmarshal([]byte(config.ApproverUserIDs), &approverIDs); err == nil {
 								for _, approverID := range approverIDs {
 									var user model.User
-									if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+									if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 										approverNamesForSteps = append(approverNamesForSteps, user.Username)
 									} else {
 										approverNamesForSteps = append(approverNamesForSteps, approverID)
@@ -460,13 +431,12 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 				}
 			}
 
-			// 如果审批有部署ID，查询部署状态和Jenkins服务器信息
+			// 如果审批有部署ID，查询部署状态
 			if approval.DeploymentID != "" {
 				var deployment model.Deployment
 				if err := h.db.Where("id = ?", approval.DeploymentID).First(&deployment).Error; err == nil {
 					response.DeploymentStatus = deployment.Status
-					deploymentWithInfo := buildDeploymentWithJenkinsInfo(h.db, deployment)
-					foundDeployments = append(foundDeployments, deploymentWithInfo)
+					foundDeployments = append(foundDeployments, deployment)
 				}
 			}
 		}
@@ -483,8 +453,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 				if approval.DeploymentID != "" {
 					var deployment model.Deployment
 					if err := h.db.Where("id = ?", approval.DeploymentID).First(&deployment).Error; err == nil {
-						deploymentWithInfo := buildDeploymentWithJenkinsInfo(h.db, deployment)
-						foundDeployments = append(foundDeployments, deploymentWithInfo)
+						foundDeployments = append(foundDeployments, deployment)
 					}
 				}
 			}
@@ -499,8 +468,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 		if err := h.db.Where("created_by = ? AND created_at >= ?",
 			ticket.ApplicantID, timeRange).Order("created_at DESC").Limit(20).Find(&deployments).Error; err == nil {
 			for _, deployment := range deployments {
-				deploymentWithInfo := buildDeploymentWithJenkinsInfo(h.db, deployment)
-				foundDeployments = append(foundDeployments, deploymentWithInfo)
+				foundDeployments = append(foundDeployments, deployment)
 			}
 		}
 	}
@@ -525,8 +493,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 				if err := h.db.Where("project_name = ? AND created_at >= ?",
 					projectName, timeRange).Order("created_at DESC").Limit(10).Find(&deployments).Error; err == nil {
 					for _, deployment := range deployments {
-						deploymentWithInfo := buildDeploymentWithJenkinsInfo(h.db, deployment)
-						foundDeployments = append(foundDeployments, deploymentWithInfo)
+						foundDeployments = append(foundDeployments, deployment)
 					}
 				}
 			}
@@ -551,7 +518,7 @@ func (h *TicketHandler) GetTicket(c *gin.Context) {
 					var approverNamesFromConfig []string
 					for _, approverID := range approverIDs {
 						var user model.User
-						if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+						if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 							approverNamesFromConfig = append(approverNamesFromConfig, user.Username)
 						} else {
 							approverNamesFromConfig = append(approverNamesFromConfig, approverID)
@@ -686,8 +653,8 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 
 		if !hasApprovalCode || approvalCode == "" {
 			platformName := "三方审批"
-			if platform == "feishu" {
-				platformName = "飞书审批"
+			if platform == "feishu" || platform == "lark" {
+				platformName = "飞书/Lark 审批"
 			} else if platform == "dingtalk" {
 				platformName = "钉钉审批"
 			} else if platform == "wechat" {
@@ -744,9 +711,15 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		h.db.First(&ticket, ticket.ID)
 	}
 
-	// 如果工单有模板且模板配置了第三方审批，自动创建审批实例
-	if ticket.TemplateID != nil && *ticket.TemplateID > 0 && ticket.Status == "submitted" {
-		go h.autoCreateThirdPartyApproval(&ticket, c)
+	// 提交工单时自动创建审批记录（包括内部审批和第三方审批）
+	if ticket.Status == "submitted" {
+		if ticket.TemplateID != nil && *ticket.TemplateID > 0 {
+			// 有模板：异步创建第三方审批（现有逻辑）
+			go h.autoCreateThirdPartyApproval(&ticket, c)
+		} else {
+			// 无模板：同步创建内部审批记录，确保审批列表可见
+			h.autoCreateInternalApproval(&ticket)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -804,15 +777,15 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 
 	// 构建审批配置：必须从模板配置中读取 app_id 和 app_secret
 	var config model.ApprovalConfig
-	
+
 	// 检查模板配置中是否包含 app_id 和 app_secret（提交时已验证，这里再次检查以确保安全）
 	templateAppID, hasTemplateAppID := approvalConfig["app_id"].(string)
 	templateAppSecret, hasTemplateAppSecret := approvalConfig["app_secret"].(string)
-	
+
 	if !hasTemplateAppID || templateAppID == "" || !hasTemplateAppSecret || templateAppSecret == "" {
 		platformName := "三方审批"
-		if platform == "feishu" {
-			platformName = "飞书审批"
+		if platform == "feishu" || platform == "lark" {
+			platformName = "飞书/Lark 审批"
 		} else if platform == "dingtalk" {
 			platformName = "钉钉审批"
 		} else if platform == "wechat" {
@@ -822,13 +795,13 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 			ticket.TicketNumber, platformName)
 		return
 	}
-	
+
 	// 从模板配置构建 ApprovalConfig
 	config.Type = platform
 	config.AppID = templateAppID
 	config.AppSecret = templateAppSecret
 	config.ApprovalCode = approvalCode
-	
+
 	// 从模板配置中读取其他字段
 	if apiBaseURL, ok := approvalConfig["api_base_url"].(string); ok && apiBaseURL != "" {
 		config.APIBaseURL = apiBaseURL
@@ -836,7 +809,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	if callbackURL, ok := approvalConfig["callback_url"].(string); ok && callbackURL != "" {
 		config.CallbackURL = callbackURL
 	}
-	
+
 	// 从模板配置中读取审批人信息
 	if approverUserIDs, ok := approvalConfig["approver_user_ids"].([]interface{}); ok && len(approverUserIDs) > 0 {
 		approverIDsJSON, _ := json.Marshal(approverUserIDs)
@@ -855,13 +828,15 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	}
 	// 如果配置中没有FormFields，尝试从飞书API获取表单详情（仅飞书平台）
 	var formFieldsFromAPI []map[string]interface{}
-	if config.FormFields == "" && platform == "feishu" {
+	if config.FormFields == "" && (platform == "feishu" || platform == "lark") {
 		// 创建临时的provider实例来获取表单详情
 		platformType := model.ApprovalPlatform(platform)
 		var tempProvider approval.Provider
 		switch platformType {
 		case model.ApprovalPlatformFeishu:
-			tempProvider = approval.NewFeishuProvider(&config, h.db)
+			tempProvider = approval.NewFeishuProvider(&config, h.db, model.ApprovalPlatformFeishu)
+		case model.ApprovalPlatformLark:
+			tempProvider = approval.NewFeishuProvider(&config, h.db, model.ApprovalPlatformLark)
 		default:
 			tempProvider = nil
 		}
@@ -881,8 +856,11 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 		}
 	}
 
+	// 生成回调令牌，嵌入审批表单数据中，回调时可直接匹配
+	callbackToken := uuid.New().String()
+
 	// 构建表单数据
-	formData := h.buildFormDataFromTicket(ticket, fieldMappings, &config)
+	formData := h.buildFormDataFromTicket(ticket, fieldMappings, &config, callbackToken)
 	if formData == "" {
 		logger.Warnf("工单 %s 自动创建审批失败：构建表单数据失败 (平台: %s, 审批代码: %s)", ticket.TicketNumber, platform, approvalCode)
 		return
@@ -893,7 +871,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	userName, _ := c.Get("username")
 	applicantID := ticket.ApplicantID
 	applicantName := ticket.ApplicantName
-	
+
 	// 查询用户的用户名（Username），用于飞书等第三方平台
 	var applicantUsername string
 	if applicantID != "" {
@@ -902,7 +880,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 			applicantUsername = user.Username
 		}
 	}
-	
+
 	// 如果查询不到用户名，使用context中的username或ApplicantName
 	if applicantUsername == "" {
 		if userName != nil {
@@ -927,7 +905,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 			return
 		}
 	}
-	
+
 	if userID != nil && applicantID == "" {
 		applicantID = fmt.Sprintf("%v", userID)
 	}
@@ -940,7 +918,9 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	var providerInstance approval.Provider
 	switch platformType {
 	case model.ApprovalPlatformFeishu:
-		providerInstance = approval.NewFeishuProvider(&config, h.db)
+		providerInstance = approval.NewFeishuProvider(&config, h.db, model.ApprovalPlatformFeishu)
+	case model.ApprovalPlatformLark:
+		providerInstance = approval.NewFeishuProvider(&config, h.db, model.ApprovalPlatformLark)
 	case model.ApprovalPlatformDingTalk:
 		providerInstance = approval.NewDingTalkProvider(&config, h.db)
 	case model.ApprovalPlatformWeChat:
@@ -953,16 +933,20 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	// 构建审批对象
 	now := time.Now()
 	approvalRecord := &model.Approval{
-		ID:            uuid.New().String(),
-		Title:         ticket.Title,
-		Description:   fmt.Sprintf("工单编号: %s", ticket.TicketNumber),
-		Type:          model.ApprovalTypeDeployment,
-		Status:        model.ApprovalStatusPending,
-		Platform:      platformType,
-		ApplicantID:   applicantID,
-		ApplicantName: applicantUsername, // 使用用户名而不是fullName，用于第三方平台
-		CreatedAt:     now,
-		UpdatedAt:     now,
+		ID:             uuid.New().String(),
+		Title:          ticket.Title,
+		Description:    fmt.Sprintf("工单编号: %s", ticket.TicketNumber),
+		Type:           model.ApprovalTypeDeployment,
+		Status:         model.ApprovalStatusPending,
+		Platform:       platformType,
+		ApplicantID:    applicantID,
+		ApplicantName:  applicantUsername,
+		CallbackSource: "ticket",
+		CallbackToken:  callbackToken,
+		TicketID:       ticket.ID,
+		TicketNumber:   ticket.TicketNumber,
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 
 	// 从配置中读取审批人信息
@@ -974,7 +958,7 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 			// 将审批人ID转换为名称
 			for _, approverID := range approverIDs {
 				var user model.User
-				if err := h.db.Where("id = ?", approverID).First(&user).Error; err == nil {
+				if err := h.db.Where("email = ?", approverID).First(&user).Error; err == nil {
 					approverNames = append(approverNames, user.Username)
 				} else {
 					// 如果查询不到用户，使用ID作为名称（兼容）
@@ -1040,8 +1024,50 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	}
 }
 
+// autoCreateInternalApproval 提交工单时自动创建内部审批记录（无第三方审批时）
+func (h *TicketHandler) autoCreateInternalApproval(ticket *model.Ticket) {
+	now := time.Now()
+	approval := &model.Approval{
+		ID:            uuid.New().String(),
+		Title:         ticket.Title,
+		Description:   fmt.Sprintf("工单编号: %s", ticket.TicketNumber),
+		Type:          model.ApprovalTypeDeployment,
+		Status:        model.ApprovalStatusPending,
+		Platform:      model.ApprovalPlatformInternal,
+		ApplicantID:   ticket.ApplicantID,
+		ApplicantName: ticket.ApplicantName,
+		TicketID:      ticket.ID,
+		TicketNumber:  ticket.TicketNumber,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+
+	// 从系统设置中查找审批人
+	var config model.ApprovalConfig
+	if err := h.db.Where("type = ? AND enabled = ?", model.ApprovalPlatformInternal, true).First(&config).Error; err == nil {
+		if config.ApproverUserIDs != "" {
+			var approverIDs []string
+			if err := json.Unmarshal([]byte(config.ApproverUserIDs), &approverIDs); err == nil {
+				approval.ApproverIDs = approverIDs
+			}
+		}
+	}
+
+	if err := h.db.Create(approval).Error; err != nil {
+		logger.Errorf("自动创建内部审批失败: %v", err)
+		return
+	}
+
+	// 更新工单审批状态
+	ticket.ApprovalPlatform = string(model.ApprovalPlatformInternal)
+	ticket.ApprovalInstanceID = approval.ID
+	if err := h.db.Save(ticket).Error; err != nil {
+		logger.Errorf("自动创建内部审批失败：更新工单审批信息失败: %v", err)
+	}
+}
+
 // buildFormDataFromTicket 从工单数据构建审批表单数据
-func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappings []map[string]interface{}, config *model.ApprovalConfig) string {
+func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappings []map[string]interface{}, config *model.ApprovalConfig, callbackToken string) string {
 	// 解析配置的表单字段
 	var formFields []map[string]interface{}
 	if config.FormFields != "" {
@@ -1149,7 +1175,7 @@ func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappi
 			// 从工单数据中获取值
 			var value interface{}
 			var found bool
-			
+
 			// 首先尝试直接匹配关键字
 			if v, ok := ticketFormData[keyword]; ok {
 				value = v
@@ -1167,7 +1193,7 @@ func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappi
 					}
 				}
 			}
-			
+
 			if found {
 				formItem["value"] = value
 			} else {
@@ -1178,6 +1204,15 @@ func (h *TicketHandler) buildFormDataFromTicket(ticket *model.Ticket, fieldMappi
 		}
 
 		formData = append(formData, formItem)
+	}
+
+	// 注入回调令牌字段，三方审批回调时可通过该字段直接匹配到工单
+	if callbackToken != "" {
+		formData = append(formData, map[string]interface{}{
+			"id":    "_callback_token",
+			"type":  "input",
+			"value": callbackToken,
+		})
 	}
 
 	jsonData, err := json.Marshal(formData)
@@ -1193,6 +1228,8 @@ func (h *TicketHandler) getDefaultExternalURL(platform model.ApprovalPlatform, e
 	switch platform {
 	case model.ApprovalPlatformFeishu:
 		return fmt.Sprintf("https://www.feishu.cn/approval/open/approval_detail?instance_code=%s", externalID)
+	case model.ApprovalPlatformLark:
+		return fmt.Sprintf("https://www.larksuite.com/approval/open/approval_detail?instance_code=%s", externalID)
 	case model.ApprovalPlatformDingTalk:
 		return fmt.Sprintf("https://oa.dingtalk.com/approval/detail?processInstanceId=%s", externalID)
 	case model.ApprovalPlatformWeChat:
@@ -1262,6 +1299,15 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 		h.db.First(&ticket, ticket.ID)
 	}
 
+	// 提交工单时自动创建审批记录
+	if ticket.Status == "submitted" && ticket.ApprovalInstanceID == "" {
+		if ticket.TemplateID != nil && *ticket.TemplateID > 0 {
+			go h.autoCreateThirdPartyApproval(&ticket, c)
+		} else {
+			h.autoCreateInternalApproval(&ticket)
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "success",
@@ -1312,6 +1358,15 @@ func (h *TicketHandler) SubmitTicket(c *gin.Context) {
 		h.db.Preload("Template").First(&ticket, ticket.ID)
 	} else {
 		h.db.First(&ticket, ticket.ID)
+	}
+
+	// 提交工单时自动创建审批记录
+	if ticket.ApprovalInstanceID == "" {
+		if ticket.TemplateID != nil && *ticket.TemplateID > 0 {
+			go h.autoCreateThirdPartyApproval(&ticket, c)
+		} else {
+			h.autoCreateInternalApproval(&ticket)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

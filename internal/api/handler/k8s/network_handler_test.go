@@ -17,12 +17,12 @@ func TestGetServiceList(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
-		name          string
-		query         string
-		mockServices  []*k8sService.Service
-		mockErr       error
-		wantStatus    int
-		wantCode      int
+		name         string
+		query        string
+		mockServices []*k8sService.Service
+		mockErr      error
+		wantStatus   int
+		wantCode     int
 	}{
 		{
 			name:         "success",
@@ -32,11 +32,11 @@ func TestGetServiceList(t *testing.T) {
 			wantCode:     0,
 		},
 		{
-			name:        "service error",
-			query:       "?cluster_id=test-cluster",
-			mockErr:     errors.New("internal error"),
-			wantStatus:  http.StatusInternalServerError,
-			wantCode:    500,
+			name:       "service error",
+			query:      "?cluster_id=test-cluster",
+			mockErr:    errors.New("internal error"),
+			wantStatus: http.StatusInternalServerError,
+			wantCode:   500,
 		},
 	}
 
@@ -83,11 +83,11 @@ func TestGetIngressList(t *testing.T) {
 			wantCode:      0,
 		},
 		{
-			name:        "service error",
-			query:       "?cluster_id=test-cluster",
-			mockErr:     errors.New("internal error"),
-			wantStatus:  http.StatusInternalServerError,
-			wantCode:    500,
+			name:       "service error",
+			query:      "?cluster_id=test-cluster",
+			mockErr:    errors.New("internal error"),
+			wantStatus: http.StatusInternalServerError,
+			wantCode:   500,
 		},
 	}
 

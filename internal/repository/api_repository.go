@@ -84,8 +84,8 @@ func (r *apiRepository) GetGroups() ([]string, error) {
 		groupColumn = "\"group\""
 	}
 	err := r.db.Model(&model.API{}).
-		Select("DISTINCT " + groupColumn).
-		Order(groupColumn + " ASC").
+		Select("DISTINCT "+groupColumn).
+		Order(groupColumn+" ASC").
 		Pluck(groupColumn, &groups).Error
 	return groups, err
 }

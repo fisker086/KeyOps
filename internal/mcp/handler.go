@@ -37,10 +37,10 @@ func (h *Handler) HandleMCPGet(c *gin.Context) {
 		names = append(names, t.Name)
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"server": "k8s-mcp",
-		"version": "0.1.0",
+		"server":    "k8s-mcp",
+		"version":   "0.1.0",
 		"transport": "streamable-http",
-		"tools": names,
+		"tools":     names,
 	})
 }
 

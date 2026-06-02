@@ -222,7 +222,7 @@ func (e *PostgreSQLExecutor) ExecuteQuery(ctx context.Context, databaseName, que
 	} else if sqlSize > 100*1024 { // 大于100KB
 		timeout = 120 * time.Second // 2分钟
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -293,7 +293,7 @@ func (e *PostgreSQLExecutor) ExecuteUpdate(ctx context.Context, databaseName, qu
 	} else if sqlSize > 100*1024 { // 大于100KB
 		timeout = 120 * time.Second // 2分钟
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

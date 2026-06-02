@@ -109,20 +109,20 @@ func TestCreateSession(t *testing.T) {
 		{
 			name:        "success",
 			requestBody: `{"hostId":"host-1"}`,
-		mockCreate: func(hostID, userID string) (*model.SessionResponse, error) {
-			return &model.SessionResponse{
-				SessionID: "session-1",
-			}, nil
-		},
-		expectedStatus: http.StatusOK,
-		expectedCode:   0,
-		checkResponse: func(t *testing.T, resp model.Response) {
-			data, _ := json.Marshal(resp.Data)
-			var s model.SessionResponse
-			err := json.Unmarshal(data, &s)
-			assert.NoError(t, err)
-			assert.Equal(t, "session-1", s.SessionID)
-		},
+			mockCreate: func(hostID, userID string) (*model.SessionResponse, error) {
+				return &model.SessionResponse{
+					SessionID: "session-1",
+				}, nil
+			},
+			expectedStatus: http.StatusOK,
+			expectedCode:   0,
+			checkResponse: func(t *testing.T, resp model.Response) {
+				data, _ := json.Marshal(resp.Data)
+				var s model.SessionResponse
+				err := json.Unmarshal(data, &s)
+				assert.NoError(t, err)
+				assert.Equal(t, "session-1", s.SessionID)
+			},
 			userID: "user-1",
 		},
 		{
@@ -188,10 +188,10 @@ func TestCreateSession(t *testing.T) {
 
 func TestGetLoginRecords(t *testing.T) {
 	tests := []struct {
-		name             string
-		mockRecords      func(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error)
-		expectedStatus   int
-		expectedCode     int
+		name           string
+		mockRecords    func(page, pageSize int, hostID, userID string) ([]model.LoginRecordWithType, int64, error)
+		expectedStatus int
+		expectedCode   int
 	}{
 		{
 			name: "success",

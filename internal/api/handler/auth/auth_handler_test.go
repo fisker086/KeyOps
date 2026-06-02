@@ -15,37 +15,37 @@ import (
 )
 
 type mockAuthService struct {
-	registerFunc               func(*model.RegisterRequest) (*model.User, error)
-	loginFunc                  func(*model.LoginRequest, string, string) (*model.LoginResponse, string, error)
-	logoutFunc                 func(string, string) error
-	validateRefreshTokenFunc   func(string) (*authService.RefreshClaims, error)
-	getUserByIDFunc            func(string) (*model.User, error)
-	generateTokenPairFunc      func(*model.User) (string, string, error)
-	enforceSessionLimitFunc    func(string) error
-	getAllUsersFunc            func() ([]model.User, error)
-	getUsersWithPaginationFunc func(int, int, string) ([]model.User, int64, error)
-	getUserWithGroupsAndHostsFunc func(string) (*model.UserWithGroups, error)
-	getPlatformLoginRecordsFunc func(int, int, string) ([]model.PlatformLoginRecord, int64, error)
-	createUserFunc             func(*model.RegisterRequest, string, string, *string) (*model.User, error)
-	updateUserInfoFunc         func(string, string, string, *string) error
-	updateUserExpirationFunc   func(string, *string, *bool) error
-	updateUserRoleFunc         func(string, string) error
-	updateUserStatusFunc       func(string, string) error
-	deleteUserFunc             func(string) error
-	resetUserPasswordFunc      func(string, string) error
-	loginWithSSOFunc           func(string, string, string) (*model.LoginResponse, string, error)
-	refreshTokenPairFunc       func(string) (string, string, error)
-	assignRolesToUserFunc      func(string, []string, string) error
-	getUserRolesFunc           func(string) ([]string, error)
-	getUserWithGroupsFunc      func(string) (*model.UserWithGroups, error)
-	getUsersWithGroupsFunc     func(int, int, string) ([]model.UserWithGroups, int64, error)
-	assignHostsToUserFunc      func(string, []string, string) error
-	getUserHostsFunc           func(string) ([]string, error)
+	registerFunc                   func(*model.RegisterRequest) (*model.User, error)
+	loginFunc                      func(*model.LoginRequest, string, string) (*model.LoginResponse, string, error)
+	logoutFunc                     func(string, string) error
+	validateRefreshTokenFunc       func(string) (*authService.RefreshClaims, error)
+	getUserByIDFunc                func(string) (*model.User, error)
+	generateTokenPairFunc          func(*model.User) (string, string, error)
+	enforceSessionLimitFunc        func(string) error
+	getAllUsersFunc                func() ([]model.User, error)
+	getUsersWithPaginationFunc     func(int, int, string) ([]model.User, int64, error)
+	getUserWithGroupsAndHostsFunc  func(string) (*model.UserWithGroups, error)
+	getPlatformLoginRecordsFunc    func(int, int, string) ([]model.PlatformLoginRecord, int64, error)
+	createUserFunc                 func(*model.RegisterRequest, string, string, *string) (*model.User, error)
+	updateUserInfoFunc             func(string, string, string, *string) error
+	updateUserExpirationFunc       func(string, *string, *bool) error
+	updateUserRoleFunc             func(string, string) error
+	updateUserStatusFunc           func(string, string) error
+	deleteUserFunc                 func(string) error
+	resetUserPasswordFunc          func(string, string) error
+	loginWithSSOFunc               func(string, string, string) (*model.LoginResponse, string, error)
+	refreshTokenPairFunc           func(string) (string, string, error)
+	assignRolesToUserFunc          func(string, []string, string) error
+	getUserRolesFunc               func(string) ([]string, error)
+	getUserWithGroupsFunc          func(string) (*model.UserWithGroups, error)
+	getUsersWithGroupsFunc         func(int, int, string) ([]model.UserWithGroups, int64, error)
+	assignHostsToUserFunc          func(string, []string, string) error
+	getUserHostsFunc               func(string) ([]string, error)
 	getUsersWithGroupsAndHostsFunc func(int, int, string) ([]model.UserWithGroups, int64, error)
-	generateSSHKeyFunc         func(string) error
-	deleteSSHKeyFunc           func(string) error
-	getSSHPrivateKeyFunc       func(string) (string, string, error)
-	updateUserAuthMethodFunc   func(string, string) error
+	generateSSHKeyFunc             func(string) error
+	deleteSSHKeyFunc               func(string) error
+	getSSHPrivateKeyFunc           func(string) (string, string, error)
+	updateUserAuthMethodFunc       func(string, string) error
 }
 
 func (m *mockAuthService) Register(req *model.RegisterRequest) (*model.User, error) {
@@ -322,9 +322,9 @@ func TestRegister(t *testing.T) {
 			},
 		},
 		{
-			name:          "invalid JSON body",
-			requestBody:   `{bad json`,
-			expectedCode:  http.StatusBadRequest,
+			name:         "invalid JSON body",
+			requestBody:  `{bad json`,
+			expectedCode: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, resp model.Response) {
 				assert.Equal(t, 400, resp.Code)
 				assert.Contains(t, resp.Message, "invalid")
@@ -367,10 +367,10 @@ func TestRegister(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	tests := []struct {
-		name         string
-		requestBody  string
-		mockLogin    func(*model.LoginRequest, string, string) (*model.LoginResponse, string, error)
-		expectedCode int
+		name          string
+		requestBody   string
+		mockLogin     func(*model.LoginRequest, string, string) (*model.LoginResponse, string, error)
+		expectedCode  int
 		checkResponse func(t *testing.T, resp model.Response)
 	}{
 		{
@@ -400,9 +400,9 @@ func TestLogin(t *testing.T) {
 			},
 		},
 		{
-			name:          "invalid JSON body",
-			requestBody:   `{bad json`,
-			expectedCode:  http.StatusBadRequest,
+			name:         "invalid JSON body",
+			requestBody:  `{bad json`,
+			expectedCode: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, resp model.Response) {
 				assert.Equal(t, 400, resp.Code)
 				assert.Contains(t, resp.Message, "invalid")
@@ -445,11 +445,11 @@ func TestLogin(t *testing.T) {
 
 func TestGetCurrentUser(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
+		name            string
+		path            string
 		mockGetUserByID func(string) (*model.User, error)
-		expectedCode  int
-		checkResponse func(t *testing.T, resp model.Response)
+		expectedCode    int
+		checkResponse   func(t *testing.T, resp model.Response)
 	}{
 		{
 			name: "success",

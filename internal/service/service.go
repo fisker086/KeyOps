@@ -23,8 +23,6 @@ import (
 	billService "github.com/fisker086/keyops/internal/service/bill"
 	// System services
 	systemService "github.com/fisker086/keyops/internal/service/system"
-	// Jenkins services
-	jenkinsService "github.com/fisker086/keyops/internal/service/jenkins"
 )
 
 // Auth services
@@ -35,7 +33,7 @@ type Claims = authService.Claims
 type RefreshClaims = authService.RefreshClaims
 
 var (
-	NewAuthService           = authService.NewAuthService
+	NewAuthService                   = authService.NewAuthService
 	AccessTokenExpiry  time.Duration = authService.AccessTokenExpiry
 	RefreshTokenExpiry time.Duration = authService.RefreshTokenExpiry
 )
@@ -43,6 +41,7 @@ var (
 // Bastion services
 type HostService = bastionService.HostService
 type SessionService = bastionService.SessionService
+
 var NewHostService = bastionService.NewHostService
 var NewSessionService = bastionService.NewSessionService
 
@@ -89,11 +88,6 @@ type MonitorConfig = systemService.MonitorConfig
 var NewAssetSyncService = systemService.NewAssetSyncService
 var NewExpirationService = systemService.NewExpirationService
 var NewProxyMonitor = systemService.NewProxyMonitor
-
-// Jenkins services
-type JenkinsService = jenkinsService.JenkinsService
-
-var NewJenkinsService = jenkinsService.NewJenkinsService
 
 // ApiKey services
 type ApiKeyService = apiKeyService.ApiKeyService

@@ -107,14 +107,14 @@ func (s *K8sService) ScaleReplica(clusterID string, clusterName string, nodeID u
 
 	// 如果没有指定 deployment_name，尝试获取 Deployment 列表并使用第一个（向后兼容）
 	if deploymentName == "" {
-	deployments, err := s.GetDeploymentList(clusterID, clusterName, nodeID, envID, namespace)
-	if err != nil {
-		return nil, fmt.Errorf("获取 Deployment 列表失败: %v", err)
-	}
+		deployments, err := s.GetDeploymentList(clusterID, clusterName, nodeID, envID, namespace)
+		if err != nil {
+			return nil, fmt.Errorf("获取 Deployment 列表失败: %v", err)
+		}
 
-	if len(deployments) == 0 {
-		return nil, fmt.Errorf("命名空间 %s 中没有找到 Deployment", ns)
-	}
+		if len(deployments) == 0 {
+			return nil, fmt.Errorf("命名空间 %s 中没有找到 Deployment", ns)
+		}
 
 		// 使用第一个 Deployment（向后兼容）
 		deploymentName = deployments[0].Name
@@ -255,4 +255,3 @@ func (s *K8sService) ScaleReplica(clusterID string, clusterName string, nodeID u
 		Available:       updatedDeployment.Status.AvailableReplicas,
 	}, nil
 }
-

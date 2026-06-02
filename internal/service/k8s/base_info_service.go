@@ -74,4 +74,3 @@ func (s *K8sService) GetBaseInfo(clusterID string, clusterName string, nodeID ui
 		IngressCount: ingressCount,
 	}, nil
 }
-

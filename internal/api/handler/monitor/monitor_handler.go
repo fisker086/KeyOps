@@ -120,9 +120,9 @@ func (h *MonitorHandler) ListMonitors(c *gin.Context) {
 	}
 
 	result := map[string]interface{}{
-		"total":    total,
-		"monitors": monitors,
-		"page":     page,
+		"total":     total,
+		"monitors":  monitors,
+		"page":      page,
 		"page_size": pageSize,
 	}
 
@@ -263,4 +263,3 @@ func (h *MonitorHandler) GetProbe(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.Success(result))
 }
-

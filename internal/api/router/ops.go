@@ -12,8 +12,8 @@ func registerOps(
 	assetSyncHandler *handler.AssetSyncHandler,
 	systemUserHandler *handler.SystemUserHandler,
 	organizationHandler *handler.OrganizationHandler,
+	environmentHandler *handler.EnvironmentHandler,
 	applicationHandler *handler.ApplicationHandler,
-	appDeployBindingHandler *handler.AppDeployBindingHandler,
 	roleHandler *handler.RoleHandler,
 	permissionRuleHandler *handler.PermissionRuleHandler,
 	permissionHandler *handler.PermissionHandler,
@@ -22,6 +22,7 @@ func registerOps(
 	ticketHandler *handler.TicketHandler,
 	ticketDraftHandler *handler.TicketDraftHandler,
 	workflowHandler *handler.WorkflowHandler,
+	appDeployParamHandler *handler.AppDeployParamHandler,
 ) {
 	approvals := authenticated.Group("/approvals")
 	{
@@ -38,7 +39,13 @@ func registerOps(
 		approvals.POST("/:id/reject", approvalHandler.RejectApproval)
 		approvals.POST("/:id/cancel", approvalHandler.CancelApproval)
 		approvals.POST("/:id/comments", approvalHandler.AddComment)
+		approvals.POST("/:id/build-master-deploy", approvalHandler.BuildMasterDeployApproval)
 		approvals.PUT("/:id", approvalHandler.UpdateApproval)
+	}
+
+	helm := authenticated.Group("/helm")
+	{
+		helm.POST("/deploy", approvalHandler.HelmReleaseDeploy)
 	}
 
 	approvalConfig := authenticated.Group("/approvals/config")
@@ -83,23 +90,28 @@ func registerOps(
 		organizations.DELETE("/:id", middleware.AdminMiddleware(), organizationHandler.DeleteOrganization)
 	}
 
+	environments := authenticated.Group("/environments")
+	{
+		environments.GET("", environmentHandler.ListEnvironments)
+		environments.GET("/:id", environmentHandler.GetEnvironment)
+		environments.POST("", middleware.AdminMiddleware(), environmentHandler.CreateEnvironment)
+		environments.PUT("/:id", middleware.AdminMiddleware(), environmentHandler.UpdateEnvironment)
+		environments.DELETE("/:id", middleware.AdminMiddleware(), environmentHandler.DeleteEnvironment)
+	}
+
 	applications := authenticated.Group("/applications")
 	{
 		applications.GET("", applicationHandler.ListApplications)
+		applications.GET("/sites", applicationHandler.ListDistinctSites)
+		applications.GET("/sites/config", applicationHandler.GetConfigSites)
 		applications.GET("/:id", applicationHandler.GetApplication)
 		applications.POST("", middleware.AdminMiddleware(), applicationHandler.CreateApplication)
 		applications.PUT("/:id", middleware.AdminMiddleware(), applicationHandler.UpdateApplication)
 		applications.DELETE("/:id", middleware.AdminMiddleware(), applicationHandler.DeleteApplication)
-	}
-
-	appDeployBindings := authenticated.Group("/app-deploy-bindings")
-	appDeployBindings.Use(middleware.AdminMiddleware())
-	{
-		appDeployBindings.GET("", appDeployBindingHandler.ListApplicationDeployBindings)
-		appDeployBindings.POST("", appDeployBindingHandler.CreateApplicationDeployBinding)
-		appDeployBindings.GET("/applications", appDeployBindingHandler.GetApplicationsForDeploy)
-		appDeployBindings.PUT("/:id", appDeployBindingHandler.UpdateApplicationDeployBinding)
-		appDeployBindings.DELETE("/:id", appDeployBindingHandler.DeleteApplicationDeployBinding)
+		applications.GET("/:id/deploy-params", appDeployParamHandler.GetAppDeployParams)
+		applications.PUT("/:id/deploy-params", appDeployParamHandler.SaveAppDeployParams)
+		applications.GET("/:id/deploy-params/resolved", appDeployParamHandler.GetResolvedDeployParams)
+		applications.POST("/:id/deploy-params/sync", appDeployParamHandler.SyncAppDeployParams)
 	}
 
 	roles := authenticated.Group("/roles")
@@ -160,6 +172,7 @@ func registerOps(
 		formTemplates.GET("", formTemplateHandler.ListFormTemplates)
 		formTemplates.POST("", formTemplateHandler.CreateFormTemplate)
 		formTemplates.GET("/:id", formTemplateHandler.GetFormTemplate)
+		formTemplates.GET("/:id/approval-callback-url", formTemplateHandler.GetApprovalCallbackURL)
 		formTemplates.PUT("/:id", formTemplateHandler.UpdateFormTemplate)
 		formTemplates.DELETE("/:id", formTemplateHandler.DeleteFormTemplate)
 		formTemplates.POST("/:id/preview", formTemplateHandler.PreviewFormTemplate)

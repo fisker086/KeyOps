@@ -123,38 +123,10 @@ CREATE TABLE IF NOT EXISTS host_group_members (
 ;
 
 -- ==================================================================================
--- DEPRECATED: 以下两个表已废弃，新权限架构使用：
--- User → Role → PermissionRule → (SystemUser + HostGroup)
--- 保留这些表是为了向后兼容，但建议在新系统中不再使用
 -- ==================================================================================
-
--- User-Group permissions table (DEPRECATED - 使用新的 roles + permission_rules)
-CREATE TABLE IF NOT EXISTS user_group_permissions (
-    id SERIAL PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL ,
-    group_id VARCHAR(36) NOT NULL ,
-    created_by VARCHAR(36) ,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (user_id, group_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES host_groups(id) ON DELETE CASCADE
-)
-;
-
--- User-Host permissions table (DEPRECATED - 使用新的 roles + permission_rules)
-CREATE TABLE IF NOT EXISTS user_host_permissions (
-    id SERIAL PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL ,
-    host_id VARCHAR(36) NOT NULL ,
-    created_by VARCHAR(36) ,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (user_id, host_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (host_id) REFERENCES hosts(id) ON DELETE CASCADE
-)
-;
+-- 以下两张表已迁移至 PermissionRule 架构（user_repository 双写过渡中）
+-- 当前由 GORM AutoMigrate 自动维护表结构（pkg/database/init.go 保留模型注册）
+-- ==================================================================================
 
 -- ============================================================================
 -- Session & Connection Tables
@@ -451,6 +423,7 @@ CREATE TABLE IF NOT EXISTS form_categories (
 -- Form templates table (表单模板表)
 CREATE TABLE IF NOT EXISTS form_templates (
     id SERIAL PRIMARY KEY,
+    uuid VARCHAR(36) NOT NULL ,
     name VARCHAR(100) NOT NULL ,
     category VARCHAR(50) DEFAULT NULL ,
     description TEXT ,
@@ -460,8 +433,8 @@ CREATE TABLE IF NOT EXISTS form_templates (
     version VARCHAR(20) DEFAULT '1.0.0' ,
     created_by VARCHAR(50) DEFAULT NULL ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_form_templates_uuid UNIQUE (uuid)
 )
 ;
 
@@ -557,6 +530,14 @@ CREATE TABLE IF NOT EXISTS approvals (
     deploy_config TEXT ,
     deployment_id VARCHAR(36) ,
     deployed BOOLEAN DEFAULT FALSE ,
+
+    -- Callback source
+    callback_source VARCHAR(20) ,
+    callback_token VARCHAR(36) ,
+
+    -- Ticket association
+    ticket_id INTEGER ,
+    ticket_number VARCHAR(50) ,
 
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -842,7 +823,9 @@ VALUES
 -- 系统角色和自定义角色都统一在 roles 表中管理，通过 role_members 表关联用户
 INSERT INTO roles (id, name, description, color, priority, status, created_at, updated_at) VALUES
 ('role:admin', '管理员', '系统管理员角色，拥有所有权限', '#f5222d', 999, 'active', NOW(), NOW()),
-('role:user', '普通用户', '普通用户角色，拥有基础权限', '#52c41a', 0, 'active', NOW(), NOW());
+('role:user', '普通用户', '普通用户角色，默认含个人设置与首页，其余菜单需按需授权', '#52c41a', 0, 'active', NOW(), NOW()),
+('role:tester', '测试人员', '测试人员角色，可查看发布状态', '#1890ff', 1, 'active', NOW(), NOW()),
+('role:release-manager', '发版', '发版角色，负责执行发布', '#722ed1', 2, 'active', NOW(), NOW());
 
 -- 为 admin 用户分配系统角色 role:admin
 INSERT INTO role_members (role_id, user_id, added_by, added_at)
@@ -979,7 +962,7 @@ CREATE TABLE IF NOT EXISTS menu_permissions (
 )
 ;
 
--- AI运维助手：目标环境（用户自定义）
+-- AI巡检：目标环境（用户自定义）
 CREATE TABLE IF NOT EXISTS ai_assistant_environments (
     id VARCHAR(36) PRIMARY KEY ,
     name VARCHAR(100) NOT NULL ,
@@ -1006,7 +989,7 @@ INSERT INTO ai_assistant_environments (id, name, prom_url, graf_url, graf_token,
 ('k8s-install', 'K8s 安装', '', '', '', '', '', 1)
 ON CONFLICT (id) DO NOTHING;
 
--- AI运维助手：专家角色（模板+用户自定义）
+-- AI巡检：专家角色（模板+用户自定义）
 CREATE TABLE IF NOT EXISTS ai_assistant_experts (
     id VARCHAR(36) PRIMARY KEY ,
     name VARCHAR(100) NOT NULL ,
@@ -1115,7 +1098,7 @@ INSERT INTO ai_assistant_experts (id, name, description, system_prompt, is_custo
 ', false, 4)
 ON CONFLICT (id) DO NOTHING;
 
--- AI运维助手：模型配置（可新建多个，智能对话中可选）
+-- AI巡检：模型配置（可新建多个，智能对话中可选）
 CREATE TABLE IF NOT EXISTS ai_assistant_models (
     id VARCHAR(36) PRIMARY KEY ,
     name VARCHAR(100) NOT NULL ,
@@ -1129,7 +1112,7 @@ CREATE TABLE IF NOT EXISTS ai_assistant_models (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_ai_model_sort ON ai_assistant_models(sort);
-COMMENT ON TABLE ai_assistant_models IS 'AI运维助手模型配置';
+COMMENT ON TABLE ai_assistant_models IS 'AI巡检模型配置';
 
 -- API表（用于API权限管理）
 CREATE TABLE IF NOT EXISTS apis (
@@ -1282,10 +1265,8 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 ('menu-cloud-bill-accounts', 'menu-cloud-bill', '/cloud-bill/accounts', 'cloudBillAccounts', 'pages/bill/CloudAccounts', false, 2, '云账户', 'Cloud', false, '', false, false, NOW(), NOW()),
 ('menu-cloud-bill-recommendations', 'menu-cloud-bill', '/cloud-bill/recommendations', 'cloudBillRecommendations', 'pages/bill/Recommendations', false, 4, '优化建议', 'Lightbulb', false, '', false, false, NOW(), NOW()),
 
--- 发布管理一级菜单已临时移除，恢复见 sql/init_removed_release_menu.sql
-
 -- 集群管理分组
-('menu-k8s', '', '', 'k8s', '', false, 6, '集群管理', 'Cloud', false, '', false, false, NOW(), NOW()),
+('menu-k8s', '', '', 'k8s', '', false, 7, '集群管理', 'Cloud', false, '', false, false, NOW(), NOW()),
 
 -- k8s 集群配置二级菜单
 ('menu-cluster-management', 'menu-k8s', '', 'clusterManagement', '', false, 1, '集群配置', 'Settings', false, '', false, false, NOW(), NOW()),
@@ -1380,8 +1361,8 @@ INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, ic
 -- 系统设置
 ('menu-system', '', '/settings', 'system', 'pages/system/Settings', false, 11, '系统设置', 'Settings', false, '', false, false, NOW(), NOW()),
 
--- AI运维助手（一级菜单）
-('menu-ai-assistant', '', '', 'aiAssistant', '', false, 9, 'AI运维助手', 'SmartToy', false, '', false, false, NOW(), NOW()),
+-- AI巡检（一级菜单）
+('menu-ai-assistant', '', '', 'aiAssistant', '', false, 9, 'AI巡检', 'SmartToy', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-chat', 'menu-ai-assistant', '/ai-assistant/chat', 'aiAssistantChat', 'pages/ai-assistant/Chat', false, 1, '智能对话', 'Chat', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-sessions', 'menu-ai-assistant', '/ai-assistant/sessions', 'aiAssistantSessions', 'pages/ai-assistant/Sessions', false, 2, '会话历史', 'History', false, '', false, false, NOW(), NOW()),
 ('menu-ai-assistant-schedules', 'menu-ai-assistant', '/ai-assistant/schedules', 'aiAssistantSchedules', 'pages/ai-assistant/Schedules', false, 3, '定时任务', 'Schedule', false, '', false, false, NOW(), NOW()),
@@ -1688,30 +1669,13 @@ INSERT INTO menu_permissions (role_id, menu_id, created_at) VALUES
 ('role:admin', 'menu-ai-assistant-models', NOW())
 ON CONFLICT (role_id, menu_id) DO NOTHING;
 
--- 为user角色分配基础菜单权限
--- 默认普通用户只能看到首页相关菜单和个人设置，其他菜单需要通过菜单授权功能才能看到
--- 先删除user角色的所有菜单权限
+-- 普通用户默认授予：个人设置、首页（组织大盘为默认落地页），其余菜单按需授权
 DELETE FROM menu_permissions WHERE role_id = 'role:user';
-
--- 为user角色分配首页相关菜单权限和个人设置（只分配首页及其子菜单和个人设置）
--- 其他菜单需要通过菜单授权功能才能看到
-INSERT INTO menu_permissions (role_id, menu_id, created_at)
-SELECT 'role:user', menus.id, NOW() FROM menus
-WHERE menus.id IN (
-    'menu-home',
-    'menu-cloud-bill',
-    'menu-cloud-bill-explorer',
-    'menu-cloud-bill-finops-dashboard',
-    'menu-cloud-bill-accounts',
-    'menu-cloud-bill-recommendations',
-
-    'menu-org-dashboard',
-    'menu-app-dashboard',
-    'menu-system-dashboard',
-    'menu-k8s-dashboard',
-    'menu-personal'
-)
-ON CONFLICT (role_id, menu_id) DO UPDATE SET created_at = NOW();
+INSERT INTO menu_permissions (role_id, menu_id, created_at) VALUES
+('role:user', 'menu-personal', NOW()),
+('role:user', 'menu-home', NOW()),
+('role:user', 'menu-org-dashboard', NOW())
+ON CONFLICT (role_id, menu_id) DO NOTHING;
 
 -- ============================================================================
 -- Initialize API Data
@@ -2458,6 +2422,20 @@ ON CONFLICT (level_name) DO UPDATE SET
 -- Deployment Management Tables (发布管理表)
 -- ============================================================================
 
+-- 参数模板表（按语言 + 版本管理）
+CREATE TABLE IF NOT EXISTS param_templates (
+    id BIGSERIAL PRIMARY KEY,
+    language VARCHAR(50) NOT NULL,
+    version_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255) NOT NULL DEFAULT '',
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_param_templates_lang_ver UNIQUE (language, version_name)
+);
+CREATE INDEX IF NOT EXISTS idx_param_templates_lang_default ON param_templates(language, is_default);
+
 -- Deployments table (部署记录表)
 CREATE TABLE IF NOT EXISTS deployments (
     id VARCHAR(36) PRIMARY KEY ,
@@ -2472,8 +2450,6 @@ CREATE TABLE IF NOT EXISTS deployments (
     deploy_config JSONB ,
     version VARCHAR(100) ,
     artifact_url TEXT ,
-    jenkins_job VARCHAR(255) ,
-    jenkins_build_number INTEGER ,
     k8s_yaml TEXT ,
     k8s_kind VARCHAR(50) ,
     verify_enabled BOOLEAN DEFAULT FALSE ,
@@ -2490,44 +2466,6 @@ CREATE TABLE IF NOT EXISTS deployments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
-)
-;
-
--- Jenkins Servers table (Jenkins服务器配置表)
-CREATE TABLE IF NOT EXISTS jenkins_servers (
-    id SERIAL PRIMARY KEY ,
-    alias VARCHAR(255) NOT NULL ,
-    url VARCHAR(500) NOT NULL ,
-    username VARCHAR(100) NOT NULL ,
-    password VARCHAR(500) NOT NULL ,
-    description TEXT ,
-    enabled BOOLEAN DEFAULT TRUE ,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-)
-;
-
--- Application Deploy Bindings table (应用-发布绑定表)
-CREATE TABLE IF NOT EXISTS application_deploy_bindings (
-    id VARCHAR(36) PRIMARY KEY ,
-    application_id VARCHAR(36) NOT NULL ,
-    deploy_type VARCHAR(20) NOT NULL ,
-    deploy_config_id VARCHAR(100) NOT NULL ,
-    deploy_config_name VARCHAR(255) ,
-    environment VARCHAR(50) ,
-    jenkins_job VARCHAR(255) ,
-    argocd_application VARCHAR(255) ,
-    deploy_strategy VARCHAR(32) ,
-    strategy_options TEXT ,
-    pipeline_id VARCHAR(36) ,
-    webhook_token VARCHAR(64) UNIQUE ,
-    enabled BOOLEAN DEFAULT TRUE ,
-    description TEXT ,
-    created_by VARCHAR(36) ,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_app_deploy_env UNIQUE (application_id, deploy_type, deploy_config_id, environment)
 )
 ;
 
@@ -2861,8 +2799,6 @@ CREATE TABLE IF NOT EXISTS applications (
     online_at TIMESTAMP ,
     offline_at TIMESTAMP ,
     git_url VARCHAR(500) ,
-    jenkins_server_id INTEGER ,
-    jenkins_job_name VARCHAR(255) ,
     ops_owners JSONB ,
     test_owners JSONB ,
     dev_owners JSONB,
@@ -2877,7 +2813,7 @@ CREATE TABLE IF NOT EXISTS applications (
 -- Insert application test data
 -- 通过外键关联 organizations 表，使用 SELECT 查询获取 unit_code，避免硬编码
 -- 注意：org 字段存储的是 BizGroup 的 unit_code，line_of_biz 字段存储的是 LineOfBiz 的 unit_code，department 字段存储的是 Department 的 unit_code
--- site 字段为扩展字段，可填写：大陆、香港、北美、欧洲等
+-- site 字段为扩展字段，可填写：Site-A、Site-B 等
 
 -- 技术组（tech-group）下的应用
 -- 技术研发业务线（tech-rd）下的应用
@@ -2887,7 +2823,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
     'xxl-job-admin', FALSE, 'MIDDLEWARE', 'K8S', 'Running',
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     '业务定时任务调度系统', '2024-06-19 13:34:48', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-rd')
@@ -2899,7 +2835,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
     'web-frontend', FALSE, 'WEB', 'K8S', 'Running',
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     'Web前端应用', '2024-04-01 11:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-rd')
@@ -2911,7 +2847,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'tech-rd' LIMIT 1),
     'nginx-proxy', FALSE, 'SERVER', 'ECS', 'Running',
     (SELECT unit_code FROM organizations WHERE unit_code = 'frontend-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     'Nginx反向代理', '2024-01-05 09:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'tech-rd')
@@ -2925,7 +2861,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'crm-system', TRUE, 'WEB', 'K8S', 'Running',
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     'CRM客户管理系统（核心业务系统）', '2024-01-20 10:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -2937,7 +2873,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'report-service', FALSE, 'WEB', 'K8S', 'Running',
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '香港',
+    'Site-B',
     '报表服务系统', '2024-03-15 14:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -2949,7 +2885,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'analytics-service', FALSE, 'DATAWARE', 'K8S', 'Running',
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '北美',
+    'Site-A',
     '数据分析服务', '2024-04-10 11:00:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -2961,7 +2897,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'notification-service', FALSE, 'MIDDLEWARE', 'K8S', 'Running',
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '大陆',
+    'Site-A',
     '消息通知服务', '2024-02-25 09:30:00', NULL
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -2975,7 +2911,7 @@ SELECT gen_random_uuid(),
     (SELECT unit_code FROM organizations WHERE unit_code = 'business-ops' LIMIT 1),
     'old-crm', FALSE, 'WEB', 'EC2', 'Stopped',
     (SELECT unit_code FROM organizations WHERE unit_code = 'product-dept' LIMIT 1),
-    '香港',
+    'Site-B',
     '旧版CRM系统（已迁移）', '2019-06-01 00:00:00', '2023-12-31 23:59:59'
 WHERE EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-group')
   AND EXISTS (SELECT 1 FROM organizations WHERE unit_code = 'business-ops')
@@ -3182,24 +3118,12 @@ INSERT INTO menu_permissions (role_id, menu_id, created_at) VALUES
 ('role:admin', 'menu-ai-assistant-models', NOW())
 ON CONFLICT (role_id, menu_id) DO NOTHING;
 
--- 确保 user 角色拥有基础菜单权限
+-- 普通用户默认授予：个人设置、首页（组织大盘为默认落地页），其余菜单按需授权
 DELETE FROM menu_permissions WHERE role_id = 'role:user';
-INSERT INTO menu_permissions (role_id, menu_id, created_at)
-SELECT 'role:user', menus.id, NOW() FROM menus
-WHERE menus.id IN (
-    'menu-home',
-    'menu-cloud-bill',
-    'menu-cloud-bill-explorer',
-    'menu-cloud-bill-finops-dashboard',
-    'menu-cloud-bill-accounts',
-    'menu-cloud-bill-recommendations',
-
-    'menu-org-dashboard',
-    'menu-app-dashboard',
-    'menu-system-dashboard',
-    'menu-k8s-dashboard',
-    'menu-personal'
-)
-ON CONFLICT (role_id, menu_id) DO UPDATE SET created_at = NOW();
+INSERT INTO menu_permissions (role_id, menu_id, created_at) VALUES
+('role:user', 'menu-personal', NOW()),
+('role:user', 'menu-home', NOW()),
+('role:user', 'menu-org-dashboard', NOW())
+ON CONFLICT (role_id, menu_id) DO NOTHING;
 
 SELECT 'Database initialized successfully!' AS Status;

@@ -87,7 +87,7 @@ func NewAuthService(repo repository.UserRepository, settingRepo repository.Setti
 		repo:             repo,
 		settingRepo:      settingRepo,
 		refreshTokenRepo: refreshTokenRepo,
-		TwoFactorSvc:     twofactor.NewTwoFactorService("ZJump"),
+		TwoFactorSvc:     twofactor.NewTwoFactorService("KeyOps"),
 		jwtSecret:        jwtKey,
 		aesKey:           aesKey,
 		adminWhitelist:   parseAdminWhitelist(adminWhitelistRaw),
@@ -326,7 +326,7 @@ func (s *AuthService) Login(req *model.LoginRequest, loginIP, userAgent string) 
 			}, "", nil
 		}
 
-			if !s.validateTwoFactorCode(user, req.TwoFactorCode, req.BackupCode) {
+		if !s.validateTwoFactorCode(user, req.TwoFactorCode, req.BackupCode) {
 			return nil, "", errors.New("2FA验证失败")
 		}
 	} else if user.TwoFactorEnabled {
@@ -1127,8 +1127,6 @@ type SSOUserInfo struct {
 	Mobile    string `json:"mobile"`     // 手机号
 	AvatarURL string `json:"avatar_url"` // 头像
 }
-
-
 
 // ExchangeCodeForToken 使用授权码换取访问令牌（入口，分发到各 provider）
 func (s *AuthService) ExchangeCodeForToken(code, provider, clientID, clientSecret, tokenURL, redirectURL string) (string, error) {

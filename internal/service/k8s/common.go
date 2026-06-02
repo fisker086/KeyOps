@@ -31,7 +31,13 @@ func (s *K8sService) GetClusterConfig(clusterID string, clusterName string) (*mo
 	var err error
 
 	if clusterID != "" {
+		// 先尝试用 ID 查询
 		cluster, err = s.clusterRepo.FindByID(clusterID)
+
+		// 如果用 ID 查不到，尝试用名称查询（兼容旧配置）
+		if err != nil || cluster == nil {
+			cluster, err = s.clusterRepo.FindByName(clusterID)
+		}
 	} else if clusterName != "" {
 		cluster, err = s.clusterRepo.FindByName(clusterName)
 	} else {

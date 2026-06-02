@@ -31,6 +31,12 @@ definitions:
         items:
           type: string
         type: array
+      callback_source:
+        description: 回调来源标识（用于区分不同业务场景的回调）
+        type: string
+      callback_token:
+        description: 回调令牌（嵌入审批表单数据，回调时可据此直接匹配工单，不依赖第三方 external_id）
+        type: string
       created_at:
         description: 时间信息
         type: string
@@ -104,6 +110,12 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.ApprovalStatus'
         description: 状态
+      ticket_id:
+        description: 关联工单信息（当从工单创建时）
+        type: integer
+      ticket_number:
+        description: 工单编号
+        type: string
       title:
         description: 标题
         type: string
@@ -118,6 +130,7 @@ definitions:
     enum:
     - internal
     - feishu
+    - lark
     - dingtalk
     - wechat
     - custom
@@ -125,18 +138,21 @@ definitions:
     x-enum-comments:
       ApprovalPlatformCustom: 自定义
       ApprovalPlatformDingTalk: 钉钉
-      ApprovalPlatformFeishu: 飞书
+      ApprovalPlatformFeishu: 飞书（中国版）
       ApprovalPlatformInternal: 内部审批系统
+      ApprovalPlatformLark: Lark（国际版）
       ApprovalPlatformWeChat: 企业微信
     x-enum-descriptions:
     - 内部审批系统
-    - 飞书
+    - 飞书（中国版）
+    - Lark（国际版）
     - 钉钉
     - 企业微信
     - 自定义
     x-enum-varnames:
     - ApprovalPlatformInternal
     - ApprovalPlatformFeishu
+    - ApprovalPlatformLark
     - ApprovalPlatformDingTalk
     - ApprovalPlatformWeChat
     - ApprovalPlatformCustom
@@ -184,76 +200,6 @@ definitions:
     - ApprovalTypeHostAccess
     - ApprovalTypeHostGroupAccess
     - ApprovalTypeDeployment
-  github_com_fisker086_keyops_internal_model.BillPrice:
-    properties:
-      createdAt:
-        type: string
-      currency:
-        description: 货币：USD, CNY
-        type: string
-      description:
-        description: 描述
-        type: string
-      effective_date:
-        description: 生效日期
-        type: string
-      id:
-        type: integer
-      region:
-        description: 区域
-        type: string
-      resource_type:
-        description: 资源类型
-        type: string
-      spec:
-        description: 规格，如 1:2, 1:4 (对应scale)
-        type: string
-      unit:
-        description: 单位：GB, Hour
-        type: string
-      unit_price:
-        description: 单价 (对应price)
-        type: number
-      updatedAt:
-        type: string
-      vendor:
-        description: 云厂商
-        type: string
-    required:
-    - vendor
-    type: object
-  github_com_fisker086_keyops_internal_model.Budget:
-    properties:
-      alert_channel_ids:
-        description: JSON数组：[1,2,3]
-        type: string
-      alert_threshold:
-        description: 告警阈值百分比
-        type: number
-      amount:
-        type: number
-      createdAt:
-        type: string
-      end_date:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      org_id:
-        type: string
-      owner:
-        type: string
-      period:
-        description: monthly/quarterly/yearly
-        type: string
-      start_date:
-        type: string
-      status:
-        type: string
-      updatedAt:
-        type: string
-    type: object
   github_com_fisker086_keyops_internal_model.CloudAccount:
     properties:
       access_key_id:
@@ -293,57 +239,13 @@ definitions:
       updatedAt:
         type: string
     type: object
-  github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest:
-    properties:
-      applicationId:
-        type: string
-      argocdApplication:
-        description: 当 deployType=argocd 时必填
-        type: string
-      deployConfigId:
-        type: string
-      deployConfigName:
-        type: string
-      deployStrategy:
-        description: rolling, blue_green, canary, multi_lane
-        type: string
-      deployType:
-        enum:
-        - jenkins
-        - argocd
-        type: string
-      description:
-        type: string
-      enabled:
-        type: boolean
-      environment:
-        enum:
-        - dev
-        - test
-        - qa
-        - staging
-        - prod
-        type: string
-      jenkinsJob:
-        description: 当 deployType=jenkins 时必填
-        type: string
-      pipelineId:
-        description: 流水线定义 ID，空则默认
-        type: string
-      strategyOptions:
-        description: JSON
-        type: string
-    required:
-    - applicationId
-    - deployConfigId
-    - deployType
-    - environment
-    type: object
   github_com_fisker086_keyops_internal_model.CreateApplicationRequest:
     properties:
       department:
         type: string
       description:
+        type: string
+      devLanguage:
         type: string
       devOwners:
         items:
@@ -353,10 +255,6 @@ definitions:
         type: string
       isCritical:
         type: boolean
-      jenkinsJobName:
-        type: string
-      jenkinsServerId:
-        type: integer
       lineOfBiz:
         type: string
       name:
@@ -387,27 +285,26 @@ definitions:
     - name
     - srvType
     type: object
-  github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest:
+  github_com_fisker086_keyops_internal_model.CreateEnvironmentRequest:
     properties:
-      alias:
+      code:
+        example: dev
         type: string
       description:
+        example: 开发环境
         type: string
-      enabled:
+      isActive:
+        example: true
         type: boolean
-      password:
-        description: 密码或API Token
+      name:
+        example: 开发
         type: string
-      url:
-        description: Jenkins服务器URL（格式：http://host:port 或 https://host:port）
-        type: string
-      username:
-        type: string
+      sortOrder:
+        example: 1
+        type: integer
     required:
-    - alias
-    - password
-    - url
-    - username
+    - code
+    - name
     type: object
   github_com_fisker086_keyops_internal_model.CreateOrganizationRequest:
     properties:
@@ -494,7 +391,7 @@ definitions:
         description: JSON格式存储不同发布方式的配置
         type: string
       deploy_type:
-        description: jenkins, k8s, gitops, argocd, helm
+        description: k8s, gitops, helm
         type: string
       description:
         type: string
@@ -506,12 +403,6 @@ definitions:
       env_name:
         type: string
       id:
-        type: string
-      jenkins_build_number:
-        description: 向后兼容字段
-        type: integer
-      jenkins_job:
-        description: 向后兼容字段
         type: string
       k8s_kind:
         description: 向后兼容字段
@@ -541,317 +432,6 @@ definitions:
         description: 验证超时时间（秒），默认300秒
         type: integer
       version:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.GetBuildLogResponse:
-    properties:
-      buildNumber:
-        type: integer
-      hasMore:
-        type: boolean
-      jobName:
-        type: string
-      log:
-        type: string
-      moreData:
-        type: boolean
-      server:
-        type: string
-      textSize:
-        type: integer
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsBuild:
-    properties:
-      building:
-        type: boolean
-      description:
-        type: string
-      displayName:
-        type: string
-      duration:
-        type: integer
-      estimatedDuration:
-        type: integer
-      fullDisplayName:
-        type: string
-      keepLog:
-        type: boolean
-      number:
-        type: integer
-      queueId:
-        type: integer
-      result:
-        description: SUCCESS/FAILURE/UNSTABLE/ABORTED
-        type: string
-      timestamp:
-        type: integer
-      url:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse:
-    properties:
-      build:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
-      server:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsComputer:
-    properties:
-      displayName:
-        type: string
-      executors:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor'
-        type: array
-      icon:
-        type: string
-      iconClassName:
-        type: string
-      idle:
-        type: boolean
-      jnlpAgent:
-        type: boolean
-      launchSupported:
-        type: boolean
-      loadStatistics:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics'
-      manualLaunchAllowed:
-        type: boolean
-      monitorData:
-        additionalProperties: true
-        type: object
-      numExecutors:
-        type: integer
-      offline:
-        type: boolean
-      offlineCause: {}
-      oneOffExecutors:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsExecutor'
-        type: array
-      temporarilyOffline:
-        type: boolean
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsExecutor:
-    properties:
-      currentExecutable: {}
-      currentWorkUnit: {}
-      idle:
-        type: boolean
-      likelyStuck:
-        type: boolean
-      number:
-        type: integer
-      progress:
-        type: integer
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsJob:
-    properties:
-      _class:
-        type: string
-      buildable:
-        type: boolean
-      color:
-        type: string
-      description:
-        type: string
-      displayName:
-        type: string
-      lastBuild:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
-      lastFailedBuild:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
-      lastStableBuild:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
-      lastSuccessfulBuild:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
-      name:
-        type: string
-      url:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse:
-    properties:
-      builds:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuild'
-        type: array
-      job:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob'
-      server:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsJobListResponse:
-    properties:
-      jobs:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob'
-        type: array
-      server:
-        type: string
-      total:
-        type: integer
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsLabel:
-    properties:
-      name:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsLoadStatistics:
-    properties:
-      busyExecutors:
-        type: integer
-      idleExecutors:
-        type: integer
-      queueLength:
-        type: integer
-      totalExecutors:
-        type: integer
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsQueue:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueueItem'
-        type: array
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsQueueItem:
-    properties:
-      actions:
-        items: {}
-        type: array
-      blocked:
-        type: boolean
-      buildable:
-        type: boolean
-      buildableStartMilliseconds:
-        type: integer
-      id:
-        type: integer
-      inQueueSince:
-        type: integer
-      params:
-        type: string
-      stuck:
-        type: boolean
-      task:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsTask'
-      url:
-        type: string
-      why:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsServer:
-    properties:
-      alias:
-        description: 别名(服务器名称)
-        type: string
-      created_at:
-        type: string
-      description:
-        description: 描述
-        type: string
-      enabled:
-        description: 是否启用
-        type: boolean
-      id:
-        type: integer
-      updated_at:
-        type: string
-      url:
-        description: Jenkins服务器URL（格式：http://host:port 或 https://host:port）
-        type: string
-      username:
-        description: 用户名
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsServerInfo:
-    properties:
-      alias:
-        type: string
-      created_at:
-        type: string
-      description:
-        type: string
-      enabled:
-        type: boolean
-      id:
-        type: integer
-      updated_at:
-        type: string
-      url:
-        type: string
-      username:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsServerListResponse:
-    properties:
-      list:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo'
-        type: array
-      total:
-        type: integer
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsSystemInfo:
-    properties:
-      assignedLabels:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsLabel'
-        type: array
-      computers:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsComputer'
-        type: array
-      mode:
-        type: string
-      nodeDescription:
-        type: string
-      nodeName:
-        type: string
-      numExecutors:
-        type: integer
-      overallLoad:
-        additionalProperties:
-          type: integer
-        type: object
-      primaryView:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView'
-      unlabeledLoad:
-        additionalProperties:
-          type: integer
-        type: object
-      useCrumbs:
-        type: boolean
-      useSecurity:
-        type: boolean
-      version:
-        type: string
-      views:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsView'
-        type: array
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsTask:
-    properties:
-      color:
-        type: string
-      name:
-        type: string
-      url:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.JenkinsView:
-    properties:
-      description:
-        type: string
-      jobs:
-        items:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJob'
-        type: array
-      name:
-        type: string
-      url:
         type: string
     type: object
   github_com_fisker086_keyops_internal_model.OperationLog:
@@ -914,61 +494,6 @@ definitions:
       userId:
         type: string
       username:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.Policy:
-    properties:
-      action:
-        description: stop/terminate/tag
-        type: string
-      conditions:
-        description: JSON条件
-        type: string
-      createdAt:
-        type: string
-      description:
-        type: string
-      enabled:
-        type: boolean
-      id:
-        type: integer
-      name:
-        type: string
-      schedule:
-        description: cron表达式
-        type: string
-      target_resources:
-        description: 目标资源筛选
-        type: string
-      type:
-        description: ttl/power_off/tag
-        type: string
-      updatedAt:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.Pool:
-    properties:
-      createdAt:
-        type: string
-      description:
-        type: string
-      id:
-        type: integer
-      limit_amount:
-        description: 费用限制
-        type: number
-      members:
-        description: JSON数组
-        type: string
-      name:
-        type: string
-      org_id:
-        type: string
-      owner:
-        type: string
-      status:
-        type: string
-      updatedAt:
         type: string
     type: object
   github_com_fisker086_keyops_internal_model.QueryLog:
@@ -1044,43 +569,6 @@ definitions:
       updatedAt:
         type: string
     type: object
-  github_com_fisker086_keyops_internal_model.StartJobRequest:
-    properties:
-      parameters:
-        additionalProperties:
-          type: string
-        type: object
-      reason:
-        type: string
-    type: object
-  github_com_fisker086_keyops_internal_model.StartJobResponse:
-    properties:
-      buildNumber:
-        type: integer
-      jobName:
-        type: string
-      message:
-        type: string
-      queueId:
-        type: integer
-      server:
-        type: string
-      success:
-        type: boolean
-    type: object
-  github_com_fisker086_keyops_internal_model.StopBuildResponse:
-    properties:
-      buildNumber:
-        type: integer
-      jobName:
-        type: string
-      message:
-        type: string
-      server:
-        type: string
-      success:
-        type: boolean
-    type: object
   github_com_fisker086_keyops_internal_model.SystemUser:
     properties:
       authType:
@@ -1118,65 +606,13 @@ definitions:
         description: OS用户名
         type: string
     type: object
-  github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest:
-    properties:
-      password:
-        description: 密码或API Token
-        type: string
-      url:
-        type: string
-      username:
-        type: string
-    required:
-    - password
-    - url
-    - username
-    type: object
-  github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse:
-    properties:
-      error:
-        type: string
-      message:
-        type: string
-      success:
-        type: boolean
-      systemInfo:
-        $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo'
-    type: object
-  github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest:
-    properties:
-      argocdApplication:
-        type: string
-      deployConfigId:
-        type: string
-      deployConfigName:
-        type: string
-      deployStrategy:
-        type: string
-      description:
-        type: string
-      enabled:
-        type: boolean
-      environment:
-        enum:
-        - dev
-        - test
-        - qa
-        - staging
-        - prod
-        type: string
-      jenkinsJob:
-        type: string
-      pipelineId:
-        type: string
-      strategyOptions:
-        type: string
-    type: object
   github_com_fisker086_keyops_internal_model.UpdateApplicationRequest:
     properties:
       department:
         type: string
       description:
+        type: string
+      devLanguage:
         type: string
       devOwners:
         items:
@@ -1186,10 +622,6 @@ definitions:
         type: string
       isCritical:
         type: boolean
-      jenkinsJobName:
-        type: string
-      jenkinsServerId:
-        type: integer
       lineOfBiz:
         type: string
       name:
@@ -1220,22 +652,23 @@ definitions:
     - name
     - srvType
     type: object
-  github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest:
+  github_com_fisker086_keyops_internal_model.UpdateEnvironmentRequest:
     properties:
-      alias:
+      code:
+        example: test
         type: string
       description:
+        example: 测试环境
         type: string
-      enabled:
+      isActive:
+        example: true
         type: boolean
-      password:
-        description: 密码或API Token（如果为空则不更新）
+      name:
+        example: 测试
         type: string
-      url:
-        description: Jenkins服务器URL（格式：http://host:port 或 https://host:port）
-        type: string
-      username:
-        type: string
+      sortOrder:
+        example: 2
+        type: integer
     type: object
   github_com_fisker086_keyops_internal_model.UpdateOrganizationRequest:
     properties:
@@ -1729,16 +1162,17 @@ definitions:
         type: string
       cluster_name:
         type: string
+      deploy_config:
+        additionalProperties: true
+        type: object
       deploy_type:
-        description: jenkins, k8s
+        description: k8s
         type: string
       description:
         type: string
       env_id:
         type: string
       env_name:
-        type: string
-      jenkins_job:
         type: string
       k8s_kind:
         type: string
@@ -1964,134 +1398,6 @@ info:
   title: KeyOps API
   version: "2.0"
 paths:
-  /api/app-deploy-bindings:
-    get:
-      parameters:
-      - description: 应用ID
-        in: query
-        name: applicationId
-        type: string
-      - description: '发布类型: jenkins, argocd'
-        in: query
-        name: deployType
-        type: string
-      - description: '环境: dev, test, qa, staging, prod'
-        in: query
-        name: environment
-        type: string
-      - description: 是否启用
-        in: query
-        name: enabled
-        type: boolean
-      - default: 1
-        description: 页码
-        in: query
-        name: page
-        type: integer
-      - default: 20
-        description: 每页数量
-        in: query
-        name: pageSize
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 获取应用-发布绑定列表
-      tags:
-      - app-deploy-bindings
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: 绑定信息
-        in: body
-        name: binding
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CreateApplicationDeployBindingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 创建应用-发布绑定
-      tags:
-      - app-deploy-bindings
-  /api/app-deploy-bindings/{id}:
-    delete:
-      parameters:
-      - description: 绑定ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 删除应用-发布绑定
-      tags:
-      - app-deploy-bindings
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: 绑定ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 绑定信息
-        in: body
-        name: binding
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.UpdateApplicationDeployBindingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 更新应用-发布绑定
-      tags:
-      - app-deploy-bindings
-  /api/app-deploy-bindings/applications:
-    get:
-      parameters:
-      - description: '发布类型: jenkins, argocd'
-        in: query
-        name: deployType
-        required: true
-        type: string
-      - description: '环境: dev, test, qa, staging, prod'
-        in: query
-        name: environment
-        type: string
-      - description: 应用名称关键字
-        in: query
-        name: keyword
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 获取可用于发布的应用列表
-      tags:
-      - app-deploy-bindings
   /api/applications:
     get:
       parameters:
@@ -2257,104 +1563,6 @@ paths:
       summary: 更新审批
       tags:
       - 审批管理
-  /api/bill/budgets:
-    get:
-      consumes:
-      - application/json
-      description: 获取所有预算及当前状态
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 获取预算列表
-      tags:
-      - bill
-    post:
-      consumes:
-      - application/json
-      description: 创建新的预算
-      parameters:
-      - description: 预算信息
-        in: body
-        name: budget
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Budget'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 创建预算
-      tags:
-      - bill
-  /api/bill/budgets/:id:
-    delete:
-      consumes:
-      - application/json
-      description: 删除指定的预算
-      parameters:
-      - description: 预算ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 删除预算
-      tags:
-      - bill
-    put:
-      consumes:
-      - application/json
-      description: 更新预算信息
-      parameters:
-      - description: 预算ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 预算信息
-        in: body
-        name: budget
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Budget'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 更新预算
-      tags:
-      - bill
-  /api/bill/check-budget-alerts:
-    get:
-      consumes:
-      - application/json
-      description: 手动检查所有预算的告警状态
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 手动检查预算告警
-      tags:
-      - bill
   /api/bill/cloud-accounts:
     get:
       consumes:
@@ -2519,255 +1727,6 @@ paths:
           schema:
             $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
       summary: 获取费用 Dashboard 数据
-      tags:
-      - bill
-  /api/bill/policies:
-    get:
-      consumes:
-      - application/json
-      description: 获取所有策略（TTL、电源管理等）
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 获取策略列表
-      tags:
-      - bill
-    post:
-      consumes:
-      - application/json
-      description: 创建新的策略
-      parameters:
-      - description: 策略信息
-        in: body
-        name: policy
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Policy'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 创建策略
-      tags:
-      - bill
-  /api/bill/policies/:id:
-    delete:
-      consumes:
-      - application/json
-      description: 删除指定的策略
-      parameters:
-      - description: 策略ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 删除策略
-      tags:
-      - bill
-    put:
-      consumes:
-      - application/json
-      description: 更新策略信息
-      parameters:
-      - description: 策略ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 策略信息
-        in: body
-        name: policy
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Policy'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 更新策略
-      tags:
-      - bill
-  /api/bill/pools:
-    get:
-      consumes:
-      - application/json
-      description: 获取所有资源池及费用信息
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 获取资源池列表
-      tags:
-      - bill
-    post:
-      consumes:
-      - application/json
-      description: 创建新的资源池
-      parameters:
-      - description: 资源池信息
-        in: body
-        name: pool
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Pool'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 创建资源池
-      tags:
-      - bill
-  /api/bill/pools/:id:
-    delete:
-      consumes:
-      - application/json
-      description: 删除指定的资源池
-      parameters:
-      - description: 资源池ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 删除资源池
-      tags:
-      - bill
-    put:
-      consumes:
-      - application/json
-      description: 更新资源池信息
-      parameters:
-      - description: 资源池ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 资源池信息
-        in: body
-        name: pool
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Pool'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 更新资源池
-      tags:
-      - bill
-  /api/bill/price:
-    get:
-      consumes:
-      - application/json
-      description: 获取单价管理列表
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 获取单价列表
-      tags:
-      - bill
-    post:
-      consumes:
-      - application/json
-      description: 创建单价配置
-      parameters:
-      - description: 单价信息
-        in: body
-        name: price
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.BillPrice'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 创建单价
-      tags:
-      - bill
-  /api/bill/price/:id:
-    delete:
-      consumes:
-      - application/json
-      description: 删除单价配置
-      parameters:
-      - description: 单价ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 删除单价
-      tags:
-      - bill
-    put:
-      consumes:
-      - application/json
-      description: 更新单价配置
-      parameters:
-      - description: 单价ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 单价信息
-        in: body
-        name: price
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.BillPrice'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 更新单价
       tags:
       - bill
   /api/bill/recommendations:
@@ -3166,7 +2125,7 @@ paths:
         in: query
         name: cluster_id
         type: string
-      - description: '部署类型: jenkins, k8s'
+      - description: '部署类型: k8s'
         in: query
         name: deploy_type
         type: string
@@ -3860,363 +2819,8 @@ paths:
       summary: 获取表列表
       tags:
       - DMS
-  /api/jenkins/{serverId}/jobs:
+  /api/environments:
     get:
-      consumes:
-      - application/json
-      description: 获取指定Jenkins服务器的所有任务
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse'
-              type: object
-      summary: 获取Jenkins任务列表
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/jobs/{jobName}:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定任务的详细信息和构建历史
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      - description: 任务名称
-        in: path
-        name: jobName
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobDetailResponse'
-              type: object
-      summary: 获取Jenkins任务详情
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定构建的详细信息
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      - description: 任务名称
-        in: path
-        name: jobName
-        required: true
-        type: string
-      - description: 构建编号
-        in: path
-        name: buildNumber
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsBuildDetailResponse'
-              type: object
-      summary: 获取Jenkins构建详情
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}/log:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定构建的日志信息，支持分页获取
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      - description: 任务名称
-        in: path
-        name: jobName
-        required: true
-        type: string
-      - description: 构建编号
-        in: path
-        name: buildNumber
-        required: true
-        type: integer
-      - default: 0
-        description: 开始位置
-        in: query
-        name: start
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.GetBuildLogResponse'
-              type: object
-      summary: 获取Jenkins构建日志
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/jobs/{jobName}/builds/{buildNumber}/stop:
-    post:
-      consumes:
-      - application/json
-      description: 停止指定的Jenkins构建任务
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      - description: 任务名称
-        in: path
-        name: jobName
-        required: true
-        type: string
-      - description: 构建编号
-        in: path
-        name: buildNumber
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.StopBuildResponse'
-              type: object
-      summary: 停止Jenkins构建
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/jobs/{jobName}/start:
-    post:
-      consumes:
-      - application/json
-      description: 启动指定的Jenkins任务，支持带参数构建
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      - description: 任务名称
-        in: path
-        name: jobName
-        required: true
-        type: string
-      - description: 启动任务请求
-        in: body
-        name: request
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.StartJobRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.StartJobResponse'
-              type: object
-      summary: 启动Jenkins任务
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/jobs/search:
-    get:
-      consumes:
-      - application/json
-      description: 根据关键词模糊搜索指定Jenkins服务器的任务
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      - description: 搜索关键词
-        in: query
-        name: keyword
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsJobListResponse'
-              type: object
-      summary: 搜索Jenkins任务
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/queue:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定Jenkins服务器的构建队列信息
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsQueue'
-              type: object
-      summary: 获取Jenkins队列信息
-      tags:
-      - Jenkins
-  /api/jenkins/{serverId}/system-info:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定Jenkins服务器的系统信息
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsSystemInfo'
-              type: object
-      summary: 获取Jenkins系统信息
-      tags:
-      - Jenkins
-  /api/jenkins/servers:
-    get:
-      consumes:
-      - application/json
-      description: 获取所有配置的Jenkins服务器
-      parameters:
-      - default: 1
-        description: 页码
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: 每页数量
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerListResponse'
-              type: object
-      summary: 获取Jenkins服务器列表
-      tags:
-      - Jenkins
-    post:
-      consumes:
-      - application/json
-      description: 创建新的Jenkins服务器配置
-      parameters:
-      - description: 服务器信息
-        in: body
-        name: server
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CreateJenkinsServerRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServer'
-              type: object
-      summary: 创建Jenkins服务器
-      tags:
-      - Jenkins
-  /api/jenkins/servers/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: 删除Jenkins服务器配置
-      parameters:
-      - description: 服务器ID
-        in: path
-        name: id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:
@@ -4224,50 +2828,79 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 删除Jenkins服务器
+      summary: 获取环境列表
       tags:
-      - Jenkins
-    get:
+      - environments
+    post:
       consumes:
       - application/json
-      description: 根据服务器ID获取Jenkins服务器详情
       parameters:
-      - description: 服务器ID
-        in: path
-        name: id
+      - description: Environment
+        in: body
+        name: environment
         required: true
-        type: integer
+        schema:
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.CreateEnvironmentRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.JenkinsServerInfo'
-              type: object
-      summary: 获取Jenkins服务器详情
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 创建环境
       tags:
-      - Jenkins
+      - environments
+  /api/environments/{id}:
+    delete:
+      parameters:
+      - description: Environment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 删除环境
+      tags:
+      - environments
+    get:
+      parameters:
+      - description: Environment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
+      summary: 获取单个环境
+      tags:
+      - environments
     put:
       consumes:
       - application/json
-      description: 更新Jenkins服务器配置
       parameters:
-      - description: 服务器ID
+      - description: Environment ID
         in: path
         name: id
         required: true
-        type: integer
-      - description: 服务器信息
+        type: string
+      - description: Environment
         in: body
-        name: server
+        name: environment
         required: true
         schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.UpdateJenkinsServerRequest'
+          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.UpdateEnvironmentRequest'
       produces:
       - application/json
       responses:
@@ -4275,36 +2908,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-      summary: 更新Jenkins服务器
+      summary: 更新环境
       tags:
-      - Jenkins
-  /api/jenkins/test-connection:
-    post:
-      consumes:
-      - application/json
-      description: 测试Jenkins服务器连接是否正常
-      parameters:
-      - description: 连接测试请求
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_fisker086_keyops_internal_model.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_fisker086_keyops_internal_model.TestJenkinsConnectionResponse'
-              type: object
-      summary: 测试Jenkins连接
-      tags:
-      - Jenkins
+      - environments
   /api/k8s/clusters:
     get:
       consumes:

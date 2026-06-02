@@ -205,10 +205,10 @@ func (p *PrometheusClient) SummarizeResults(results interface{}, totalPointsBudg
 		summary = append(summary, item)
 	}
 	return map[string]interface{}{
-		"summary":               summary,
-		"total_series":          numSeries,
-		"compression_strategy":  "full_dimensions_dynamic_sampling",
-		"points_per_series":     pointsPerSeries,
+		"summary":              summary,
+		"total_series":         numSeries,
+		"compression_strategy": "full_dimensions_dynamic_sampling",
+		"points_per_series":    pointsPerSeries,
 	}
 }
 

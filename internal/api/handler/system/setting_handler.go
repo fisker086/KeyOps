@@ -18,8 +18,8 @@ import (
 	pkgconfig "github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/distributed"
 	pkgredis "github.com/fisker086/keyops/pkg/redis"
-	"github.com/go-ldap/ldap/v3"
 	"github.com/gin-gonic/gin"
+	"github.com/go-ldap/ldap/v3"
 )
 
 type SettingHandler struct {
@@ -501,11 +501,11 @@ func (h *SettingHandler) TestSSOConnection(c *gin.Context) {
 	})
 }
 
-// getSiteName 从系统设置读取站点名称，用于通知文案等，未配置时返回 "ZJump"
+// getSiteName 从系统设置读取站点名称，用于通知文案等，未配置时返回 "KeyOps"
 func (h *SettingHandler) getSiteName() string {
 	settings, err := h.repo.GetByCategory("system")
 	if err != nil {
-		return "ZJump"
+		return "KeyOps"
 	}
 	for _, s := range settings {
 		if s.Key == "siteName" || s.Key == "system.siteName" {
@@ -515,7 +515,7 @@ func (h *SettingHandler) getSiteName() string {
 			break
 		}
 	}
-	return "ZJump"
+	return "KeyOps"
 }
 
 // TestFeishuNotification 测试飞书通知

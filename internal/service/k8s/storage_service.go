@@ -34,12 +34,12 @@ type PVC struct {
 
 // StorageClass 存储类信息
 type StorageClass struct {
-	Name                string `json:"name"`
-	Provisioner         string `json:"provisioner"`
-	ReclaimPolicy       string `json:"reclaimPolicy"`
-	VolumeBindingMode   string `json:"volumeBindingMode"`
+	Name                 string `json:"name"`
+	Provisioner          string `json:"provisioner"`
+	ReclaimPolicy        string `json:"reclaimPolicy"`
+	VolumeBindingMode    string `json:"volumeBindingMode"`
 	AllowVolumeExpansion bool   `json:"allowVolumeExpansion"`
-	Age                 string `json:"age"`
+	Age                  string `json:"age"`
 }
 
 // GetPVList 获取 PV 列表（集群级别资源）
@@ -80,11 +80,11 @@ func (s *K8sService) GetPVList(clusterID string, clusterName string, nodeID uint
 				CreationTimestamp string `json:"creationTimestamp"`
 			} `json:"metadata"`
 			Spec struct {
-				Capacity              map[string]string `json:"capacity"`
-				AccessModes           []string          `json:"accessModes"`
-				PersistentVolumeReclaimPolicy string `json:"persistentVolumeReclaimPolicy"`
-				StorageClassName      string   `json:"storageClassName"`
-				ClaimRef              *struct {
+				Capacity                      map[string]string `json:"capacity"`
+				AccessModes                   []string          `json:"accessModes"`
+				PersistentVolumeReclaimPolicy string            `json:"persistentVolumeReclaimPolicy"`
+				StorageClassName              string            `json:"storageClassName"`
+				ClaimRef                      *struct {
 					Namespace string `json:"namespace"`
 					Name      string `json:"name"`
 				} `json:"claimRef"`
@@ -125,8 +125,8 @@ func (s *K8sService) GetPVList(clusterID string, clusterName string, nodeID uint
 
 		pvs = append(pvs, &PV{
 			Name:          item.Metadata.Name,
-			Capacity:     capacity,
-			AccessModes:  accessModes,
+			Capacity:      capacity,
+			AccessModes:   accessModes,
 			ReclaimPolicy: reclaimPolicy,
 			Status:        item.Status.Phase,
 			Claim:         claim,
@@ -175,10 +175,10 @@ func (s *K8sService) GetStorageClassList(clusterID string, clusterName string, n
 				Name              string `json:"name"`
 				CreationTimestamp string `json:"creationTimestamp"`
 			} `json:"metadata"`
-			Provisioner       string `json:"provisioner"`
-			ReclaimPolicy     string `json:"reclaimPolicy"`
-			VolumeBindingMode string `json:"volumeBindingMode"`
-			AllowVolumeExpansion *bool `json:"allowVolumeExpansion"`
+			Provisioner          string `json:"provisioner"`
+			ReclaimPolicy        string `json:"reclaimPolicy"`
+			VolumeBindingMode    string `json:"volumeBindingMode"`
+			AllowVolumeExpansion *bool  `json:"allowVolumeExpansion"`
 		} `json:"items"`
 	}
 
@@ -204,12 +204,12 @@ func (s *K8sService) GetStorageClassList(clusterID string, clusterName string, n
 		}
 
 		storageClasses = append(storageClasses, &StorageClass{
-			Name:                item.Metadata.Name,
-			Provisioner:        item.Provisioner,
-			ReclaimPolicy:       reclaimPolicy,
-			VolumeBindingMode:  volumeBindingMode,
+			Name:                 item.Metadata.Name,
+			Provisioner:          item.Provisioner,
+			ReclaimPolicy:        reclaimPolicy,
+			VolumeBindingMode:    volumeBindingMode,
 			AllowVolumeExpansion: allowExpansion,
-			Age:                formatAge(item.Metadata.CreationTimestamp),
+			Age:                  formatAge(item.Metadata.CreationTimestamp),
 		})
 	}
 
@@ -265,7 +265,7 @@ func (s *K8sService) GetPVCList(clusterID string, clusterName string, nodeID uin
 				} `json:"resources"`
 			} `json:"spec"`
 			Status struct {
-				Phase  string `json:"phase"`
+				Phase    string             `json:"phase"`
 				Capacity *map[string]string `json:"capacity"`
 			} `json:"status"`
 		} `json:"items"`

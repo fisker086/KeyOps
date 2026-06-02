@@ -82,9 +82,9 @@ func clearRefreshTokenCookie(c *gin.Context) {
 }
 
 type AuthHandler struct {
-	service       AuthService
-	settingRepo   repository.SettingRepository
-	roleRepo repository.RoleRepository
+	service     AuthService
+	settingRepo repository.SettingRepository
+	roleRepo    repository.RoleRepository
 }
 
 var _ AuthService = (*authService.AuthService)(nil)
@@ -217,7 +217,36 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, model.Success(user))
+	// 获取用户角色ID列表（用于前端权限判断）
+	roles, _ := h.roleRepo.GetRolesByUserID(user.ID)
+	roleIDs := make([]string, 0, len(roles))
+	for _, r := range roles {
+		roleIDs = append(roleIDs, r.ID)
+	}
+
+	c.JSON(http.StatusOK, model.Success(gin.H{
+		"id":                    user.ID,
+		"username":              user.Username,
+		"email":                 user.Email,
+		"fullName":              user.FullName,
+		"role":                  user.Role,
+		"status":                user.Status,
+		"authMethod":            user.AuthMethod,
+		"sshPublicKey":          user.SSHPublicKey,
+		"sshKeyFingerprint":     user.SSHKeyFingerprint,
+		"sshKeyGeneratedAt":     user.SSHKeyGeneratedAt,
+		"organizationId":        user.OrganizationID,
+		"twoFactorEnabled":      user.TwoFactorEnabled,
+		"twoFactorVerifiedAt":   user.TwoFactorVerifiedAt,
+		"expiresAt":             user.ExpiresAt,
+		"expirationWarningSent": user.ExpirationWarningSent,
+		"autoDisableOnExpiry":   user.AutoDisableOnExpiry,
+		"lastLoginTime":         user.LastLoginTime,
+		"lastLoginIp":           user.LastLoginIP,
+		"createdAt":             user.CreatedAt,
+		"updatedAt":             user.UpdatedAt,
+		"roleIds":               roleIDs,
+	}))
 }
 
 // GetMyPermissions 返回当前登录用户的分组与主机权限（Web 终端等场景；不暴露他人数据）

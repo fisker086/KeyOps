@@ -116,7 +116,7 @@ func (s *BillService) getMongoDailyBreakdown(startDate, endDate time.Time, group
 	totals := make(map[string]float64)
 
 	type mongoDoc struct {
-		ID        struct {
+		ID struct {
 			Date  string `bson:"date"`
 			Group string `bson:"group"`
 		} `bson:"_id"`

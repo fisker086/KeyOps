@@ -1,9 +1,5 @@
 package types
 
-import (
-	"github.com/fisker086/keyops/internal/model"
-)
-
 // TimeSlot 时间段策略
 type TimeSlot struct {
 	Enable   bool     `json:"enable"`
@@ -34,17 +30,4 @@ type SilenceConfig struct {
 	Times     []string `json:"times,omitempty"`      // 周期静默: ["09:00:00", "18:00:00"]
 }
 
-// AlertProcessor 告警处理器接口
-type AlertProcessor interface {
-	Process(event *model.AlertEvent) error
-}
 
-// StrategyMatcher 策略匹配器接口
-type StrategyMatcher interface {
-	Match(event *model.AlertEvent, departmentID string) ([]model.AlertStrategy, error)
-}
-
-// Aggregator 聚合器接口
-type Aggregator interface {
-	Aggregate(events []*model.AlertEvent) ([]*model.AlertEvent, error)
-}

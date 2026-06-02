@@ -76,6 +76,7 @@ type OnCallShiftRepository interface {
 	Delete(id uint) error
 	FindByID(id uint) (*model.OnCallShift, error)
 	ListBySchedule(scheduleID uint) ([]model.OnCallShift, error)
+	ListByScheduleIDs(scheduleIDs []uint) ([]model.OnCallShift, error)
 	ListByScheduleWithUser(scheduleID uint) ([]model.OnCallShiftWithUser, error)
 	GetCurrentOnCallUsers(departmentID string, atTime time.Time) ([]string, error)
 	GetOnCallUserForSchedule(scheduleID uint, atTime time.Time) (string, error)
@@ -122,6 +123,16 @@ func (r *onCallShiftRepository) FindByID(id uint) (*model.OnCallShift, error) {
 func (r *onCallShiftRepository) ListBySchedule(scheduleID uint) ([]model.OnCallShift, error) {
 	var shifts []model.OnCallShift
 	err := r.db.Where("schedule_id = ? AND status = ?", scheduleID, "active").
+		Order("start_time ASC").Find(&shifts).Error
+	return shifts, err
+}
+
+func (r *onCallShiftRepository) ListByScheduleIDs(scheduleIDs []uint) ([]model.OnCallShift, error) {
+	if len(scheduleIDs) == 0 {
+		return nil, nil
+	}
+	var shifts []model.OnCallShift
+	err := r.db.Where("schedule_id IN ? AND status = ?", scheduleIDs, "active").
 		Order("start_time ASC").Find(&shifts).Error
 	return shifts, err
 }

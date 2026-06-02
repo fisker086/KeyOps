@@ -317,14 +317,6 @@ func (n *AlertNotifier) buildMessage(event *model.AlertEvent, template *model.Al
 	return title, content
 }
 
-// buildDefaultContent 构建默认内容模板（已废弃，不再使用默认格式）
-// 默认格式已移除，需要在模板前端配置中设置示例格式
-// 如果渠道模板内容为空，将返回空字符串
-func (n *AlertNotifier) buildDefaultContent(event *model.AlertEvent, variables map[string]string, isRecovery bool) string {
-	// 不再提供默认格式，需要在模板中配置
-	return ""
-}
-
 // replaceVariables 替换模板变量
 func replaceVariables(template string, variables map[string]string) string {
 	result := template
@@ -401,14 +393,6 @@ func (n *AlertNotifier) sendToChannel(channel *model.AlertChannel, title, conten
 	}
 }
 
-// min 返回两个整数中的较小值
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // formatTime 格式化时间
 func formatTime(t *time.Time) string {
 	if t == nil {
@@ -423,36 +407,6 @@ func getAlertStatus(isRecovered bool) string {
 		return "resolved"
 	}
 	return "firing"
-}
-
-// formatTagsFromVariables 从变量中格式化标签
-func formatTagsFromVariables(variables map[string]string) string {
-	var parts []string
-	for k, v := range variables {
-		if strings.HasPrefix(k, "tag_") {
-			tagKey := strings.TrimPrefix(k, "tag_")
-			parts = append(parts, fmt.Sprintf("%s=%s", tagKey, v))
-		}
-	}
-	if len(parts) == 0 {
-		return "无"
-	}
-	return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
-}
-
-// formatAnnotationsFromVariables 从变量中格式化注解
-func formatAnnotationsFromVariables(variables map[string]string) string {
-	var parts []string
-	for k, v := range variables {
-		if strings.HasPrefix(k, "annotation_") {
-			annKey := strings.TrimPrefix(k, "annotation_")
-			parts = append(parts, fmt.Sprintf("%s=%s", annKey, v))
-		}
-	}
-	if len(parts) == 0 {
-		return "无"
-	}
-	return fmt.Sprintf("{%s}", strings.Join(parts, ", "))
 }
 
 // SendRecoveryNotification 发送恢复通知
@@ -638,28 +592,4 @@ func (n *AlertNotifier) sendRecoveryNotificationWithTemplate(event *model.AlertE
 	return nil
 }
 
-// formatTags 格式化标签
-func formatTags(tags map[string]string) string {
-	if len(tags) == 0 {
-		return "无"
-	}
 
-	var parts []string
-	for k, v := range tags {
-		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
-	}
-	return fmt.Sprintf("{%s}", fmt.Sprintf("%v", parts))
-}
-
-// formatAnnotations 格式化注解
-func formatAnnotations(annotations map[string]string) string {
-	if len(annotations) == 0 {
-		return "无"
-	}
-
-	var parts []string
-	for k, v := range annotations {
-		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
-	}
-	return fmt.Sprintf("{%s}", fmt.Sprintf("%v", parts))
-}

@@ -15,7 +15,7 @@ type Activities struct {
 	ReleaseService *release.Service
 }
 
-// ExecuteDeploy 执行部署（调 release 服务触发 Jenkins）
+// ExecuteDeploy 执行部署（调 release 服务）
 func (a *Activities) ExecuteDeploy(ctx context.Context, input DeployProdInput) error {
 	if a.ReleaseService == nil {
 		return fmt.Errorf("release service not configured")

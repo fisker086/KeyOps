@@ -39,20 +39,20 @@ type SessionSummary struct {
 
 // Schedule 定时任务
 type Schedule struct {
-	ID                     string   `json:"id"`
-	Name                   string   `json:"name"`
-	EnvID                  string   `json:"env_id"`
-	ModelID                string   `json:"model_id,omitempty"` // 模型配置 ID，空则使用第一个
-	Cron                   string   `json:"cron"`
-	TaskPrompt             string   `json:"task_prompt"`
-	Role                   string   `json:"role,omitempty"`
-	LarkBotID              string   `json:"lark_bot_id,omitempty"`
-	LarkGroupName          string   `json:"lark_group_name,omitempty"`
-	LarkFolderID           string   `json:"lark_folder_id,omitempty"`
-	Enabled                bool     `json:"enabled"`
-	ResponsibleUser        string   `json:"responsible_user,omitempty"`
-	NotificationChannelIDs []uint   `json:"notification_channel_ids,omitempty"` // 监控告警渠道 ID 列表，巡检结果通知到这些渠道
-	CreatedAt              string   `json:"created_at,omitempty"`
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	EnvID                  string `json:"env_id"`
+	ModelID                string `json:"model_id,omitempty"` // 模型配置 ID，空则使用第一个
+	Cron                   string `json:"cron"`
+	TaskPrompt             string `json:"task_prompt"`
+	Role                   string `json:"role,omitempty"`
+	LarkBotID              string `json:"lark_bot_id,omitempty"`
+	LarkGroupName          string `json:"lark_group_name,omitempty"`
+	LarkFolderID           string `json:"lark_folder_id,omitempty"`
+	Enabled                bool   `json:"enabled"`
+	ResponsibleUser        string `json:"responsible_user,omitempty"`
+	NotificationChannelIDs []uint `json:"notification_channel_ids,omitempty"` // 监控告警渠道 ID 列表，巡检结果通知到这些渠道
+	CreatedAt              string `json:"created_at,omitempty"`
 }
 
 // Environment 目标环境（数据来源：数据库表 ai_assistant_environments，由 store.ListEnvironments / GetEnvironment 加载）
@@ -66,9 +66,9 @@ type Environment struct {
 	GrafToken      string                 `json:"graf_token,omitempty"`
 	Cluster        string                 `json:"cluster,omitempty"`
 	K8sClusterID   string                 `json:"k8s_cluster_id,omitempty"`   // 关联 K8s 集群 ID（来自 k8s 管理）
-	AllowedRoleIDs []string               `json:"allowed_role_ids,omitempty"`   // 允许使用该环境的平台角色ID列表，空表示所有角色可用
-	ExtraConfig    map[string]interface{} `json:"extra_config,omitempty"`      // 保留字段，DB 兼容；界面已移除，仅支持 Prometheus/Grafana/K8s
-	EnabledSkills  []string               `json:"enabled_skills,omitempty"`    // 当前环境启用的技能（prometheus/grafana/k8s），API 返回时由 handler 填充
+	AllowedRoleIDs []string               `json:"allowed_role_ids,omitempty"` // 允许使用该环境的平台角色ID列表，空表示所有角色可用
+	ExtraConfig    map[string]interface{} `json:"extra_config,omitempty"`     // 保留字段，DB 兼容；界面已移除，仅支持 Prometheus/Grafana/K8s
+	EnabledSkills  []string               `json:"enabled_skills,omitempty"`   // 当前环境启用的技能（prometheus/grafana/k8s），API 返回时由 handler 填充
 }
 
 // ModelConfig 模型配置（API 响应用，列表可隐藏 api_key）
@@ -76,7 +76,7 @@ type ModelConfig struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Model    string `json:"model"`
-	APIKey   string `json:"api_key,omitempty"`   // 列表时可为空，详情/编辑时返回
+	APIKey   string `json:"api_key,omitempty"` // 列表时可为空，详情/编辑时返回
 	BaseURL  string `json:"base_url,omitempty"`
 	ProxyURL string `json:"proxy_url,omitempty"`
 	MaxSteps int    `json:"max_steps,omitempty"`
@@ -89,7 +89,7 @@ type Expert struct {
 	Name           string   `json:"name"`
 	Description    string   `json:"description"`
 	SystemPrompt   string   `json:"system_prompt"`
-	SkillID        string   `json:"skill_id,omitempty"`        // 关联技能（如 k8s-install），非空时前置注入技能知识库，数据库 system_prompt 在后可覆盖
+	SkillID        string   `json:"skill_id,omitempty"` // 关联技能（如 k8s-install），非空时前置注入技能知识库，数据库 system_prompt 在后可覆盖
 	IsCustom       bool     `json:"is_custom,omitempty"`
 	AllowedRoleIDs []string `json:"allowed_role_ids,omitempty"` // 允许使用该专家的平台角色ID列表，空表示所有角色可用
 }

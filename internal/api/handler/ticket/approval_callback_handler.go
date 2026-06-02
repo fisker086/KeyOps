@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -142,6 +143,35 @@ type WeChatCallbackRequest struct {
 	} `json:"content"`
 }
 
+// BuildApprovalCallbackPath 构建审批回调路径（scopeID 通常为 form_templates.uuid）
+func BuildApprovalCallbackPath(source, platform, scopeID string) string {
+	source = strings.Trim(strings.TrimSpace(source), "/")
+	platform = strings.Trim(strings.TrimSpace(platform), "/")
+	scopeID = strings.Trim(strings.TrimSpace(scopeID), "/")
+	if source == "" {
+		source = "ticket"
+	}
+	if scopeID != "" {
+		return fmt.Sprintf("/api/approvals/callback/%s/%s/%s", source, platform, scopeID)
+	}
+	return fmt.Sprintf("/api/approvals/callback/%s/%s", source, platform)
+}
+
+// HandleScopedCallback 按 scope_id（如工单模板 ID）路由的审批回调入口
+func (h *ApprovalCallbackHandler) HandleScopedCallback(c *gin.Context) {
+	platform := strings.ToLower(strings.TrimSpace(c.Param("platform")))
+	switch platform {
+	case "feishu", "lark":
+		h.HandleFeishuCallback(c)
+	case "dingtalk":
+		h.HandleDingTalkCallback(c)
+	case "wechat":
+		h.HandleWeChatCallback(c)
+	default:
+		c.JSON(http.StatusNotFound, gin.H{"error": "unsupported platform"})
+	}
+}
+
 // HandleFeishuCallback 处理飞书审批回调
 func (h *ApprovalCallbackHandler) HandleFeishuCallback(c *gin.Context) {
 	var req FeishuCallbackRequest
@@ -158,8 +188,15 @@ func (h *ApprovalCallbackHandler) HandleFeishuCallback(c *gin.Context) {
 
 	// 处理审批事件
 	if req.Header.EventType == "approval_instance" {
-		err := h.handleFeishuApprovalEvent(&req)
+		source := c.Param("source")
+		if source == "" {
+			source = "ticket"
+		}
+		scopeID := strings.TrimSpace(c.Param("scope_id"))
+		logger.Infof("收到飞书审批回调 source=%s scope_id=%s instance_code=%s status=%s", source, scopeID, req.Event.InstanceCode, req.Event.Status)
+		err := h.handleFeishuApprovalEvent(&req, scopeID)
 		if err != nil {
+			logger.Errorf("处理飞书审批回调失败 source=%s instance_code=%s: %v", source, req.Event.InstanceCode, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -178,8 +215,19 @@ func (h *ApprovalCallbackHandler) HandleDingTalkCallback(c *gin.Context) {
 
 	// 处理审批事件
 	if req.EventType == "bpms_task_change" || req.EventType == "bpms_instance_change" {
-		err := h.handleDingTalkApprovalEvent(&req)
+		source := c.Param("source")
+		if source == "" {
+			source = "ticket"
+		}
+		instanceID := req.ProcessInstanceID
+		if instanceID == "" && req.Data.ProcessInstanceID != "" {
+			instanceID = req.Data.ProcessInstanceID
+		}
+		scopeID := strings.TrimSpace(c.Param("scope_id"))
+		logger.Infof("收到钉钉审批回调 source=%s scope_id=%s instance_id=%s event_type=%s", source, scopeID, instanceID, req.EventType)
+		err := h.handleDingTalkApprovalEvent(&req, scopeID)
 		if err != nil {
+			logger.Errorf("处理钉钉审批回调失败 source=%s instance_id=%s: %v", source, instanceID, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -198,8 +246,15 @@ func (h *ApprovalCallbackHandler) HandleWeChatCallback(c *gin.Context) {
 
 	// 处理审批事件
 	if req.Event == "sys_approval_change" {
-		err := h.handleWeChatApprovalEvent(&req)
+		source := c.Param("source")
+		if source == "" {
+			source = "ticket"
+		}
+		scopeID := strings.TrimSpace(c.Param("scope_id"))
+		logger.Infof("收到企微审批回调 source=%s scope_id=%s instance_id=%s status=%s", source, scopeID, req.Content.ProcessInstanceID, req.Content.Status)
+		err := h.handleWeChatApprovalEvent(&req, scopeID)
 		if err != nil {
+			logger.Errorf("处理企微审批回调失败 source=%s instance_id=%s: %v", source, req.Content.ProcessInstanceID, err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -352,7 +407,7 @@ func (h *ApprovalCallbackHandler) convertUserIDToUsername(userID string) string 
 func (h *ApprovalCallbackHandler) updateApprovalRecordStatus(approval *model.Approval, status model.ApprovalStatus, comment string, finishTime *time.Time, currentApproverName string) {
 	approval.Status = status
 	approval.UpdatedAt = time.Now()
-	
+
 	if currentApproverName != "" {
 		approval.CurrentApprover = currentApproverName
 	}
@@ -483,13 +538,100 @@ func (h *ApprovalCallbackHandler) updateTicketApprovalSteps(ticket *model.Ticket
 	return nil
 }
 
+// extractCallbackTokenFromFeishuForm 从飞书回调的 Form 字段中提取回调令牌
+func (h *ApprovalCallbackHandler) extractCallbackTokenFromFeishuForm(formJSON string) string {
+	if formJSON == "" {
+		return ""
+	}
+	var formMap map[string]string
+	if err := json.Unmarshal([]byte(formJSON), &formMap); err != nil {
+		return ""
+	}
+	return formMap["_callback_token"]
+}
+
+// validateCallbackScope 校验回调路径中的 scope_id 与审批所属工单模板一致（scope 为空则跳过）
+// scope_id 优先为 form_templates.uuid；兼容旧配置中的数字自增 id
+func (h *ApprovalCallbackHandler) validateCallbackScope(approval *model.Approval, scopeID string) error {
+	scopeID = strings.TrimSpace(scopeID)
+	if scopeID == "" || approval.TicketID == 0 {
+		return nil
+	}
+	var ticket model.Ticket
+	if err := h.db.First(&ticket, approval.TicketID).Error; err != nil {
+		return fmt.Errorf("未找到关联工单: %w", err)
+	}
+	if ticket.TemplateID == nil {
+		return fmt.Errorf("工单未关联模板，与回调路径 scope 不匹配")
+	}
+
+	var template model.FormTemplate
+	if err := h.db.First(&template, *ticket.TemplateID).Error; err != nil {
+		return fmt.Errorf("未找到工单模板: %w", err)
+	}
+	_ = ensureFormTemplateUUID(h.db, &template)
+
+	if template.UUID == scopeID {
+		return nil
+	}
+	// 兼容历史回调 URL 使用自增 id 的情况
+	if strconv.FormatUint(uint64(*ticket.TemplateID), 10) == scopeID {
+		return nil
+	}
+	return fmt.Errorf("工单模板与回调路径 scope 不匹配")
+}
+
+// extractCallbackTokenFromDingTalkForm 从钉钉回调的表单字段中提取回调令牌
+func (h *ApprovalCallbackHandler) extractCallbackTokenFromDingTalkForm(values []struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}) string {
+	for _, v := range values {
+		if v.Name == "_callback_token" {
+			return v.Value
+		}
+	}
+	return ""
+}
+
+// extractCallbackTokenFromWeChatForm 从企微回调的表单字段中提取回调令牌
+func (h *ApprovalCallbackHandler) extractCallbackTokenFromWeChatForm(formData []struct {
+	Title string `json:"title"`
+	Value string `json:"value"`
+}) string {
+	for _, v := range formData {
+		if v.Title == "_callback_token" {
+			return v.Value
+		}
+	}
+	return ""
+}
+
 // handleFeishuApprovalEvent 处理飞书审批事件
-func (h *ApprovalCallbackHandler) handleFeishuApprovalEvent(req *FeishuCallbackRequest) error {
+func (h *ApprovalCallbackHandler) handleFeishuApprovalEvent(req *FeishuCallbackRequest, scopeID string) error {
+	// 先尝试从回调表单数据中提取回调令牌，作为快速匹配
+	callbackToken := h.extractCallbackTokenFromFeishuForm(req.Event.Form)
+
 	// 查找对应的审批记录
 	var approval model.Approval
 	err := h.db.Where("external_id = ?", req.Event.InstanceCode).First(&approval).Error
 	if err != nil {
-		return fmt.Errorf("未找到对应的审批记录: %v", err)
+		// 如果 external_id 查找失败，尝试用回调令牌查找
+		if callbackToken != "" {
+			logger.Warnf("external_id=%s 查找失败，尝试用 callback_token=%s 匹配", req.Event.InstanceCode, callbackToken)
+			err = h.db.Where("callback_token = ?", callbackToken).First(&approval).Error
+		}
+		if err != nil {
+			return fmt.Errorf("未找到对应的审批记录: %v", err)
+		}
+	}
+	if err := h.validateCallbackScope(&approval, scopeID); err != nil {
+		return err
+	}
+	// 日志记录回调令牌以便追踪
+	if callbackToken != "" {
+		logger.Infof("飞书回调匹配成功 instance_code=%s callback_token=%s approval_id=%s ticket_id=%d",
+			req.Event.InstanceCode, callbackToken, approval.ID, approval.TicketID)
 	}
 
 	// 获取实例详情（包含 task_list）
@@ -517,7 +659,7 @@ func (h *ApprovalCallbackHandler) handleFeishuApprovalEvent(req *FeishuCallbackR
 
 	// 更新审批状态
 	status := h.mapFeishuStatus(req.Event.Status)
-	
+
 	// 更新当前审批人（转换为用户名）
 	currentApproverName := ""
 	if req.Event.Operator.UserID != "" {
@@ -604,12 +746,28 @@ func (h *ApprovalCallbackHandler) handleFeishuApprovalEvent(req *FeishuCallbackR
 }
 
 // handleDingTalkApprovalEvent 处理钉钉审批事件
-func (h *ApprovalCallbackHandler) handleDingTalkApprovalEvent(req *DingTalkCallbackRequest) error {
+func (h *ApprovalCallbackHandler) handleDingTalkApprovalEvent(req *DingTalkCallbackRequest, scopeID string) error {
+	// 先尝试从回调表单数据中提取回调令牌，作为快速匹配
+	callbackToken := h.extractCallbackTokenFromDingTalkForm(req.Data.FormComponentValues)
+
 	// 查找对应的审批记录
 	var approval model.Approval
 	err := h.db.Where("external_id = ?", req.ProcessInstanceID).First(&approval).Error
 	if err != nil {
-		return fmt.Errorf("未找到对应的审批记录: %v", err)
+		if callbackToken != "" {
+			logger.Warnf("钉钉 external_id=%s 查找失败，尝试用 callback_token=%s 匹配", req.ProcessInstanceID, callbackToken)
+			err = h.db.Where("callback_token = ?", callbackToken).First(&approval).Error
+		}
+		if err != nil {
+			return fmt.Errorf("未找到对应的审批记录: %v", err)
+		}
+	}
+	if err := h.validateCallbackScope(&approval, scopeID); err != nil {
+		return err
+	}
+	if callbackToken != "" {
+		logger.Infof("钉钉回调匹配成功 process_instance_id=%s callback_token=%s approval_id=%s ticket_id=%d",
+			req.ProcessInstanceID, callbackToken, approval.ID, approval.TicketID)
 	}
 
 	// 从 Tasks 中提取审批人信息
@@ -704,12 +862,15 @@ func (h *ApprovalCallbackHandler) handleDingTalkApprovalEvent(req *DingTalkCallb
 }
 
 // handleWeChatApprovalEvent 处理企业微信审批事件
-func (h *ApprovalCallbackHandler) handleWeChatApprovalEvent(req *WeChatCallbackRequest) error {
+func (h *ApprovalCallbackHandler) handleWeChatApprovalEvent(req *WeChatCallbackRequest, scopeID string) error {
 	// 查找对应的审批记录
 	var approval model.Approval
 	err := h.db.Where("external_id = ?", req.Content.ProcessInstanceID).First(&approval).Error
 	if err != nil {
 		return fmt.Errorf("未找到对应的审批记录: %v", err)
+	}
+	if err := h.validateCallbackScope(&approval, scopeID); err != nil {
+		return err
 	}
 
 	// 从 ApproverInfo 中提取审批人信息

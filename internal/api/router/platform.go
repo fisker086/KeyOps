@@ -18,9 +18,9 @@ func registerPlatform(
 	deploymentHandler *handler.DeploymentHandler,
 	releaseHandler *handler.ReleaseHandler,
 	buildMasterHandler *handler.BuildMasterHandler,
+	deployParamHandler *handler.DeployParamHandler,
 	registryHandler *handler.RegistryHandler,
 	monitorHandler *handler.MonitorHandler,
-	jenkinsHandler *handler.JenkinsHandler,
 	auditHandler *handler.AuditHandler,
 	dmsInstanceHandler *handler.DMSInstanceHandler,
 	dmsQueryHandler *handler.DMSQueryHandler,
@@ -29,6 +29,7 @@ func registerPlatform(
 	aiAssistantHandler *aiassistant.Handler,
 	k8sPermissionService *service.K8sPermissionService,
 	roleRepo repository.RoleRepository,
+	appDeployParamHandler *handler.AppDeployParamHandler,
 ) {
 	k8sClusters := authenticated.Group("/k8s/clusters")
 	k8sClusters.Use(middleware.OperationLogMiddleware())
@@ -131,10 +132,20 @@ func registerPlatform(
 		release.POST("/runs/:id/status", releaseHandler.UpdateRunStatus)
 		release.GET("/applications/:id/last-prod-run", releaseHandler.GetLastProdRun)
 		release.POST("/rollback", releaseHandler.RollbackProd)
-		release.GET("/pipelines", releaseHandler.ListPipelines)
-		release.GET("/pipeline", releaseHandler.GetPipeline)
-		release.PUT("/pipeline", releaseHandler.SavePipeline)
-		release.DELETE("/pipeline/:id", releaseHandler.DeletePipeline)
+	}
+
+	deployParams := authenticated.Group("/deploy-params")
+	{
+		deployParams.GET("", deployParamHandler.ListParams)
+		deployParams.GET("/templates", deployParamHandler.ListTemplates)
+		deployParams.PUT("/templates", deployParamHandler.UpsertTemplate)
+		deployParams.PATCH("/templates/:id", deployParamHandler.UpdateTemplate)
+		deployParams.DELETE("/templates/:id", deployParamHandler.DeleteTemplate)
+		deployParams.POST("", deployParamHandler.CreateParam)
+		deployParams.PATCH("/:id", deployParamHandler.UpdateParam)
+		deployParams.DELETE("/:id", deployParamHandler.DeleteParam)
+		deployParams.GET("/global-defaults", appDeployParamHandler.GetGlobalDefaults)
+		deployParams.PUT("/global-defaults", appDeployParamHandler.SaveGlobalDefaults)
 	}
 
 	buildMaster := authenticated.Group("/build-master")
@@ -144,6 +155,26 @@ func registerPlatform(
 		buildMaster.POST("/lists", buildMasterHandler.Create)
 		buildMaster.PATCH("/lists/:id", buildMasterHandler.Update)
 		buildMaster.GET("/records", buildMasterHandler.RecordsByQuery)
+		buildMaster.GET("/stats/sites", buildMasterHandler.SiteStats)
+
+		buildMaster.GET("/lists/:id/items", buildMasterHandler.ListItems)
+		buildMaster.GET("/check-items", buildMasterHandler.ListCheckItems)
+		buildMaster.POST("/items", buildMasterHandler.CreateItem)
+		buildMaster.DELETE("/items/:id", buildMasterHandler.DeleteItem)
+
+		buildMaster.POST("/details", buildMasterHandler.CreateDetail)
+		buildMaster.PATCH("/details/:id", buildMasterHandler.UpdateDetail)
+		buildMaster.DELETE("/details/:id", buildMasterHandler.DeleteDetail)
+		buildMaster.POST("/details/:id/execute", buildMasterHandler.ExecuteDetail)
+
+		buildMaster.GET("/approval-configs", buildMasterHandler.GetApprovalConfigs)
+		buildMaster.POST("/lists/:id/submit", buildMasterHandler.SubmitForApproval)
+		buildMaster.POST("/lists/:id/submit-platform", buildMasterHandler.SubmitForPlatformApproval)
+		buildMaster.POST("/lists/:id/approve", buildMasterHandler.Approve)
+		buildMaster.POST("/lists/:id/complete", buildMasterHandler.CompleteList)
+		buildMaster.POST("/lists/:id/rollback", buildMasterHandler.RollbackList)
+		buildMaster.POST("/lists/:id/deploy", buildMasterHandler.DeployList)
+		buildMaster.PATCH("/lists/:id/deploy-status", buildMasterHandler.UpdateDeployStatus)
 	}
 
 	registry := authenticated.Group("/registry")
@@ -161,25 +192,6 @@ func registerPlatform(
 		monitors.PUT("/prom/:id", monitorHandler.UpdateMonitor)
 		monitors.DELETE("/prom/:id", monitorHandler.DeleteMonitor)
 		monitors.GET("/probe", monitorHandler.GetProbe)
-	}
-
-	jenkins := authenticated.Group("/jenkins")
-	{
-		jenkins.GET("/servers", jenkinsHandler.GetJenkinsServers)
-		jenkins.POST("/servers", jenkinsHandler.CreateJenkinsServer)
-		jenkins.GET("/servers/:id", jenkinsHandler.GetJenkinsServerDetail)
-		jenkins.PUT("/servers/:id", jenkinsHandler.UpdateJenkinsServer)
-		jenkins.DELETE("/servers/:id", jenkinsHandler.DeleteJenkinsServer)
-		jenkins.POST("/test-connection", jenkinsHandler.TestJenkinsConnection)
-		jenkins.GET("/:serverId/jobs", jenkinsHandler.GetJobs)
-		jenkins.GET("/:serverId/jobs/search", jenkinsHandler.SearchJobs)
-		jenkins.GET("/:serverId/jobs/:jobName", jenkinsHandler.GetJobDetail)
-		jenkins.POST("/:serverId/jobs/:jobName/start", jenkinsHandler.StartJob)
-		jenkins.GET("/:serverId/jobs/:jobName/builds/:buildNumber", jenkinsHandler.GetBuildDetail)
-		jenkins.POST("/:serverId/jobs/:jobName/builds/:buildNumber/stop", jenkinsHandler.StopBuild)
-		jenkins.GET("/:serverId/jobs/:jobName/builds/:buildNumber/log", jenkinsHandler.GetBuildLog)
-		jenkins.GET("/:serverId/system-info", jenkinsHandler.GetSystemInfo)
-		jenkins.GET("/:serverId/queue", jenkinsHandler.GetQueueInfo)
 	}
 
 	audit := authenticated.Group("/v1/audit")

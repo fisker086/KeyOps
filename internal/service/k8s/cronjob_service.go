@@ -135,7 +135,7 @@ func (s *K8sService) GetCronJobDetail(clusterID string, clusterName string, name
 			ConcurrencyPolicy          string `json:"concurrencyPolicy"`
 			SuccessfulJobsHistoryLimit *int32 `json:"successfulJobsHistoryLimit"`
 			FailedJobsHistoryLimit     *int32 `json:"failedJobsHistoryLimit"`
-			JobTemplate struct {
+			JobTemplate                struct {
 				Spec struct {
 					Completions  *int32 `json:"completions"`
 					Parallelism  *int32 `json:"parallelism"`
@@ -199,9 +199,9 @@ func (s *K8sService) GetCronJobDetail(clusterID string, clusterName string, name
 			} `json:"jobTemplate"`
 		} `json:"spec"`
 		Status struct {
-			Active            []interface{} `json:"active"`
-			LastScheduleTime  *string       `json:"lastScheduleTime"`
-			LastSuccessfulTime *string      `json:"lastSuccessfulTime"`
+			Active             []interface{} `json:"active"`
+			LastScheduleTime   *string       `json:"lastScheduleTime"`
+			LastSuccessfulTime *string       `json:"lastSuccessfulTime"`
 		} `json:"status"`
 	}
 
@@ -223,17 +223,17 @@ func (s *K8sService) GetCronJobDetail(clusterID string, clusterName string, name
 			Active:    int32(len(cronJobResponse.Status.Active)),
 			Age:       formatAge(cronJobResponse.Metadata.CreationTimestamp),
 		},
-		Labels:                    cronJobResponse.Metadata.Labels,
-		Annotations:               cronJobResponse.Metadata.Annotations,
-		Schedule:                  cronJobResponse.Spec.Schedule,
-		Suspend:                   cronJobResponse.Spec.Suspend,
-		ConcurrencyPolicy:         cronJobResponse.Spec.ConcurrencyPolicy,
+		Labels:                     cronJobResponse.Metadata.Labels,
+		Annotations:                cronJobResponse.Metadata.Annotations,
+		Schedule:                   cronJobResponse.Spec.Schedule,
+		Suspend:                    cronJobResponse.Spec.Suspend,
+		ConcurrencyPolicy:          cronJobResponse.Spec.ConcurrencyPolicy,
 		SuccessfulJobsHistoryLimit: cronJobResponse.Spec.SuccessfulJobsHistoryLimit,
 		FailedJobsHistoryLimit:     cronJobResponse.Spec.FailedJobsHistoryLimit,
 		LastScheduleTime:           cronJobResponse.Status.LastScheduleTime,
 		LastSuccessfulTime:         cronJobResponse.Status.LastSuccessfulTime,
 		ServiceAccount:             cronJobResponse.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName,
-		NodeSelector:              cronJobResponse.Spec.JobTemplate.Spec.Template.Spec.NodeSelector,
+		NodeSelector:               cronJobResponse.Spec.JobTemplate.Spec.Template.Spec.NodeSelector,
 		CreationTimestamp:          cronJobResponse.Metadata.CreationTimestamp,
 	}
 
@@ -397,9 +397,9 @@ func (s *K8sService) GetCronJobDetail(clusterID string, clusterName string, name
 				var jobsResponse struct {
 					Items []struct {
 						Metadata struct {
-							Name              string            `json:"name"`
-							Namespace         string            `json:"namespace"`
-							CreationTimestamp string            `json:"creationTimestamp"`
+							Name              string `json:"name"`
+							Namespace         string `json:"namespace"`
+							CreationTimestamp string `json:"creationTimestamp"`
 							OwnerReferences   []struct {
 								Kind string `json:"kind"`
 								Name string `json:"name"`
@@ -509,4 +509,3 @@ func (s *K8sService) GetCronJobDetail(clusterID string, clusterName string, name
 
 	return detail, nil
 }
-

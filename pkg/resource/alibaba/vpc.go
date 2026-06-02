@@ -34,10 +34,10 @@ func (p *Provider) createVPC(ctx context.Context, r *resource.Resource) (*resour
 	}
 
 	props, _ := json.Marshal(map[string]interface{}{
-		"vpc_id":    response.VpcId,
+		"vpc_id":     response.VpcId,
 		"cidr_block": request.CidrBlock,
-		"vpc_name":  request.VpcName,
-		"region_id": p.region,
+		"vpc_name":   request.VpcName,
+		"region_id":  p.region,
 	})
 
 	var properties map[string]interface{}
@@ -68,11 +68,11 @@ func (p *Provider) readVPC(ctx context.Context, state *resource.ResourceState) (
 	}
 
 	props, _ := json.Marshal(map[string]interface{}{
-		"vpc_id":    response.VpcId,
+		"vpc_id":     response.VpcId,
 		"cidr_block": response.CidrBlock,
-		"vpc_name":  response.VpcName,
-		"status":    response.Status,
-		"region_id": response.RegionId,
+		"vpc_name":   response.VpcName,
+		"status":     response.Status,
+		"region_id":  response.RegionId,
 	})
 
 	var properties map[string]interface{}

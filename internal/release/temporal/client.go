@@ -9,7 +9,7 @@ import (
 
 // Client 用于在生产审批通过后启动 DeployProdWorkflow（可选）
 type Client struct {
-	c        client.Client
+	c         client.Client
 	taskQueue string
 }
 

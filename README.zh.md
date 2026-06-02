@@ -5,7 +5,7 @@
 ---
 
 **相关截图**
-![部门管理（中文）](image/readme-zh.jpg)
+![部门管理（中文）](image/readme-zh.png)
 
 **基于 Go 的企业级 DevOps 一体化平台** — 堡垒机、K8s 多集群、监控告警、数据库管理、云费用 FinOps、AI 助手等。
 

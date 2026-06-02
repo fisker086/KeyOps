@@ -23,6 +23,7 @@ type ApplicationRepository interface {
 	SearchWithUserFilterPaginated(params map[string]interface{}, userID, username string, isAdmin bool, page, pageSize int) ([]model.Application, int64, error)
 	CheckNameExists(name string, excludeID string) (bool, error)
 	FindByGitURL(repoURL string) (*model.Application, error)
+	ListDistinctSites() ([]string, error)
 }
 
 type applicationRepository struct {
@@ -262,6 +263,16 @@ func normalizeGitURL(u string) string {
 	s = strings.TrimSuffix(s, ".git")
 	s = strings.TrimSuffix(s, "/")
 	return s
+}
+
+func (r *applicationRepository) ListDistinctSites() ([]string, error) {
+	var sites []string
+	err := r.db.Model(&model.Application{}).
+		Where("site IS NOT NULL AND site != ''").
+		Distinct("site").
+		Order("site ASC").
+		Pluck("site", &sites).Error
+	return sites, err
 }
 
 func (r *applicationRepository) FindByGitURL(repoURL string) (*model.Application, error) {

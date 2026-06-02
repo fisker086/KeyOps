@@ -339,9 +339,9 @@ func (s *DatabaseStorage) SaveCommand(cmd *CommandRecord) error {
 
 // saveCommandToDB 实际的命令保存逻辑
 func (s *DatabaseStorage) saveCommandToDB(cmd *CommandRecord) error {
-	logger.Infof("[DatabaseStorage] Saving command: session=%s, host=%s, user=%s, command=%q", 
+	logger.Infof("[DatabaseStorage] Saving command: session=%s, host=%s, user=%s, command=%q",
 		cmd.SessionID, cmd.HostIP, cmd.Username, cmd.Command)
-	
+
 	// 使用统一的 CommandRecord 模型（表名是 command_histories）
 	commandRecord := model.CommandRecord{
 		ProxyID:    cmd.ProxyID,
@@ -365,7 +365,7 @@ func (s *DatabaseStorage) saveCommandToDB(cmd *CommandRecord) error {
 		return err
 	}
 
-	logger.Infof("[DatabaseStorage] Command saved successfully: id=%d, command=%q, session=%s", 
+	logger.Infof("[DatabaseStorage] Command saved successfully: id=%d, command=%q, session=%s",
 		commandRecord.ID, cmd.Command, cmd.SessionID)
 	return nil
 }

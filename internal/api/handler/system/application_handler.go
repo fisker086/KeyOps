@@ -7,9 +7,22 @@ import (
 
 	"github.com/fisker086/keyops/internal/model"
 	"github.com/fisker086/keyops/internal/repository"
+	"github.com/fisker086/keyops/pkg/config"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
+
+func (h *ApplicationHandler) GetConfigSites(c *gin.Context) {
+	sites := config.GlobalConfig.Sites
+	if sites == nil {
+		sites = []string{}
+	}
+	c.JSON(http.StatusOK, model.Response{
+		Code:    http.StatusOK,
+		Message: "Success",
+		Data:    sites,
+	})
+}
 
 type ApplicationHandler struct {
 	repo repository.ApplicationRepository
@@ -183,6 +196,28 @@ func (h *ApplicationHandler) ListApplications(c *gin.Context) {
 	})
 }
 
+// ListDistinctSites 返回应用服务中已配置的不重复站点列表（供发版总览选站）
+// GET /api/applications/sites
+func (h *ApplicationHandler) ListDistinctSites(c *gin.Context) {
+	sites, err := h.repo.ListDistinctSites()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to fetch sites: " + err.Error(),
+			Data:    nil,
+		})
+		return
+	}
+	if sites == nil {
+		sites = []string{}
+	}
+	c.JSON(http.StatusOK, model.Response{
+		Code:    http.StatusOK,
+		Message: "Success",
+		Data:    sites,
+	})
+}
+
 // isUserOwner 判断用户是否为该应用的运维/测试/研发负责人之一（支持 userID 或 username，前端可能存的是用户名）
 func isUserOwner(app *model.Application, userID, username string) bool {
 	matches := func(s string) bool {
@@ -320,6 +355,7 @@ func (h *ApplicationHandler) CreateApplication(c *gin.Context) {
 		IsCritical:  req.IsCritical,
 		SrvType:     normalizedSrvType,
 		VirtualTech: req.VirtualTech,
+		DevLanguage: req.DevLanguage,
 		Status:      req.Status,
 		Site:        req.Site,
 		Department:  req.Department,
@@ -420,6 +456,7 @@ func (h *ApplicationHandler) UpdateApplication(c *gin.Context) {
 	app.IsCritical = req.IsCritical
 	app.SrvType = normalizedSrvType
 	app.VirtualTech = req.VirtualTech
+	app.DevLanguage = req.DevLanguage
 	if req.Status != "" {
 		app.Status = req.Status
 	}

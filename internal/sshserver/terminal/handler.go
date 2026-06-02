@@ -3,8 +3,8 @@ package terminal
 import (
 	"context"
 	"fmt"
-	"io"
 	"github.com/fisker086/keyops/pkg/logger"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +23,7 @@ type ProxyHandler struct {
 	selector       types.HostSelector
 	auditor        types.Auditor
 	recorder       types.SessionRecorder
-	blacklistMgr   *blacklist.Manager               // 黑名单管理器
+	blacklistMgr   *blacklist.Manager              // 黑名单管理器
 	systemUserRepo repository.SystemUserRepository // 系统用户仓库（用于新权限架构）
 }
 
@@ -159,17 +159,13 @@ func (h *ProxyHandler) handleHostConnection(ctx context.Context, channel ssh.Cha
 		TerminalRows: session.TerminalRows,
 	}
 
+	// 显示连接信息（此时用户名尚未确定，在系统用户选择后更新）
 	logger.Infof("[TerminalHandler] Created new host session: %s (SSH session: %s, Target: %s@%s)",
 		hostSessionID, originalSessionID, selectedHost.Username, selectedHost.IP)
 
-	// 显示连接信息
-	menu.ShowConnectionInfo(selectedHost)
-
-	// ========== 新权限架构：系统用户选择 ==========
+	// ========== 系统用户选择 ==========
 	var systemUser *model.SystemUser
-	// 如果启用了新权限架构（systemUserRepo 可用），让用户选择系统用户
 	if h.systemUserRepo != nil {
-		// 获取该主机可用的系统用户
 		availableSystemUsers, err := h.systemUserRepo.GetAvailableSystemUsersForUser(session.UserID, selectedHost.ID)
 		if err != nil {
 			logger.Infof("[TerminalHandler] Failed to get available system users: %v", err)
@@ -180,24 +176,14 @@ func (h *ProxyHandler) handleHostConnection(ctx context.Context, channel ssh.Cha
 			menu.ShowError("No available system users for this host")
 			return fmt.Errorf("no available system users")
 		} else if len(availableSystemUsers) == 1 {
-			// 只有一个系统用户，自动使用
 			systemUser = &availableSystemUsers[0]
 			logger.Infof("[TerminalHandler] Auto-selected system user: %s", systemUser.Name)
-			hostSession.HostUsername = systemUser.Username
-			// 更新 selectedHost 的认证信息（目前只支持密码）
-			if systemUser.Password != "" {
-				selectedHost.Password = systemUser.Password
-			}
-			// TODO: 支持私钥认证
 		} else {
-			// 有多个系统用户，让用户选择
 			channel.Write([]byte(fmt.Sprintf("\r\n📋 Available system users for %s:\r\n", selectedHost.Name)))
 			for i, su := range availableSystemUsers {
 				channel.Write([]byte(fmt.Sprintf("  [%d] %s (%s)\r\n", i+1, su.Name, su.Username)))
 			}
 			channel.Write([]byte("\r\n"))
-
-			// 读取用户选择
 			channel.Write([]byte("Select system user (1-" + fmt.Sprintf("%d", len(availableSystemUsers)) + "): "))
 			buf := make([]byte, 32)
 			n, err := channel.Read(buf)
@@ -205,7 +191,6 @@ func (h *ProxyHandler) handleHostConnection(ctx context.Context, channel ssh.Cha
 				return fmt.Errorf("failed to read system user selection")
 			}
 
-			// 解析选择
 			choice := strings.TrimSpace(string(buf[:n]))
 			var selected int
 			if _, err := fmt.Sscanf(choice, "%d", &selected); err != nil || selected < 1 || selected > len(availableSystemUsers) {
@@ -215,15 +200,17 @@ func (h *ProxyHandler) handleHostConnection(ctx context.Context, channel ssh.Cha
 
 			systemUser = &availableSystemUsers[selected-1]
 			logger.Infof("[TerminalHandler] User selected system user: %s", systemUser.Name)
-			hostSession.HostUsername = systemUser.Username
-			// 更新 selectedHost 的认证信息（目前只支持密码）
-			if systemUser.Password != "" {
-				selectedHost.Password = systemUser.Password
-			}
-			// TODO: 支持私钥认证
 			channel.Write([]byte("\r\n"))
 		}
+
+		// 将 SystemUser 信息回填到 selectedHost 和 hostSession
+		selectedHost.Username = systemUser.Username
+		selectedHost.Password = systemUser.Password
+		hostSession.HostUsername = systemUser.Username
 	}
+
+	// 系统用户选择完成后，显示连接信息
+	menu.ShowConnectionInfo(selectedHost)
 	// ========== 系统用户选择结束 ==========
 
 	// 1. 先记录登录尝试（status: connecting）

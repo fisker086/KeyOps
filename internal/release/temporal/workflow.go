@@ -3,8 +3,8 @@ package temporal
 import (
 	"time"
 
-	"go.temporal.io/sdk/workflow"
 	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
 )
 
 // DeployProdInput 生产发布 Workflow 输入

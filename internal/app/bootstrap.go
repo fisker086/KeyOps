@@ -62,4 +62,3 @@ func Bootstrap(cfgPath string) (*config.Config, error) {
 
 	return cfg, nil
 }
-

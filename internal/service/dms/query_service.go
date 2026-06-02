@@ -13,10 +13,10 @@ import (
 )
 
 type QueryService struct {
-	instanceRepo   repository.DBInstanceRepository
-	queryLogRepo   repository.QueryLogRepository
-	permissionSvc  *PermissionService
-	crypto         *crypto.Crypto
+	instanceRepo  repository.DBInstanceRepository
+	queryLogRepo  repository.QueryLogRepository
+	permissionSvc *PermissionService
+	crypto        *crypto.Crypto
 }
 
 func NewQueryService(
@@ -118,10 +118,10 @@ func (s *QueryService) ExecuteQuery(req *ExecuteQueryRequest, userID, username, 
 	} else if sqlSize > 100*1024 { // 大于100KB
 		timeout = 120 * time.Second // 2分钟
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	
+
 	var result *QueryResult
 	if isSelect {
 		result, err = executor.ExecuteQuery(ctx, req.DatabaseName, req.Query, 0) // limit 0 表示不限制
@@ -136,22 +136,22 @@ func (s *QueryService) ExecuteQuery(req *ExecuteQueryRequest, userID, username, 
 
 	// 6. 记录日志（异步）
 	go s.logQueryAsync(&model.QueryLog{
-		UserID:        userID,
-		Username:      username,
-		InstanceID:    req.InstanceID,
-		InstanceName:  instance.Name,
-		DBType:        instance.DBType,
-		DatabaseName:  req.DatabaseName,
-		QueryContent:  req.Query,
-		QueryType:     sqlType,
-		AffectedRows:  int(result.AffectedRows),
-		ResultCount:   result.ResultCount,
+		UserID:          userID,
+		Username:        username,
+		InstanceID:      req.InstanceID,
+		InstanceName:    instance.Name,
+		DBType:          instance.DBType,
+		DatabaseName:    req.DatabaseName,
+		QueryContent:    req.Query,
+		QueryType:       sqlType,
+		AffectedRows:    int(result.AffectedRows),
+		ResultCount:     result.ResultCount,
 		ExecutionTimeMs: int(executionTime),
-		Status:        getStatus(result),
-		ErrorMessage:  result.Error,
-		ResultPreview: truncateString(formatResultPreview(result), 1000),
-		ClientIP:      clientIP,
-		UserAgent:     userAgent,
+		Status:          getStatus(result),
+		ErrorMessage:    result.Error,
+		ResultPreview:   truncateString(formatResultPreview(result), 1000),
+		ClientIP:        clientIP,
+		UserAgent:       userAgent,
 	})
 
 	if err != nil {
@@ -335,7 +335,7 @@ func (s *QueryService) detectRedisType(query string) string {
 func (s *QueryService) extractTableName(sql string) string {
 	// 简化实现，实际应该使用 SQL 解析器
 	upperSQL := strings.ToUpper(strings.TrimSpace(sql))
-	
+
 	// 简单的表名提取逻辑
 	if strings.HasPrefix(upperSQL, "SELECT") {
 		// SELECT * FROM table_name
@@ -410,13 +410,13 @@ type ExecuteQueryRequest struct {
 }
 
 type QueryResult struct {
-	Success      bool                   `json:"success"`
-	Columns      []string               `json:"columns,omitempty"`
-	Rows         [][]interface{}        `json:"rows,omitempty"`
-	Documents    []map[string]interface{} `json:"documents,omitempty"`
-	RedisResult  interface{}            `json:"redisResult,omitempty"`
-	AffectedRows int64                  `json:"affectedRows"`
-	ResultCount  int                    `json:"resultCount"`
-	ExecutionTime int64                 `json:"executionTimeMs"`
-	Error        string                 `json:"error,omitempty"`
+	Success       bool                     `json:"success"`
+	Columns       []string                 `json:"columns,omitempty"`
+	Rows          [][]interface{}          `json:"rows,omitempty"`
+	Documents     []map[string]interface{} `json:"documents,omitempty"`
+	RedisResult   interface{}              `json:"redisResult,omitempty"`
+	AffectedRows  int64                    `json:"affectedRows"`
+	ResultCount   int                      `json:"resultCount"`
+	ExecutionTime int64                    `json:"executionTimeMs"`
+	Error         string                   `json:"error,omitempty"`
 }

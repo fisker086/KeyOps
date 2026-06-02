@@ -92,5 +92,3 @@ func (s *SyncScheduler) Reload() {
 	s.stopCh = make(chan struct{})
 	s.Start()
 }
-
-

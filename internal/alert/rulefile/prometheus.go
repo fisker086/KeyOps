@@ -23,7 +23,7 @@ type RuleGroupYaml struct {
 // RuleGroup 规则组
 type RuleGroup struct {
 	Name  string `yaml:"name"`
-	Rules []Rule  `yaml:"rules"`
+	Rules []Rule `yaml:"rules"`
 }
 
 // Rule 告警规则
@@ -401,4 +401,3 @@ type RuleGroupData struct {
 	GroupName string
 	Rule      AlertRule
 }
-

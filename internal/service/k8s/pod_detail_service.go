@@ -14,13 +14,13 @@ type PodDetail struct {
 	Pod
 	Labels            map[string]string `json:"labels"`
 	Annotations       map[string]string `json:"annotations"`
-	Containers        []Container        `json:"containers"`
-	Volumes           []VolumeInfo       `json:"volumes"`
-	Events            []Event            `json:"events"`
-	CreationTimestamp string             `json:"creationTimestamp"`
-	StartTime         string             `json:"startTime"`
-	QoSClass          string             `json:"qosClass"`
-	ServiceAccount    string             `json:"serviceAccount"`
+	Containers        []Container       `json:"containers"`
+	Volumes           []VolumeInfo      `json:"volumes"`
+	Events            []Event           `json:"events"`
+	CreationTimestamp string            `json:"creationTimestamp"`
+	StartTime         string            `json:"startTime"`
+	QoSClass          string            `json:"qosClass"`
+	ServiceAccount    string            `json:"serviceAccount"`
 	NodeSelector      map[string]string `json:"nodeSelector"`
 	Tolerations       []TolerationInfo  `json:"tolerations"`
 }
@@ -281,4 +281,3 @@ func (s *K8sService) GetPodDetail(clusterID string, clusterName string, namespac
 
 	return detail, nil
 }
-

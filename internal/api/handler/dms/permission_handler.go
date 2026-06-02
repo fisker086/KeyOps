@@ -98,7 +98,7 @@ func (h *PermissionHandler) BatchGrantPermissions(c *gin.Context) {
 			UserID:         req.UserID,
 			InstanceID:     req.InstanceID,
 			DatabaseName:   perm.DatabaseName, // 留空表示实例级别权限
-			TableName:      "",                 // 不再支持表级别权限
+			TableName:      "",                // 不再支持表级别权限
 			PermissionType: req.PermissionType,
 			GrantedBy:      grantedBy,
 			ExpiresAt:      req.ExpiresAt,

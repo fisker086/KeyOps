@@ -276,12 +276,12 @@ func handleListDeployments(args json.RawMessage, ctx *K8sToolContext) *mcp.CallT
 	var items []map[string]any
 	for _, d := range deployList.Items {
 		items = append(items, map[string]any{
-			"name":             d.Name,
-			"namespace":        d.Namespace,
-			"replicas":         d.Status.Replicas,
-			"available":        d.Status.AvailableReplicas,
-			"strategy":         string(d.Spec.Strategy.Type),
-			"age":              d.CreationTimestamp.Format("2006-01-02"),
+			"name":      d.Name,
+			"namespace": d.Namespace,
+			"replicas":  d.Status.Replicas,
+			"available": d.Status.AvailableReplicas,
+			"strategy":  string(d.Spec.Strategy.Type),
+			"age":       d.CreationTimestamp.Format("2006-01-02"),
 		})
 	}
 
@@ -355,16 +355,16 @@ func handleDescribeNode(args json.RawMessage, ctx *K8sToolContext) *mcp.CallTool
 	}
 
 	info := map[string]any{
-		"name":       node.Name,
-		"status":     conditions,
-		"version":    node.Status.NodeInfo.KubeletVersion,
-		"os":         node.Status.NodeInfo.OSImage,
-		"arch":       node.Status.NodeInfo.Architecture,
-		"cpu_cores":  quantityString(node.Status.Capacity["cpu"]),
-		"memory":     quantityString(node.Status.Capacity["memory"]),
-		"pod_cidr":   node.Spec.PodCIDR,
-		"age":        node.CreationTimestamp.Format("2006-01-02"),
-		"labels":     node.Labels,
+		"name":      node.Name,
+		"status":    conditions,
+		"version":   node.Status.NodeInfo.KubeletVersion,
+		"os":        node.Status.NodeInfo.OSImage,
+		"arch":      node.Status.NodeInfo.Architecture,
+		"cpu_cores": quantityString(node.Status.Capacity["cpu"]),
+		"memory":    quantityString(node.Status.Capacity["memory"]),
+		"pod_cidr":  node.Spec.PodCIDR,
+		"age":       node.CreationTimestamp.Format("2006-01-02"),
+		"labels":    node.Labels,
 	}
 
 	data, _ := json.MarshalIndent(info, "", "  ")

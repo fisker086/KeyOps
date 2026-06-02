@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/fisker086/keyops/internal/audit"
@@ -92,7 +95,7 @@ func Initialize(cfgPath string) (*App, error) {
 	logger.Infof("Notification Manager initialized")
 
 	// 6. Initialize background services
-	backgroundServices := InitializeBackgroundServices(repos, cfg, notificationMgr, services.Alert, services.Bill)
+	backgroundServices := InitializeBackgroundServices(repos, cfg, notificationMgr, services.Alert, services.Bill, services.Deployment)
 	logger.Infof("Background services initialized")
 	logger.Infof("   Asset sync scheduler started")
 	logger.Infof("   Host status monitor started (interval: 5 minutes)")
@@ -135,10 +138,10 @@ func Shutdown(app *App) {
 	defer cancel()
 
 	// 1. 停止账单同步调度器
-	// if app.BackgroundServices.BillSync != nil {
-	// 	app.BackgroundServices.BillSync.Stop()
-	// 	logger.Infof("[Shutdown] Bill sync scheduler stopped")
-	// }
+	if app.BackgroundServices.BillSync != nil {
+		app.BackgroundServices.BillSync.Stop()
+		logger.Infof("[Shutdown] Bill sync scheduler stopped")
+	}
 
 	// 2. Close MongoDB connections
 	if app.BastionMongo != nil {
@@ -175,9 +178,11 @@ func Shutdown(app *App) {
 	logger.Infof("[Shutdown] Graceful shutdown completed")
 }
 
-// WaitForShutdown 阻塞等待关闭信号，然后触发优雅关闭
+// WaitForShutdown 阻塞等待关闭信号（SIGINT/SIGTERM），然后触发优雅关闭
 func WaitForShutdown(app *App) {
-	// TODO: 实现信号处理
-	<-make(chan struct{})
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigCh
+	logger.Infof("[Shutdown] Received signal: %v", sig)
 	Shutdown(app)
 }

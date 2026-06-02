@@ -34,9 +34,9 @@ func NewSearchHandler(
 
 // SearchResult 搜索结果结构
 type SearchResult struct {
-	Type        string `json:"type"`        // cluster, node, pod, workload
-	ID          string `json:"id"`          // 资源ID
-	Name        string `json:"name"`        // 资源名称
+	Type        string `json:"type"` // cluster, node, pod, workload
+	ID          string `json:"id"`   // 资源ID
+	Name        string `json:"name"` // 资源名称
 	Namespace   string `json:"namespace,omitempty"`
 	ClusterID   string `json:"clusterId"`
 	ClusterName string `json:"clusterName"`
@@ -318,4 +318,3 @@ func (h *SearchHandler) GlobalSearch(c *gin.Context) {
 		"stats":   stats,
 	}))
 }
-

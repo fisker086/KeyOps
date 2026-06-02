@@ -66,8 +66,8 @@ func (p *AggregationProcessor) CheckAggregation(event *model.AlertEvent) (*Aggre
 		}, nil
 	}
 
-	// 获取所有未关闭的告警事件
-	unclosedEvents, err := p.eventRepo.ListUnclosed()
+	// 获取最近24小时内的未关闭告警事件（聚合窗口通常较短，限制1000条）
+	unclosedEvents, err := p.eventRepo.ListUnclosedRecent(time.Now().Add(-24*time.Hour), 1000)
 	if err != nil {
 		return &AggregationResult{
 			ShouldNotify: true,

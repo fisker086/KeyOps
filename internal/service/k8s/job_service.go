@@ -243,11 +243,11 @@ func (s *K8sService) GetJobDetail(clusterID string, clusterName string, namespac
 		Active:            jobResponse.Status.Active,
 		Completions:       jobResponse.Spec.Completions,
 		Parallelism:       jobResponse.Spec.Parallelism,
-		BackoffLimit:     jobResponse.Spec.BackoffLimit,
+		BackoffLimit:      jobResponse.Spec.BackoffLimit,
 		StartTime:         jobResponse.Status.StartTime,
 		CompletionTime:    jobResponse.Status.CompletionTime,
 		ServiceAccount:    jobResponse.Spec.Template.Spec.ServiceAccountName,
-		NodeSelector:     jobResponse.Spec.Template.Spec.NodeSelector,
+		NodeSelector:      jobResponse.Spec.Template.Spec.NodeSelector,
 		CreationTimestamp: jobResponse.Metadata.CreationTimestamp,
 	}
 
@@ -466,4 +466,3 @@ func (s *K8sService) GetJobDetail(clusterID string, clusterName string, namespac
 
 	return detail, nil
 }
-
