@@ -24,7 +24,7 @@ bastion_storage:
   # uri 支持完整连接串，可附带 timeout、authSource 等参数
   # 示例: "mongodb://user:pass@localhost:27017?authSource=admin&connectTimeoutMS=5000"
   mongodb:
-    uri: "mongodb://admin:123456@localhost:27017/keyops_bastion?authSource=admin&connectTimeoutMS=5000"
+    uri: "mongodb://admin:123456@mongodb:27017/keyops_bastion?authSource=admin&connectTimeoutMS=5000"
     database: keyops_bastion
     collection_recordings: bastion_recordings
     collection_commands: bastion_commands
