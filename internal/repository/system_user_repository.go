@@ -136,8 +136,8 @@ func (r *systemUserRepository) GetAvailableSystemUsersForUser(userID, hostID str
 		) OR
 		(permission_rules.host_ids IS NOT NULL 
 		 AND permission_rules.host_ids != '' 
-		 AND %s)
-	`, r.getJSONContainsQuery("permission_rules.host_ids", "?"), hostID, hostID)
+		 AND `+r.getJSONContainsQuery("permission_rules.host_ids", "?")+`)
+	`, hostID, hostID)
 
 	err := query.Order("system_users.priority DESC, system_users.created_at DESC").Find(&systemUsers).Error
 	return systemUsers, err

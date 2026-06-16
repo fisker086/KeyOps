@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -18,12 +19,38 @@ type Config struct {
 	SSH      SSHConfig      `yaml:"ssh"`
 	Proxy    ProxyConfig    `yaml:"proxy"`
 	Sync     SyncConfig     `yaml:"sync"`
-	// Pulumi removed, replaced by pkg/resource engine
+	// Pulumi / resource engine removed, deploy uses Helm charts
 	Deploy         DeployConfig         `yaml:"deploy"`
 	Helm           HelmConfig           `yaml:"helm"`
 	BastionStorage BastionStorageConfig `yaml:"bastion_storage"`
-	BillStorage    BillStorageConfig    `yaml:"bill_storage"`
+	Billing        BillingConfig        `yaml:"billing"`
 	Sites          []string             `yaml:"sites"`
+}
+
+// DefaultUSDToCNYRate 仅在 config.yaml 未配置 billing.usd_to_cny_rate 时使用。
+const DefaultUSDToCNYRate = 6.8
+
+// BillingConfig 账单展示配置：基准币种与汇率（单一来源，避免硬编码）
+type BillingConfig struct {
+	DefaultCurrency string  `yaml:"default_currency"` // 默认基准币种 CNY/USD
+	USDToCNYRate    float64 `yaml:"usd_to_cny_rate"`  // USD→CNY 汇率
+}
+
+func (c *BillingConfig) SetDefaults() {
+	if c.DefaultCurrency == "" {
+		c.DefaultCurrency = "CNY"
+	}
+	if c.USDToCNYRate <= 0 {
+		c.USDToCNYRate = DefaultUSDToCNYRate
+	}
+}
+
+// EffectiveUSDToCNYRate 返回有效汇率（优先 config 值）。
+func EffectiveUSDToCNYRate(rate float64) float64 {
+	if rate > 0 {
+		return rate
+	}
+	return DefaultUSDToCNYRate
 }
 
 // BastionStorageConfig 堡垒机存储配置
@@ -73,28 +100,13 @@ func (c *BastionStorageConfig) GetMongoURI() string {
 	return c.MongoDB.GetURI()
 }
 
-// MongoConfig MongoDB 配置（内嵌到 bastion_storage 或 bill_storage）
+// MongoConfig MongoDB 配置（内嵌到 bastion_storage）
 type MongoConfig struct {
 	URI      string `yaml:"uri"`
 	Database string `yaml:"database"`
 }
 
 func (c *MongoConfig) GetURI() string {
-	return c.URI
-}
-
-// BillStorageConfig 账单存储配置（复用 MongoConfig）
-type BillStorageConfig struct {
-	MongoConfig `yaml:",inline"`
-}
-
-func (c *BillStorageConfig) SetDefaults() {
-	if c.Database == "" {
-		c.Database = "keyops_bill"
-	}
-}
-
-func (c *BillStorageConfig) GetURI() string {
 	return c.URI
 }
 
@@ -205,6 +217,8 @@ type DatabaseConfig struct {
 	MaxIdleConns    int    `yaml:"max_idle_conns"`
 	MaxOpenConns    int    `yaml:"max_open_conns"`
 	ConnMaxLifetime int    `yaml:"conn_max_lifetime"`
+	// SlowThresholdMs GORM 慢 SQL 日志阈值（毫秒），同步扫大表时可适当调高
+	SlowThresholdMs int `yaml:"slow_threshold_ms"`
 }
 
 type RedisConfig struct {
@@ -300,8 +314,7 @@ type SecurityConfig struct {
 // SetDefaults 设置安全配置的默认值
 func (c *SecurityConfig) SetDefaults() {
 	if c.JWTSecret == "" {
-		// 默认JWT密钥（64字节，使用openssl生成的随机字符串，仅用于开发环境）
-		// 生产环境必须修改为强随机字符串
+		log.Printf("[Security] WARNING: No JWT secret configured (security.jwt_secret). Using hardcoded dev default. Set a strong random string in production config.yaml!")
 		c.JWTSecret = "DdzI7wyean0JDT86fIEY+XEPKa+swZRkAlDUojBhnUQUta4KY/EG3JnnI6mDSrxV"
 	}
 }
@@ -343,7 +356,7 @@ type SyncConfig struct {
 	Interval       int    `yaml:"interval"`         // 同步间隔（秒），默认60秒
 	CleanupDays    int    `yaml:"cleanup_days"`     // 清理已同步数据的天数，默认7天
 	BatchSize      int    `yaml:"batch_size"`       // 每次同步的批量大小，默认1000
-	BillSyncHour   int    `yaml:"bill_sync_hour"`   // 账单同步执行小时，默认2点
+	BillSyncHour   *int   `yaml:"bill_sync_hour"`   // 账单同步执行小时，nil=2点；设为0=午夜
 	BillSyncMinute int    `yaml:"bill_sync_minute"` // 账单同步执行分钟，默认0分
 	BillSyncCron   string `yaml:"bill_sync_cron"`   // Cron表达式，支持5段或6段；为空时由hour/minute生成
 }
@@ -358,17 +371,18 @@ func (c *SyncConfig) SetDefaults() {
 	if c.BatchSize == 0 {
 		c.BatchSize = 1000
 	}
-	if c.BillSyncHour == 0 {
-		c.BillSyncHour = 2
-	}
-	if c.BillSyncHour < 0 || c.BillSyncHour > 23 {
-		c.BillSyncHour = 2
+	if c.BillSyncHour == nil {
+		defaultHour := 2
+		c.BillSyncHour = &defaultHour
+	} else if *c.BillSyncHour < 0 || *c.BillSyncHour > 23 {
+		defaultHour := 2
+		c.BillSyncHour = &defaultHour
 	}
 	if c.BillSyncMinute < 0 || c.BillSyncMinute > 59 {
 		c.BillSyncMinute = 0
 	}
 	if c.BillSyncCron == "" {
-		c.BillSyncCron = fmt.Sprintf("0 %d %d * * *", c.BillSyncMinute, c.BillSyncHour)
+		c.BillSyncCron = fmt.Sprintf("0 %d %d * * *", c.BillSyncMinute, *c.BillSyncHour)
 	}
 }
 
@@ -409,7 +423,7 @@ func Load(configPath string) (*Config, error) {
 	config.Helm.SetDefaults()
 	config.MongoDB.SetDefaults()
 	config.BastionStorage.SetDefaults()
-	config.BillStorage.SetDefaults()
+	config.Billing.SetDefaults()
 	config.Sync.SetDefaults()
 
 	// 验证配置
@@ -491,12 +505,6 @@ func Load(configPath string) (*Config, error) {
 	if v := os.Getenv("MONGO_DATABASE"); v != "" {
 		config.MongoDB.Database = v
 	}
-	if v := os.Getenv("BILL_MONGO_URI"); v != "" {
-		config.BillStorage.URI = v
-	}
-	if v := os.Getenv("BILL_MONGO_DATABASE"); v != "" {
-		config.BillStorage.Database = v
-	}
 	if v := os.Getenv("BILL_SYNC_CRON"); v != "" {
 		config.Sync.BillSyncCron = v
 	}
@@ -574,5 +582,8 @@ func (c *DatabaseConfig) SetDefaults() {
 	}
 	if c.ConnMaxLifetime == 0 {
 		c.ConnMaxLifetime = 3600 // 1 hour
+	}
+	if c.SlowThresholdMs <= 0 {
+		c.SlowThresholdMs = 5000 // 默认 5s，避免同步时 1s 阈值刷屏
 	}
 }

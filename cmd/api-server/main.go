@@ -30,16 +30,9 @@ func main() {
 		panic(err)
 	}
 
-	// 启动优雅关闭监听（阻塞直到收到信号）
+	// 启动优雅关闭监听（在独立 goroutine 中等待信号）
 	go app.WaitForShutdown(application)
 
-	app.StartServer(
-		application.Config,
-		application.Handlers,
-		application.Services,
-		application.Repos,
-		application.BackgroundServices,
-		application.SSHServer,
-		application.UnifiedAuditor,
-	)
+	// StartServer 阻塞直到 httpServer.Shutdown() 被调用
+	app.StartServer(application)
 }

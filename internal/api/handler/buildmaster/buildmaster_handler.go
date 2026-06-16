@@ -1766,7 +1766,7 @@ func (h *BuildMasterHandler) SubmitForPlatformApproval(c *gin.Context) {
 	}))
 }
 
-// ApprovalCallback 通用审批回调入口（Feishu / DingTalk / WeChat）
+// ApprovalCallback 通用审批回调入口（Feishu / WeChat）
 // 各平台需注册独立路由，此方法根据 platform 参数分发
 func (h *BuildMasterHandler) ApprovalCallback(c *gin.Context) {
 	platform := c.Param("platform")
@@ -1843,6 +1843,103 @@ func (h *BuildMasterHandler) ApprovalCallback(c *gin.Context) {
 		ListID:       list.ID,
 		OperatorID:   "",
 		OperatorName: result.ApproverName,
+		Method:       method,
+		Body:         `[{"name":"status","old":"2","new":"` + strconv.Itoa(list.Status) + `"}]`,
+	})
+
+	c.JSON(200, gin.H{"message": "ok"})
+}
+
+// DingTalkCallback 钉钉审批回调（BuildMaster 专用）
+func (h *BuildMasterHandler) DingTalkCallback(c *gin.Context) {
+	raw, err := c.GetRawData()
+	if err != nil {
+		c.JSON(400, model.Error(400, "read body failed"))
+		return
+	}
+
+	var req struct {
+		EventType         string `json:"eventType"`
+		ProcessInstanceID string `json:"processInstanceId"`
+		Data              struct {
+			ProcessInstanceID string `json:"processInstanceId"`
+			Status            string `json:"status"`
+			Result            string `json:"result"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(raw, &req); err != nil {
+		c.JSON(400, model.Error(400, "invalid dingtalk callback json"))
+		return
+	}
+
+	if req.EventType != "bpms_instance_change" {
+		c.JSON(200, gin.H{"message": "ignored"})
+		return
+	}
+
+	instanceID := req.ProcessInstanceID
+	if instanceID == "" {
+		instanceID = req.Data.ProcessInstanceID
+	}
+	if instanceID == "" {
+		c.JSON(200, gin.H{"message": "ignored"})
+		return
+	}
+
+	list, err := h.repo.FindByApprovalInstance(instanceID)
+	if err != nil {
+		logger.Infof("DingTalkCallback: no build master found for instance=%s", instanceID)
+		c.JSON(200, gin.H{"message": "ignored"})
+		return
+	}
+
+	var status model.ApprovalStatus
+	switch req.Data.Status {
+	case "COMPLETED":
+		if req.Data.Result == "refuse" {
+			status = model.ApprovalStatusRejected
+		} else {
+			status = model.ApprovalStatusApproved
+		}
+	case "TERMINATED":
+		status = model.ApprovalStatusRejected
+	case "CANCELED":
+		status = model.ApprovalStatusCanceled
+	default:
+		c.JSON(200, gin.H{"message": "ignored"})
+		return
+	}
+
+	method := "approval_" + string(status)
+	switch status {
+	case model.ApprovalStatusApproved:
+		list.Status = model.BuildMasterStatusReleasing
+		list.DeployStatus = model.BuildMasterDeployPending
+		h.db.Model(&model.Approval{}).Where("external_id = ?", instanceID).Update("status", model.ApprovalStatusApproved)
+	case model.ApprovalStatusRejected:
+		list.Status = model.BuildMasterStatusFilling
+		list.DeployStatus = ""
+		h.db.Model(&model.Approval{}).Where("external_id = ?", instanceID).Update("status", model.ApprovalStatusRejected)
+	case model.ApprovalStatusCanceled:
+		list.Status = model.BuildMasterStatusFilling
+		list.DeployStatus = ""
+		list.ApprovalInstance = ""
+		h.db.Model(&model.Approval{}).Where("external_id = ?", instanceID).Update("status", model.ApprovalStatusCanceled)
+	default:
+		c.JSON(200, gin.H{"message": "ignored"})
+		return
+	}
+
+	if err := h.repo.Update(list); err != nil {
+		logger.Errorf("DingTalkCallback: update list failed: %v", err)
+		c.JSON(500, model.Error(500, "update failed"))
+		return
+	}
+
+	_ = h.repo.CreateOperationLog(&model.BuildMasterOperationLog{
+		ListID:       list.ID,
+		OperatorID:   "",
+		OperatorName: "钉钉审批回调",
 		Method:       method,
 		Body:         `[{"name":"status","old":"2","new":"` + strconv.Itoa(list.Status) + `"}]`,
 	})

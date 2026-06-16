@@ -989,6 +989,26 @@ INSERT INTO ai_assistant_environments (id, name, prom_url, graf_url, graf_token,
 ('k8s-install', 'K8s 安装', '', '', '', '', '', 1)
 ON CONFLICT (id) DO NOTHING;
 
+-- 平台环境管理（组织管理使用，非 AI 助手环境）
+CREATE TABLE IF NOT EXISTS environments (
+    id VARCHAR(36) PRIMARY KEY,
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    sort_order INT DEFAULT 0,
+    description VARCHAR(500) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (code)
+);
+CREATE INDEX IF NOT EXISTS idx_env_sort_order ON environments (sort_order);
+INSERT INTO environments (id, code, name, is_active, sort_order, description) VALUES
+('env-dev', 'dev', '开发', TRUE, 1, ''),
+('env-test', 'test', '测试', TRUE, 2, ''),
+('env-stg', 'stg', '预发', TRUE, 3, ''),
+('env-prod', 'prod', '生产', TRUE, 4, '')
+ON CONFLICT (id) DO NOTHING;
+
 -- AI巡检：专家角色（模板+用户自定义）
 CREATE TABLE IF NOT EXISTS ai_assistant_experts (
     id VARCHAR(36) PRIMARY KEY ,
@@ -1212,6 +1232,84 @@ CREATE TABLE IF NOT EXISTS casbin_models (
 
 )
 ;
+
+-- ============================================================================
+-- DMS: Database Management (数据库管理)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS db_instances (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    db_type VARCHAR(50) NOT NULL DEFAULT 'mysql',
+    host VARCHAR(255) NOT NULL,
+    port INT NOT NULL DEFAULT 3306,
+    username VARCHAR(255),
+    password VARCHAR(255) NOT NULL,
+    database_name VARCHAR(255),
+    auth_database VARCHAR(255),
+    charset VARCHAR(50) DEFAULT 'utf8mb4',
+    connection_string TEXT,
+    ssl_enabled BOOLEAN DEFAULT FALSE,
+    ssl_cert TEXT,
+    description TEXT,
+    is_enabled BOOLEAN DEFAULT TRUE,
+    created_by VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_dbi_db_type ON db_instances (db_type);
+CREATE INDEX IF NOT EXISTS idx_dbi_is_enabled ON db_instances (is_enabled);
+CREATE INDEX IF NOT EXISTS idx_dbi_created_by ON db_instances (created_by);
+CREATE INDEX IF NOT EXISTS idx_dbi_name ON db_instances (name);
+
+CREATE TABLE IF NOT EXISTS db_permission_metadata (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    instance_id BIGINT NOT NULL,
+    database_name VARCHAR(255),
+    table_name VARCHAR(255),
+    permission_type VARCHAR(50) NOT NULL,
+    granted_by VARCHAR(36) NOT NULL,
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (instance_id) REFERENCES db_instances(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_dpm_user_id ON db_permission_metadata (user_id);
+CREATE INDEX IF NOT EXISTS idx_dpm_instance_id ON db_permission_metadata (instance_id);
+CREATE INDEX IF NOT EXISTS idx_dpm_expires_at ON db_permission_metadata (expires_at);
+CREATE INDEX IF NOT EXISTS idx_dpm_user_instance_db_table ON db_permission_metadata (user_id, instance_id, database_name, table_name);
+
+CREATE TABLE IF NOT EXISTS query_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    instance_id BIGINT NOT NULL,
+    instance_name VARCHAR(255) NOT NULL,
+    db_type VARCHAR(50) NOT NULL,
+    database_name VARCHAR(255),
+    query_content TEXT NOT NULL,
+    query_type VARCHAR(50),
+    affected_rows INT DEFAULT 0,
+    result_count INT DEFAULT 0,
+    execution_time_ms INT,
+    status VARCHAR(20) NOT NULL DEFAULT 'success',
+    error_message TEXT,
+    result_preview TEXT,
+    client_ip VARCHAR(45),
+    user_agent VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (instance_id) REFERENCES db_instances(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_ql_user_id ON query_logs (user_id);
+CREATE INDEX IF NOT EXISTS idx_ql_instance_id ON query_logs (instance_id);
+CREATE INDEX IF NOT EXISTS idx_ql_db_type ON query_logs (db_type);
+CREATE INDEX IF NOT EXISTS idx_ql_database_name ON query_logs (database_name);
+CREATE INDEX IF NOT EXISTS idx_ql_query_type ON query_logs (query_type);
+CREATE INDEX IF NOT EXISTS idx_ql_status ON query_logs (status);
+CREATE INDEX IF NOT EXISTS idx_ql_created_at ON query_logs (created_at);
 
 -- ============================================================================
 -- Initialize Menu Data (菜单数据初始化)
@@ -1900,14 +1998,16 @@ CREATE TABLE IF NOT EXISTS bill_summary (
 
 )
 ;
+CREATE INDEX IF NOT EXISTS idx_bill_summary_vendor ON bill_summary (vendor);
+CREATE INDEX IF NOT EXISTS idx_bill_summary_cycle ON bill_summary (cycle);
 
 -- 月度汇总账单详情表
 CREATE TABLE IF NOT EXISTS bill_summary_detail (
     id SERIAL PRIMARY KEY ,
-    resource_type VARCHAR(50) ,
-    resource_code VARCHAR(50) ,
-    service_type VARCHAR(50) ,
-    service_code VARCHAR(50) ,
+    resource_type TEXT ,
+    resource_code TEXT ,
+    service_type TEXT ,
+    service_code TEXT ,
     consume_amount DECIMAL(25,15) DEFAULT 0 ,
     summary_id INTEGER NOT NULL ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
@@ -1915,6 +2015,9 @@ CREATE TABLE IF NOT EXISTS bill_summary_detail (
     FOREIGN KEY (summary_id) REFERENCES bill_summary(id) ON DELETE CASCADE
 )
 ;
+CREATE INDEX IF NOT EXISTS idx_summary_id ON bill_summary_detail (summary_id);
+CREATE INDEX IF NOT EXISTS idx_resource_code ON bill_summary_detail (resource_code);
+CREATE INDEX IF NOT EXISTS idx_service_code ON bill_summary_detail (service_code);
 
 -- 账单消费记录表
 CREATE TABLE IF NOT EXISTS bill_records (
@@ -1925,6 +2028,7 @@ CREATE TABLE IF NOT EXISTS bill_records (
     resource_name VARCHAR(200) ,
     spec_desc TEXT ,
     consume_amount DECIMAL(25,15) DEFAULT 0 ,
+    effective_cost DECIMAL(25,15) DEFAULT 0 ,
     resource_type VARCHAR(50) ,
     resource_code VARCHAR(50) ,
     service_type VARCHAR(50) ,
@@ -1934,11 +2038,33 @@ CREATE TABLE IF NOT EXISTS bill_records (
     cloud_account_id INTEGER DEFAULT NULL ,
     tags TEXT ,
     extra TEXT ,
+    usage_date DATE ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
 )
 ;
+CREATE INDEX IF NOT EXISTS idx_bill_records_vendor ON bill_records (vendor);
+CREATE INDEX IF NOT EXISTS idx_bill_records_cycle ON bill_records (cycle);
+CREATE INDEX IF NOT EXISTS idx_bill_records_service_code ON bill_records (service_code);
+CREATE INDEX IF NOT EXISTS idx_bill_records_instance_id ON bill_records (instance_id);
+CREATE INDEX IF NOT EXISTS idx_bill_records_cloud_account_id ON bill_records (cloud_account_id);
+CREATE INDEX IF NOT EXISTS idx_bill_records_account_cycle ON bill_records (cloud_account_id, cycle, consume_amount);
+CREATE INDEX IF NOT EXISTS idx_bill_records_instance_cycle ON bill_records (instance_id, cycle);
+CREATE INDEX IF NOT EXISTS idx_bill_records_vendor_cycle ON bill_records (vendor, cycle);
+CREATE INDEX IF NOT EXISTS idx_bill_records_cycle_instance_id ON bill_records (cycle, instance_id, consume_amount);
+-- 覆盖索引：聚合查询避免回表
+CREATE INDEX IF NOT EXISTS idx_cv_ce ON bill_records (cycle, vendor, consume_amount, effective_cost);
+CREATE INDEX IF NOT EXISTS idx_cs_ce ON bill_records (cycle, service_code, consume_amount, effective_cost);
+CREATE INDEX IF NOT EXISTS idx_cr_ce ON bill_records (cycle, region, consume_amount, effective_cost);
+CREATE INDEX IF NOT EXISTS idx_ci_cesvrn ON bill_records (cycle, instance_id, consume_amount, effective_cost, service_code, vendor, resource_name);
+CREATE INDEX IF NOT EXISTS idx_cycle_vendor_service ON bill_records (cycle, vendor, service_type, service_code, consume_amount);
+CREATE INDEX IF NOT EXISTS idx_br_cycle_vendor ON bill_records (cycle, vendor);
+CREATE INDEX IF NOT EXISTS idx_br_cycle_svc ON bill_records (cycle, service_code);
+CREATE INDEX IF NOT EXISTS idx_br_cycle_region ON bill_records (cycle, region);
+CREATE INDEX IF NOT EXISTS idx_br_cycle_acc ON bill_records (cycle, cloud_account_id);
+CREATE INDEX IF NOT EXISTS idx_br_cycle_inst ON bill_records (cycle, instance_id);
+CREATE INDEX IF NOT EXISTS idx_br_usage_date ON bill_records (usage_date);
 
 -- 单价管理表（适用于专有云）
 CREATE TABLE IF NOT EXISTS bill_price (
@@ -1957,6 +2083,8 @@ CREATE TABLE IF NOT EXISTS bill_price (
 
 )
 ;
+CREATE INDEX IF NOT EXISTS idx_bill_price_vendor ON bill_price (vendor);
+CREATE INDEX IF NOT EXISTS idx_bill_price_resource_type ON bill_price (resource_type);
 
 -- 云账户凭证管理表
 CREATE TABLE IF NOT EXISTS bill_cloud_accounts (
@@ -1982,6 +2110,9 @@ CREATE TABLE IF NOT EXISTS bill_cloud_accounts (
 
 )
 ;
+CREATE INDEX IF NOT EXISTS idx_bca_cloud_type ON bill_cloud_accounts (cloud_type);
+CREATE INDEX IF NOT EXISTS idx_bca_account_id ON bill_cloud_accounts (account_id);
+CREATE INDEX IF NOT EXISTS idx_bca_status ON bill_cloud_accounts (status);
 
 -- 云定价表
 CREATE TABLE IF NOT EXISTS bill_pricing (
@@ -1999,6 +2130,10 @@ CREATE TABLE IF NOT EXISTS bill_pricing (
 
 )
 ;
+CREATE INDEX IF NOT EXISTS idx_bp_cloud_type ON bill_pricing (cloud_type);
+CREATE INDEX IF NOT EXISTS idx_bp_service_code ON bill_pricing (service_code);
+CREATE INDEX IF NOT EXISTS idx_bp_instance_type ON bill_pricing (instance_type);
+CREATE INDEX IF NOT EXISTS idx_bp_region ON bill_pricing (region);
 
 -- 云资源清单表
 CREATE TABLE IF NOT EXISTS bill_resources (
@@ -2022,6 +2157,92 @@ CREATE TABLE IF NOT EXISTS bill_resources (
 
 )
 ;
+CREATE INDEX IF NOT EXISTS idx_bill_resources_vendor ON bill_resources (vendor);
+CREATE INDEX IF NOT EXISTS idx_bill_resources_cloud_account_id ON bill_resources (cloud_account_id);
+CREATE INDEX IF NOT EXISTS idx_bill_resources_account_id ON bill_resources (account_id);
+CREATE INDEX IF NOT EXISTS idx_bill_resources_first_seen ON bill_resources (first_seen);
+CREATE INDEX IF NOT EXISTS idx_bill_resources_last_seen ON bill_resources (last_seen);
+
+-- 日维度预聚合费用表
+CREATE TABLE IF NOT EXISTS bill_daily_cost (
+    id SERIAL PRIMARY KEY,
+    date VARCHAR(10) NOT NULL,
+    vendor VARCHAR(50) NOT NULL,
+    cost DECIMAL(25,6) NOT NULL DEFAULT 0,
+    list_cost DECIMAL(25,6) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+;
+CREATE INDEX IF NOT EXISTS idx_bill_daily_cost_date ON bill_daily_cost (date, vendor);
+
+-- 成本总览预聚合表
+CREATE TABLE IF NOT EXISTS bill_dashboard_aggregates (
+    id SERIAL PRIMARY KEY,
+    cycle VARCHAR(10) NOT NULL,
+    agg_type VARCHAR(20) NOT NULL,
+    agg_key VARCHAR(200) NOT NULL,
+    sub_key VARCHAR(200) DEFAULT '',
+    vendor VARCHAR(50) DEFAULT '',
+    currency VARCHAR(10) DEFAULT '',
+    cost_usd DECIMAL(25,6) NOT NULL DEFAULT 0,
+    effective_cost_usd DECIMAL(25,6) NOT NULL DEFAULT 0,
+    resource_name VARCHAR(200) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+;
+CREATE INDEX IF NOT EXISTS idx_bda_cycle_type ON bill_dashboard_aggregates (cycle, agg_type);
+CREATE INDEX IF NOT EXISTS idx_bda_cycle_type_cost ON bill_dashboard_aggregates (cycle, agg_type, cost_usd);
+
+-- FinOps（预算 / 成本池 / 策略，与 internal/model/finops.go 对齐）
+CREATE TABLE IF NOT EXISTS finops_budgets (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL DEFAULT '',
+    amount DECIMAL(25,15) DEFAULT 0,
+    period VARCHAR(20) DEFAULT NULL,
+    start_date VARCHAR(10) DEFAULT NULL,
+    end_date VARCHAR(10) DEFAULT NULL,
+    alert_threshold DECIMAL(5,2) DEFAULT 0,
+    org_id VARCHAR(50) DEFAULT NULL,
+    owner VARCHAR(100) DEFAULT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_fb_status ON finops_budgets (status);
+CREATE INDEX IF NOT EXISTS idx_fb_org_id ON finops_budgets (org_id);
+
+CREATE TABLE IF NOT EXISTS finops_pools (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL DEFAULT '',
+    description TEXT,
+    limit_amount DECIMAL(25,15) DEFAULT 0,
+    org_id VARCHAR(50) DEFAULT NULL,
+    owner VARCHAR(100) DEFAULT NULL,
+    members JSONB DEFAULT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_fp_status ON finops_pools (status);
+CREATE INDEX IF NOT EXISTS idx_fp_org_id ON finops_pools (org_id);
+
+CREATE TABLE IF NOT EXISTS finops_policies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL DEFAULT '',
+    type VARCHAR(50) DEFAULT NULL,
+    action VARCHAR(50) DEFAULT NULL,
+    conditions JSONB DEFAULT NULL,
+    target_resources TEXT,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    schedule VARCHAR(100) DEFAULT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS fpol_enabled ON finops_policies (enabled);
+CREATE INDEX IF NOT EXISTS fpol_type ON finops_policies (type);
 
 -- ============================================================================
 -- Monitor Management Tables (监控管理表)

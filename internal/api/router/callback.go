@@ -28,6 +28,6 @@ func registerCallbacks(api *gin.RouterGroup, d Deps) {
 	// BuildMaster 第三方审批回调（无认证，webhook）
 	api.POST("/build-master/callback/feishu", buildMasterCallback(h.BuildMaster, "feishu"))
 	api.POST("/build-master/callback/lark", buildMasterCallback(h.BuildMaster, "lark"))
-	api.POST("/build-master/callback/dingtalk", buildMasterCallback(h.BuildMaster, "dingtalk"))
+	api.POST("/build-master/callback/dingtalk", h.BuildMaster.DingTalkCallback)
 	api.POST("/build-master/callback/wechat", buildMasterCallback(h.BuildMaster, "wechat"))
 }

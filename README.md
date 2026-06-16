@@ -80,12 +80,13 @@
 | | 👨‍💼 OnCall Management | Shift scheduling, duty calendar, auto/manual alert assignment | ✅ |
 | | 📈 Alert Statistics | Alert trends, level distribution, strategy effectiveness | ✅ |
 | | 🔗 Prometheus Webhook | Native Prometheus Alertmanager webhook receiver | ✅ |
+| | 📊 Prometheus Metrics | Built-in `/metrics` endpoint exposing API request counters, proxy health, active sessions, sync errors | ✅ |
 | **💾 Database Management** | 🗄️ Multi-DB Support | MySQL, PostgreSQL, MongoDB, Redis unified management | ✅ |
 | | 🔍 Query Execution | SQL queries, MongoDB queries, Redis command execution with result formatting | ✅ |
 | | 📝 Query Audit Logs | Complete query audit trail: user, time, IP, executed SQL | ✅ |
 | | 🔐 Fine-grained Permissions | Casbin-based: instance → database → table → permission type | ✅ |
 | | 🧪 Test Connection | Connection validation before saving instances | ✅ |
-| **☁️ Cloud Billing & FinOps** | 💳 Cloud Accounts | Multi-cloud account credential management: AWS, Aliyun, Tencent | ✅ |
+| **☁️ Cloud Billing & FinOps** | 💳 Cloud Accounts | Multi-cloud account credential management: AWS, Azure, GCP, Aliyun, Tencent | ✅ |
 | | 📊 Cost Dashboard | Multi-cloud cost overview, trends, and comparisons | ✅ |
 | | 📈 Cost Breakdown | By tag, account, region, service, resource | ✅ |
 | | 📉 Optimization | Cost optimization recommendations based on usage analysis | ✅ |
@@ -93,6 +94,7 @@
 | | 🔄 Bill Sync | Scheduled auto-sync of cloud bills with configurable frequency | ✅ |
 | **🔧 CMDB MCP** | 🖥️ CMDB Tools | CMDB (host/asset) query tools via Model Context Protocol | ✅ |
 | | 🛠️ K8s Tools | K8s resource operation tools via MCP | ✅ |
+| | 💰 Bill Tools | Cloud billing query tools (cost breakdown, trends, recommendations) via MCP | ✅ |
 | | 🔌 MCP Service | Standard MCP server for AI tool invocation, supports API key auth | ✅ |
 | **📋 Audit** | 📝 Operation Logs | Full API operation audit trail with user, action, resource, timestamp | ✅ |
 | | 🗃️ Pod Command Audit | Bastion pod command recording and audit | ✅ |
@@ -128,13 +130,11 @@ docker-compose down
 
 ### PostgreSQL Deployment
 
-Modify environment variables in `.env` file:
+KeyOps supports PostgreSQL as the backend database. Set the following environment variables in `.env` and ensure you have a PostgreSQL instance available:
 
 ```bash
-docker-compose -f docker-compose-pg.yaml up -d
-
 DB_DRIVER=postgres
-DB_HOST=postgres
+DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
@@ -153,7 +153,13 @@ DB_NAME=keyops
 
 ## Environment Variables Configuration
 
-Create `.env` file (optional):
+Copy `.env.example` to `.env` and modify as needed (optional):
+
+```bash
+cp .env.example .env
+```
+
+Example content:
 
 ```bash
 # Database configuration
@@ -171,7 +177,6 @@ REDIS_PASSWORD=
 MONGO_INITDB_ROOT_USERNAME=admin
 MONGO_INITDB_ROOT_PASSWORD=123456
 MONGO_BASTION_URI=mongodb://admin:123456@mongodb:27017/keyops_bastion?authSource=admin
-MONGO_BILL_URI=mongodb://admin:123456@mongodb:27017/keyops_bill?authSource=admin
 
 # Auth override (emergency)
 # AUTH_METHOD=local

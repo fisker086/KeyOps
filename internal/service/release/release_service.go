@@ -280,7 +280,7 @@ func (s *Service) tryCreateReleaseThirdPartyApproval(a *model.Approval) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// 目前仅实现飞书/Lark：按字段名称构建表单并创建实例
+	// 目前仅实现飞书/Lark/钉钉：按字段名称构建表单并创建实例
 	if platform == "feishu" {
 		provider := approval.NewFeishuProvider(config, s.db, model.ApprovalPlatformFeishu)
 		formData, err := provider.BuildReleaseFormData(ctx, approvalCode, a, "")
@@ -307,8 +307,17 @@ func (s *Service) tryCreateReleaseThirdPartyApproval(a *model.Approval) error {
 		a.ExternalID = externalID
 		a.ExternalURL = fmt.Sprintf("https://www.larksuite.com/approval/instance/%s", externalID)
 		return s.db.Save(a).Error
+	} else if platform == "dingtalk" {
+		provider := approval.NewDingTalkProvider(config, s.db)
+		externalID, err := provider.CreateApprovalWithFormData(ctx, approvalCode, a.Description, a)
+		if err != nil {
+			return err
+		}
+		a.Platform = model.ApprovalPlatformDingTalk
+		a.ExternalID = externalID
+		a.ExternalURL = fmt.Sprintf("https://oa.dingtalk.com/approval/detail?processInstanceId=%s", externalID)
+		return s.db.Save(a).Error
 	}
-	// 钉钉/企微后续可按同样方式接入
 	return nil
 }
 

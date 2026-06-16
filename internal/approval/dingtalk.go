@@ -8,11 +8,18 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fisker086/keyops/internal/model"
 	"gorm.io/gorm"
 )
+
+type tokenCache struct {
+	mu    sync.Mutex
+	token string
+	expAt time.Time
+}
 
 // DingTalkProvider 钉钉审批提供者
 type DingTalkProvider struct {
@@ -20,6 +27,7 @@ type DingTalkProvider struct {
 	baseURL string
 	client  *http.Client
 	db      *gorm.DB
+	token   tokenCache
 }
 
 // NewDingTalkProvider 创建钉钉审批提供者
@@ -81,8 +89,15 @@ func (p *DingTalkProvider) CreateApprovalWithFormData(ctx context.Context, appro
 	return p.createApprovalInstanceWithCode(ctx, token, code, formData, approval)
 }
 
-// getAccessToken 获取钉钉访问令牌
+// getAccessToken 获取钉钉访问令牌（带缓存，过期前120秒自动刷新）
 func (p *DingTalkProvider) getAccessToken(ctx context.Context) (string, error) {
+	p.token.mu.Lock()
+	defer p.token.mu.Unlock()
+
+	if p.token.token != "" && time.Now().Before(p.token.expAt) {
+		return p.token.token, nil
+	}
+
 	url := fmt.Sprintf("%s/gettoken?appkey=%s&appsecret=%s", p.baseURL, p.config.AppID, p.config.AppSecret)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -102,9 +117,10 @@ func (p *DingTalkProvider) getAccessToken(ctx context.Context) (string, error) {
 	}
 
 	var result struct {
-		ErrCode int    `json:"errcode"`
-		ErrMsg  string `json:"errmsg"`
-		Token   string `json:"access_token"`
+		ErrCode   int    `json:"errcode"`
+		ErrMsg    string `json:"errmsg"`
+		Token     string `json:"access_token"`
+		ExpiresIn int    `json:"expires_in"`
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
@@ -114,6 +130,13 @@ func (p *DingTalkProvider) getAccessToken(ctx context.Context) (string, error) {
 	if result.ErrCode != 0 {
 		return "", fmt.Errorf("钉钉API错误 [%d]: %s", result.ErrCode, result.ErrMsg)
 	}
+
+	expireSec := result.ExpiresIn
+	if expireSec <= 0 {
+		expireSec = 7200
+	}
+	p.token.token = result.Token
+	p.token.expAt = time.Now().Add(time.Duration(expireSec-120) * time.Second)
 
 	return result.Token, nil
 }
@@ -347,7 +370,7 @@ func (p *DingTalkProvider) GetApprovalStatus(ctx context.Context, externalID str
 	}
 
 	// 映射状态
-	status := p.mapStatus(result.Result.Status)
+	status := p.mapStatus(result.Result.Status, result.Result.Result)
 
 	return &ApprovalStatusResponse{
 		Status:  status,
@@ -373,7 +396,6 @@ func (p *DingTalkProvider) CancelApproval(ctx context.Context, externalID string
 
 	reqBody := map[string]interface{}{
 		"process_instance_id": externalID,
-		"operator_userid":     p.config.AppID, // 使用应用ID作为操作人
 	}
 
 	body, _ := json.Marshal(reqBody)
@@ -419,16 +441,28 @@ func (p *DingTalkProvider) HandleCallback(ctx context.Context, data interface{})
 
 // ValidateConfig 验证配置
 func (p *DingTalkProvider) ValidateConfig(config map[string]interface{}) error {
-	// 验证钉钉配置
+	if p.config.AppID == "" {
+		return fmt.Errorf("钉钉 AppID 未配置")
+	}
+	if p.config.AppSecret == "" {
+		return fmt.Errorf("钉钉 AppSecret 未配置")
+	}
+	if p.config.ProcessCode == "" {
+		return fmt.Errorf("钉钉审批 ProcessCode 未配置")
+	}
 	return nil
 }
 
 // mapStatus 映射钉钉状态到系统状态
-func (p *DingTalkProvider) mapStatus(dingTalkStatus string) model.ApprovalStatus {
+// dingTalkResult: "agree" 同意, "refuse" 拒绝（仅 COMPLETED 时有效）
+func (p *DingTalkProvider) mapStatus(dingTalkStatus, dingTalkResult string) model.ApprovalStatus {
 	switch dingTalkStatus {
 	case "RUNNING":
 		return model.ApprovalStatusPending
 	case "COMPLETED":
+		if dingTalkResult == "refuse" {
+			return model.ApprovalStatusRejected
+		}
 		return model.ApprovalStatusApproved
 	case "TERMINATED":
 		return model.ApprovalStatusRejected

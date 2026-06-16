@@ -801,6 +801,9 @@ func (h *TicketHandler) autoCreateThirdPartyApproval(ticket *model.Ticket, c *gi
 	config.AppID = templateAppID
 	config.AppSecret = templateAppSecret
 	config.ApprovalCode = approvalCode
+	if platform == "dingtalk" {
+		config.ProcessCode = approvalCode
+	}
 
 	// 从模板配置中读取其他字段
 	if apiBaseURL, ok := approvalConfig["api_base_url"].(string); ok && apiBaseURL != "" {

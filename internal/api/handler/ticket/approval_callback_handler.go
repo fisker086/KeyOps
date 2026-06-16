@@ -785,7 +785,7 @@ func (h *ApprovalCallbackHandler) handleDingTalkApprovalEvent(req *DingTalkCallb
 	}
 
 	// 更新审批状态
-	status := h.mapDingTalkStatus(req.Data.Status)
+	status := h.mapDingTalkStatus(req.Data.Status, req.Data.Result)
 
 	// 提取审批意见（从操作记录中获取最新的）
 	var comment string
@@ -981,11 +981,15 @@ func (h *ApprovalCallbackHandler) mapFeishuStatus(feishuStatus string) model.App
 }
 
 // mapDingTalkStatus 映射钉钉状态到系统状态
-func (h *ApprovalCallbackHandler) mapDingTalkStatus(dingTalkStatus string) model.ApprovalStatus {
+// dingTalkResult: "agree" 同意, "refuse" 拒绝（仅 COMPLETED 时有效）
+func (h *ApprovalCallbackHandler) mapDingTalkStatus(dingTalkStatus, dingTalkResult string) model.ApprovalStatus {
 	switch dingTalkStatus {
 	case "RUNNING":
 		return model.ApprovalStatusPending
 	case "COMPLETED":
+		if dingTalkResult == "refuse" {
+			return model.ApprovalStatusRejected
+		}
 		return model.ApprovalStatusApproved
 	case "TERMINATED":
 		return model.ApprovalStatusRejected

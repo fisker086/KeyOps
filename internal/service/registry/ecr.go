@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 )
 
 func (s *Service) listTagsECR(ctx context.Context, m map[string]string, appName string) ([]string, error) {
@@ -18,30 +19,36 @@ func (s *Service) listTagsECR(ctx context.Context, m map[string]string, appName 
 	if region == "" {
 		return nil, fmt.Errorf("ecr_region is required in registry settings")
 	}
-	repoName := appName
-	cfg := &aws.Config{Region: aws.String(region)}
-	if accessKey != "" && secretKey != "" {
-		cfg.Credentials = credentials.NewStaticCredentials(accessKey, secretKey, "")
+
+	optFns := []func(*config.LoadOptions) error{
+		config.WithRegion(region),
 	}
-	sess, err := session.NewSession(cfg)
+	if accessKey != "" && secretKey != "" {
+		optFns = append(optFns, config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
+		))
+	}
+	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {
 		return nil, err
 	}
-	svc := ecr.New(sess)
+	svc := ecr.NewFromConfig(cfg)
+
+	paginator := ecr.NewListImagesPaginator(svc, &ecr.ListImagesInput{
+		RepositoryName: aws.String(appName),
+		Filter:         &types.ListImagesFilter{TagStatus: types.TagStatusTagged},
+	})
 	var tags []string
-	err = svc.ListImagesPagesWithContext(ctx, &ecr.ListImagesInput{
-		RepositoryName: aws.String(repoName),
-		Filter:         &ecr.ListImagesFilter{TagStatus: aws.String(ecr.TagStatusTagged)},
-	}, func(out *ecr.ListImagesOutput, last bool) bool {
+	for paginator.HasMorePages() {
+		out, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
 		for _, img := range out.ImageIds {
 			if img.ImageTag != nil && *img.ImageTag != "" {
 				tags = append(tags, *img.ImageTag)
 			}
 		}
-		return true
-	})
-	if err != nil {
-		return nil, err
 	}
 	return tags, nil
 }

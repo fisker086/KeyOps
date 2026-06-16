@@ -153,7 +153,7 @@ func InitializeRepositories(cfg *config.Config, bastionMongo *mongo.Client) *Rep
 		AssetSync:          repository.NewAssetSyncRepository(database.DB),
 		K8sCluster:         repository.NewK8sClusterRepository(database.DB),
 		Deployment:         repository.NewDeploymentRepository(database.DB),
-		Bill:               repository.NewBillRepository(database.DB),
+		Bill:               repository.NewBillRepository(database.DB, cfg.Billing.USDToCNYRate),
 		CloudAccount:       repository.NewCloudAccountRepository(database.DB), // 新增
 		Monitor:            repository.NewMonitorRepository(database.DB),
 		Organization:       repository.NewOrganizationRepository(database.DB),

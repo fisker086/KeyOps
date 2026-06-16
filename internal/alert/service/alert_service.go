@@ -1054,7 +1054,7 @@ func (s *AlertService) GetChannelTemplates(templateID uint) ([]model.ChannelTemp
 func (s *AlertService) UpdateChannelTemplate(templateID, channelID uint, content string, finished bool) (*model.ChannelTemplate, error) {
 	// 查找是否已存在
 	existing, err := s.channelTemplateRepo.FindByTemplateIDAndChannelID(templateID, channelID)
-	if err != nil && existing == nil {
+	if err != nil {
 		return nil, err
 	}
 

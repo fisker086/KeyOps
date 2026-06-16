@@ -160,4 +160,3 @@ func (p *SilenceProcessor) isInTimeRange(times []string, now time.Time) bool {
 
 	return !now.Before(finalStartTime) && !now.After(finalEndTime)
 }
-

@@ -9,7 +9,6 @@ import (
 	alertnotification "github.com/fisker086/keyops/internal/alert/notification"
 	oncallNotification "github.com/fisker086/keyops/internal/alert/oncall"
 	"github.com/fisker086/keyops/internal/approval"
-	"github.com/fisker086/keyops/internal/infrastructure/mongodb"
 	"github.com/fisker086/keyops/internal/notification"
 	"github.com/fisker086/keyops/internal/service"
 	"github.com/fisker086/keyops/internal/service/auth"
@@ -24,7 +23,6 @@ import (
 	"github.com/fisker086/keyops/pkg/crypto"
 	"github.com/fisker086/keyops/pkg/database"
 	"github.com/fisker086/keyops/pkg/logger"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Services 包含所有 Service 实例
@@ -47,32 +45,14 @@ type Services struct {
 	DMSPermission *dms.PermissionService
 	Release       *release.Service
 	Registry      *registry.Service
-	MongoClient   *mongodb.Client
 }
 
 // InitializeServices 初始化所有 Service
-func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mongodb.Client) *Services {
+func InitializeServices(repos *Repositories, cfg *config.Config) *Services {
 	hostService := service.NewHostService(repos.Host)
 	sessionService := service.NewSessionService(repos.Session, repos.Host)
 
-	// 初始化 MongoDB 连接（用于账单原始数据存储）
-	if mongoClient == nil && cfg.BillStorage.GetURI() != "" {
-		mongoClient2, err := mongodb.NewClientWithDatabase(cfg.BillStorage.GetURI(), cfg.BillStorage.Database)
-		if err != nil {
-			logger.Warnf("MongoDB connect failed: %v, AWS bill sync will not work", err)
-			mongoClient2 = nil
-		} else {
-			if err := mongoClient2.InitIndexes(context.Background()); err != nil {
-				logger.Warnf("MongoDB init indexes failed: %v", err)
-			}
-		}
-		mongoClient = mongoClient2
-	}
-	var mongoColl *mongo.Collection
-	if mongoClient != nil {
-		mongoColl = mongoClient.RawExpenses()
-	}
-	billSvc := billService.NewBillService(repos.Bill, repos.CloudAccount, repos.AlertChannel, mongoColl)
+	billSvc := billService.NewBillService(repos.Bill, repos.CloudAccount, repos.AlertChannel, cfg.Billing.USDToCNYRate)
 
 	// Session 存储引擎已在 Repositories 初始化时根据配置选定 (repos.Session)
 
@@ -157,7 +137,6 @@ func InitializeServices(repos *Repositories, cfg *config.Config, mongoClient *mo
 		DMSPermission: dmsPermissionService,
 		Release:       releaseService,
 		Registry:      registryService,
-		MongoClient:   mongoClient,
 	}
 }
 

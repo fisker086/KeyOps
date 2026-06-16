@@ -150,4 +150,3 @@ func (m *StrategyMatcher) isInTimeRange(times []string, now time.Time) bool {
 
 	return !now.Before(finalStartTime) && !now.After(finalEndTime)
 }
-

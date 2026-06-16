@@ -12,6 +12,7 @@ func Setup(d Deps) *gin.Engine {
 	r.MaxMultipartMemory = 1 << 30
 
 	r.Use(middleware.RecoveryMiddleware())
+	r.Use(middleware.AccessLogMiddleware())
 	if d.Mode != "release" {
 		r.Use(gin.Logger())
 	}
@@ -71,7 +72,7 @@ func Setup(d Deps) *gin.Engine {
 			h.AppDeployParam,
 		)
 		registerAlert(api, authenticated, h.Alert, h.OnCall)
-		registerBill(authenticated, h.Bill, h.ExpensesMap, h.CloudAccount, h.Resources, h.BillDashboard)
+		registerBill(authenticated, h.Bill, h.CloudAccount, h.Resources, h.BillDashboard)
 	}
 
 	registerMCP(r, api, authenticated, d)

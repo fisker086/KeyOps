@@ -54,7 +54,7 @@ func InitDatabase(cfg *config.DatabaseConfig) error {
 		Logger: gormLogger.New(
 			log.New(os.Stdout, "\r\n", log.LstdFlags),
 			gormLogger.Config{
-				SlowThreshold:             time.Second,
+				SlowThreshold:             time.Duration(cfg.SlowThresholdMs) * time.Millisecond,
 				LogLevel:                  gormLogger.Warn,
 				IgnoreRecordNotFoundError: true,
 				Colorful:                  false,
@@ -270,6 +270,8 @@ func AutoMigrateAll() error {
 		&model.BillSummary{},
 		&model.BillSummaryDetail{},
 		&model.BillRecord{},
+		&model.BillDashboardAggregate{},
+		&model.BillDailyCost{},
 		&model.CloudAccount{},
 		&model.BillPricing{},
 		&model.BillResource{},
@@ -345,6 +347,7 @@ func AutoMigrateAll() error {
 				tableName == "build_master_operation_logs" || tableName == "build_master_items" ||
 				tableName == "build_master_item_details" || tableName == "build_master_approvals" ||
 				tableName == "bill_records" || tableName == "bill_resources" || tableName == "bill_price" ||
+				tableName == "bill_dashboard_aggregates" || tableName == "bill_daily_cost" ||
 				tableName == "form_templates" {
 				tablesToMigrate = append(tablesToMigrate, table)
 			}

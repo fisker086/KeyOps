@@ -85,6 +85,18 @@ func normalizeMarkdownForFeishu(s string) string {
 	return normalizeMarkdownForChannels(s)
 }
 
+// normalizeMarkdownForDingTalk 钉钉专用：钉钉原生支持 ## 标题，无需转为粗体
+func normalizeMarkdownForDingTalk(s string) string {
+	if s == "" {
+		return s
+	}
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	s = regexp.MustCompile(`(?m)^#{3,6}\s*`).ReplaceAllString(s, "## ")
+	s = regexp.MustCompile(`(?m)^(\s*)\*\s+`).ReplaceAllString(s, "$1- ")
+	return strings.TrimSpace(s)
+}
+
 // buildFeishuCardElements 组装飞书卡片 elements
 func buildFeishuCardElements(content string) []map[string]interface{} {
 	content = normalizeMarkdownForFeishu(content)
@@ -312,7 +324,7 @@ func (n *FeishuNotifier) sendRequest(message map[string]interface{}) error {
 
 // SendAlert 发送钉钉告警（通用方法）
 func (n *DingTalkNotifier) SendAlert(title, content string) error {
-	content = normalizeMarkdownForChannels(content)
+	content = normalizeMarkdownForDingTalk(content)
 	timestamp := time.Now().UnixNano() / 1e6
 	sign := n.genSign(timestamp)
 
@@ -348,8 +360,25 @@ func (n *DingTalkNotifier) SendAlert(title, content string) error {
 	}
 	defer resp.Body.Close()
 
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %v", err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("dingtalk returned non-200 status: %d", resp.StatusCode)
+		return fmt.Errorf("dingtalk returned non-200 status: %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
+	if len(respBody) > 0 {
+		var dtResp struct {
+			ErrCode int    `json:"errcode"`
+			ErrMsg  string `json:"errmsg"`
+		}
+		if err := json.Unmarshal(respBody, &dtResp); err == nil {
+			if dtResp.ErrCode != 0 {
+				return fmt.Errorf("dingtalk api error [%d]: %s", dtResp.ErrCode, dtResp.ErrMsg)
+			}
+		}
 	}
 
 	logger.Infof("[Notification] DingTalk alert sent successfully")
@@ -446,8 +475,25 @@ func (n *DingTalkNotifier) SendDangerousCommandAlert(username, hostIP, command, 
 	}
 	defer resp.Body.Close()
 
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %v", err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("dingtalk returned non-200 status: %d", resp.StatusCode)
+		return fmt.Errorf("dingtalk returned non-200 status: %d, body: %s", resp.StatusCode, string(respBody))
+	}
+
+	if len(respBody) > 0 {
+		var dtResp struct {
+			ErrCode int    `json:"errcode"`
+			ErrMsg  string `json:"errmsg"`
+		}
+		if err := json.Unmarshal(respBody, &dtResp); err == nil {
+			if dtResp.ErrCode != 0 {
+				return fmt.Errorf("dingtalk api error [%d]: %s", dtResp.ErrCode, dtResp.ErrMsg)
+			}
+		}
 	}
 
 	return nil

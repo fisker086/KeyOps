@@ -1633,7 +1633,7 @@ COMMENT='查询日志表（支持多种数据库类型）';
 --   - 分组菜单（只有子菜单，没有实际页面）：component 为空字符串 ''
 --   - 路径格式：'pages/ComponentName'（不需要 .tsx 扩展名）
 --   - 所有 component 路径必须在 componentMap.tsx 中注册才能正常加载
-INSERT INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
+INSERT IGNORE INTO menus (id, parent_id, path, name, component, hidden, sort, title, icon, keep_alive, active_name, close_tab, default_menu, created_at, updated_at) VALUES
 -- 首页分组（一级菜单）
 -- 注意：系统大盘已拆分成3个独立菜单（组织大盘、应用大盘、主机大盘），保留在首页下
 ('menu-home', '', '', 'home', '', false, 1, '首页', 'Home', false, '', false, false, NOW(), NOW()),
@@ -1982,17 +1982,17 @@ COMMENT='月度汇总账单表';
 -- 月度汇总账单详情表
 CREATE TABLE IF NOT EXISTS bill_summary_detail (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
-    resource_type VARCHAR(50) COMMENT '资源类型',
-    resource_code VARCHAR(50) COMMENT '资源类型代码',
-    service_type VARCHAR(50) COMMENT '服务类型',
-    service_code VARCHAR(50) COMMENT '服务类型代码',
+    resource_type TEXT COMMENT '资源类型',
+    resource_code TEXT COMMENT '资源类型代码',
+    service_type TEXT COMMENT '服务类型',
+    service_code TEXT COMMENT '服务类型代码',
     consume_amount DECIMAL(25,15) DEFAULT 0 COMMENT '费用总额',
     summary_id INT UNSIGNED NOT NULL COMMENT '关联的summary表ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_summary_id (summary_id),
-    INDEX idx_resource_code (resource_code),
-    INDEX idx_service_code (service_code),
+    INDEX idx_resource_code (resource_code(191)),
+    INDEX idx_service_code (service_code(191)),
     FOREIGN KEY (summary_id) REFERENCES bill_summary(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='月度汇总账单详情表';
@@ -2006,6 +2006,7 @@ CREATE TABLE IF NOT EXISTS bill_records (
     resource_name VARCHAR(200) COMMENT '资源名称',
     spec_desc TEXT COMMENT '资源配置',
     consume_amount DECIMAL(25,15) DEFAULT 0 COMMENT '费用',
+    effective_cost DECIMAL(25,15) DEFAULT 0 COMMENT '有效成本',
     resource_type TEXT COMMENT '资源类型',
     resource_code TEXT COMMENT '资源类型代码',
     service_type TEXT COMMENT '服务类型',
@@ -2015,6 +2016,7 @@ CREATE TABLE IF NOT EXISTS bill_records (
     cloud_account_id INT UNSIGNED DEFAULT NULL COMMENT '系统云账户ID',
     tags TEXT COMMENT '标签(JSON)',
     extra TEXT COMMENT '扩展字段',
+    usage_date DATE DEFAULT NULL COMMENT '消费日期',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_vendor (vendor),
@@ -2022,7 +2024,23 @@ CREATE TABLE IF NOT EXISTS bill_records (
     INDEX idx_service_code (service_code),
     INDEX idx_instance_id (instance_id),
     INDEX idx_cloud_account_id (cloud_account_id),
-    INDEX idx_vendor_cycle (vendor, cycle)
+    INDEX idx_account_cycle (cloud_account_id, cycle, consume_amount),
+    INDEX idx_instance_cycle (instance_id, cycle),
+    INDEX idx_vendor_cycle (vendor, cycle),
+    INDEX idx_cycle_instance_id (cycle, instance_id, consume_amount),
+    INDEX idx_cycle_vendor_service (cycle, vendor, service_type(191), service_code, consume_amount),
+    -- 覆盖索引：聚合查询避免回表（vendor/service/region 各需 consume_amount + effective_cost）
+    INDEX idx_cv_ce (cycle, vendor, consume_amount, effective_cost),
+    INDEX idx_cs_ce (cycle, service_code, consume_amount, effective_cost),
+    INDEX idx_cr_ce (cycle, region, consume_amount, effective_cost),
+    -- 实例覆盖索引：额外包含 service_code / vendor / resource_name
+    INDEX idx_ci_cesvrn (cycle, instance_id, consume_amount, effective_cost, service_code, vendor, resource_name(191)),
+    INDEX idx_br_cycle_vendor (cycle, vendor),
+    INDEX idx_br_cycle_svc (cycle, service_code),
+    INDEX idx_br_cycle_region (cycle, region),
+    INDEX idx_br_cycle_acc (cycle, cloud_account_id),
+    INDEX idx_br_cycle_inst (cycle, instance_id),
+    INDEX idx_br_usage_date (usage_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='账单消费记录表';
 
@@ -2112,9 +2130,43 @@ CREATE TABLE IF NOT EXISTS bill_resources (
     INDEX idx_vendor (vendor),
     INDEX idx_cloud_account_id (cloud_account_id),
     INDEX idx_account_id (account_id),
-    INDEX idx_first_seen (first_seen)
+    INDEX idx_first_seen (first_seen),
+    INDEX idx_last_seen (last_seen),
+    UNIQUE KEY uk_account_resource (cloud_account_id, resource_id(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='云资源清单表';
+
+-- 日维度预聚合费用表（Dashboard 快速查询用）
+CREATE TABLE IF NOT EXISTS bill_daily_cost (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    date VARCHAR(10) NOT NULL COMMENT '日期 YYYY-MM-DD',
+    vendor VARCHAR(50) NOT NULL COMMENT '云厂商',
+    cost DECIMAL(25,6) NOT NULL DEFAULT 0 COMMENT '实际成本（USD）',
+    list_cost DECIMAL(25,6) NOT NULL DEFAULT 0 COMMENT '标价（USD）',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_date (date, vendor)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='日维度预聚合费用表';
+
+-- 成本总览预聚合表（同步后写入，避免总览/建议页在线扫 bill_records）
+CREATE TABLE IF NOT EXISTS bill_dashboard_aggregates (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    cycle VARCHAR(10) NOT NULL COMMENT '账单月份 YYYY-MM',
+    agg_type VARCHAR(20) NOT NULL COMMENT 'vendor|service|region|instance',
+    agg_key VARCHAR(200) NOT NULL COMMENT '聚合键',
+    sub_key VARCHAR(200) DEFAULT '' COMMENT '次级键（如 service_code）',
+    vendor VARCHAR(50) DEFAULT '' COMMENT '云厂商',
+    currency VARCHAR(10) DEFAULT '' COMMENT '原始币种',
+    cost_usd DECIMAL(25,6) NOT NULL DEFAULT 0 COMMENT '费用(USD)',
+    effective_cost_usd DECIMAL(25,6) NOT NULL DEFAULT 0 COMMENT '摊销后费用(USD)',
+    resource_name VARCHAR(200) DEFAULT '' COMMENT '资源名称',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_bda_cycle_type (cycle, agg_type),
+    INDEX idx_bda_cycle_type_cost (cycle, agg_type, cost_usd)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='账单总览预聚合';
 
 -- FinOps（预算 / 成本池 / 策略，与 internal/model/finops.go 对齐）
 CREATE TABLE IF NOT EXISTS finops_budgets (
@@ -2691,16 +2743,6 @@ CREATE TABLE IF NOT EXISTS release_runs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='发布代码运行记录（Git Webhook/手动触发/回滚）';
 
--- 发布流水线定义表（支持多条，用户可拖拽画节点与连线并保存）
-CREATE TABLE IF NOT EXISTS release_pipeline_definitions (
-    id VARCHAR(36) PRIMARY KEY COMMENT '定义ID',
-    name VARCHAR(255) DEFAULT '' COMMENT '展示名称，列表与应用-发布选择用',
-    content JSON NOT NULL COMMENT '流水线内容：{ "nodes": [], "edges": [] }',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    updated_by VARCHAR(36) COMMENT '最后更新人'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='发布流水线定义（React Flow nodes/edges JSON）';
-
 -- ============================================================================
 -- Initialize Casbin Model Configuration (Casbin模型配置初始化)
 -- ============================================================================
@@ -3268,110 +3310,6 @@ INSERT IGNORE INTO menu_permissions (role_id, menu_id, created_at) VALUES
 ('role:admin', 'menu-k8s-management', NOW()),
 ('role:admin', 'menu-k8s-operations', NOW()),
 ('role:admin', 'menu-k8s-cluster-overview', NOW());
-
--- ============================================================================
--- Build Master / Release Management Tables
--- ============================================================================
-
--- Build master lists (发版总览)
-CREATE TABLE IF NOT EXISTS `build_master_lists` (
-  `id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `publish_date` date NOT NULL,
-  `type` bigint NOT NULL,
-  `status` bigint NOT NULL DEFAULT '0',
-  `order_num` bigint NOT NULL DEFAULT '1',
-  `order_describe` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `owner_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `owner_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `hurried` bigint DEFAULT '0',
-  `created_at` datetime(3) DEFAULT NULL,
-  `updated_at` datetime(3) DEFAULT NULL,
-  `site` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `approval_config_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `approval_platform` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `approval_instance` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `release_run_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `deploy_status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT '',
-  PRIMARY KEY (`id`),
-  KEY `idx_build_master_date_type` (`publish_date`,`type`),
-  KEY `idx_build_master_lists_owner_id` (`owner_id`),
-  KEY `idx_build_master_date_type_site` (`publish_date`,`site`,`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Build master items (应用列表)
-CREATE TABLE IF NOT EXISTS `build_master_items` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `order_num` bigint NOT NULL DEFAULT '0',
-  `created_at` datetime(3) DEFAULT NULL,
-  `updated_at` datetime(3) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_bm_item_list` (`list_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Build master item details (发版项详情)
-CREATE TABLE IF NOT EXISTS `build_master_item_details` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `item_id` bigint unsigned NOT NULL,
-  `app_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `operate` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tag` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `content` text COLLATE utf8mb4_unicode_ci,
-  `note` text COLLATE utf8mb4_unicode_ci,
-  `rollback` text COLLATE utf8mb4_unicode_ci,
-  `jenkins` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `record` text COLLATE utf8mb4_unicode_ci,
-  `status` bigint NOT NULL DEFAULT '0',
-  `code_review` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `maker` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `checker` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `log_viewer` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `market_viewer` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tester` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `app_affect` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_affect` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `lib_deps` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `stg_validate` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `prd_validate` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `sim_sync` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `order_num` bigint NOT NULL DEFAULT '0',
-  `created_at` datetime(3) DEFAULT NULL,
-  `updated_at` datetime(3) DEFAULT NULL,
-  `sub_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_bm_detail_list` (`list_id`),
-  KEY `idx_bm_detail_item` (`item_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Build master approvals (审批记录)
-CREATE TABLE IF NOT EXISTS `build_master_approvals` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `approver_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `approver_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `result` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `comment` text COLLATE utf8mb4_unicode_ci,
-  `order_num` bigint NOT NULL DEFAULT '0',
-  `created_at` datetime(3) DEFAULT NULL,
-  `updated_at` datetime(3) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_bm_approval_list` (`list_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Build master operation logs (操作日志)
-CREATE TABLE IF NOT EXISTS `build_master_operation_logs` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `list_id` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `operator_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `operator_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `method` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `body` text COLLATE utf8mb4_unicode_ci,
-  `created_at` datetime(3) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_bm_log_list` (`list_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
 -- Release Orders (发版工单)

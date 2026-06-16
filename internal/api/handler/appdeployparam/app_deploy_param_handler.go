@@ -116,6 +116,7 @@ func (h *AppDeployParamHandler) SaveAppDeployParams(c *gin.Context) {
 	}
 
 	tx := h.db.Begin()
+	defer tx.Rollback()
 
 	var existing []model.AppDeployParamConfig
 	tx.Where("app_id = ?", appID).Find(&existing)
@@ -133,7 +134,6 @@ func (h *AppDeployParamHandler) SaveAppDeployParams(c *gin.Context) {
 				ParamValue: paramValue,
 			}
 			if err := tx.Create(&cfg).Error; err != nil {
-				tx.Rollback()
 				c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "保存失败: " + err.Error()})
 				return
 			}
@@ -243,6 +243,7 @@ func (h *AppDeployParamHandler) SyncAppDeployParams(c *gin.Context) {
 	}
 
 	tx := h.db.Begin()
+	defer tx.Rollback()
 
 	// 删除目标环境所有配置
 	tx.Where("app_id = ? AND env = ?", appID, req.ToEnv).Delete(&model.AppDeployParamConfig{})
@@ -256,7 +257,6 @@ func (h *AppDeployParamHandler) SyncAppDeployParams(c *gin.Context) {
 			ParamValue: cfg.ParamValue,
 		}
 		if err := tx.Create(&newCfg).Error; err != nil {
-			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "复制失败: " + err.Error()})
 			return
 		}
@@ -295,6 +295,7 @@ func (h *AppDeployParamHandler) SaveGlobalDefaults(c *gin.Context) {
 	}
 
 	tx := h.db.Begin()
+	defer tx.Rollback()
 
 	// 全量替换
 	tx.Where("1 = 1").Delete(&model.AppDeployParamDefault{})
@@ -308,7 +309,6 @@ func (h *AppDeployParamHandler) SaveGlobalDefaults(c *gin.Context) {
 			DefaultValue: d.DefaultValue,
 		}
 		if err := tx.Create(&def).Error; err != nil {
-			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "保存失败: " + err.Error()})
 			return
 		}

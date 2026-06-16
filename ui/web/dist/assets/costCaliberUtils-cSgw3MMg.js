@@ -1,0 +1,1 @@
+const t="bill_cost_type";function o(){return localStorage.getItem(t)==="effective"?"effective":"unblended"}function l(e){localStorage.setItem(t,e)}export{o as defaultCostCaliber,l as persistCostCaliber};

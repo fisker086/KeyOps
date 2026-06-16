@@ -4,38 +4,22 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/fisker086/keyops/internal/api/router"
-	"github.com/fisker086/keyops/internal/audit"
-	"github.com/fisker086/keyops/internal/sshserver/server"
 	"github.com/fisker086/keyops/pkg/config"
-	"github.com/fisker086/keyops/pkg/database"
 	"github.com/fisker086/keyops/pkg/logger"
-	pkgredis "github.com/fisker086/keyops/pkg/redis"
 )
 
-// StartServer 启动 HTTP 服务器
-func StartServer(
-	cfg *config.Config,
-	handlers *Handlers,
-	services *Services,
-	repos *Repositories,
-	backgroundServices *BackgroundServices,
-	sshServer *server.Server,
-	unifiedAuditor *audit.DatabaseAuditor,
-) {
-	r := router.Setup(RouterDeps(handlers, services, repos, cfg.Server.Mode))
+// StartServer 启动 HTTP 服务器（不注册信号处理，由 Shutdown 统一管理优雅关闭）
+func StartServer(app *App) {
+	r := router.Setup(RouterDeps(app.Handlers, app.Services, app.Repos, app.Config.Server.Mode))
 
 	// Start expiration service (延迟启动，确保数据库连接完全就绪)
 	ctx := context.Background()
 	go func() {
-		// 等待数据库连接就绪
 		time.Sleep(3 * time.Second)
-		if err := backgroundServices.Expiration.Start(ctx); err != nil {
+		if err := app.BackgroundServices.Expiration.Start(ctx); err != nil {
 			logger.Warnf("Failed to start expiration service: %v", err)
 		} else {
 			logger.Infof("Expiration Service started")
@@ -45,9 +29,8 @@ func StartServer(
 
 	// Start on-call notification service (延迟启动，确保数据库连接完全就绪)
 	go func() {
-		// 等待数据库连接就绪
 		time.Sleep(4 * time.Second)
-		if onCallNotificationService, ok := backgroundServices.OnCallNotification.(interface {
+		if onCallNotificationService, ok := app.BackgroundServices.OnCallNotification.(interface {
 			Start(context.Context) error
 		}); ok {
 			if err := onCallNotificationService.Start(ctx); err != nil {
@@ -61,97 +44,24 @@ func StartServer(
 	logger.Infof("")
 
 	// Start HTTP server
-	addr := fmt.Sprintf(":%d", cfg.Server.APIPort)
-	httpServer := &http.Server{
+	addr := fmt.Sprintf(":%d", app.Config.Server.APIPort)
+	app.HTTPServer = &http.Server{
 		Addr:           addr,
 		Handler:        r,
-		ReadTimeout:    300 * time.Second, // 5分钟读取超时（支持大SQL传输）
-		WriteTimeout:   300 * time.Second, // 5分钟写入超时（支持大结果返回）
-		MaxHeaderBytes: 1 << 20,           // 1MB 请求头大小限制
+		ReadTimeout:    300 * time.Second,
+		WriteTimeout:   300 * time.Second,
+		MaxHeaderBytes: 1 << 20,
 	}
 
 	// Print startup banner
-	printStartupBanner(cfg)
+	printStartupBanner(app.Config)
 
-	// Start HTTP server in goroutine
-	go func() {
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("Failed to start HTTP server: %v", err)
-		}
-	}()
+	logger.Infof("HTTP server listening on %s", addr)
 
-	// Wait for interrupt signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	<-sigChan
-
-	logger.Infof("\nShutting down gracefully...")
-
-	// Create shutdown context with 10s timeout
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownCancel()
-
-	// 1. Shutdown HTTP server
-	logger.Infof("  → Stopping HTTP server...")
-	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		logger.Infof("  Warning: HTTP server shutdown error: %v", err)
-	} else {
-		logger.Infof("  ✓ HTTP server stopped")
+	// Block until Shutdown calls httpServer.Shutdown()
+	if err := app.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.Fatalf("Failed to start HTTP server: %v", err)
 	}
-
-	// 2. Stop Expiration Service
-	logger.Infof("  → Stopping expiration service...")
-	backgroundServices.Expiration.Stop()
-	logger.Infof("  ✓ Expiration service stopped")
-
-	// 2.5. Stop On-Call Notification Service
-	if onCallNotificationService, ok := backgroundServices.OnCallNotification.(interface {
-		Stop()
-	}); ok {
-		logger.Infof("  → Stopping on-call notification service...")
-		onCallNotificationService.Stop()
-		logger.Infof("  ✓ On-call notification service stopped")
-	}
-
-	// 3. Stop SSH Server
-	if sshServer != nil {
-		logger.Infof("  → Stopping SSH server...")
-		if err := sshServer.Stop(); err != nil {
-			logger.Infof("  Warning: SSH server shutdown error: %v", err)
-		} else {
-			logger.Infof("  ✓ SSH server stopped")
-		}
-	}
-
-	// 4. Stop proxy monitor (如果已启用)
-	if backgroundServices.ProxyMonitor != nil {
-		logger.Infof("  → Stopping proxy monitor...")
-		backgroundServices.ProxyMonitor.Stop()
-		logger.Infof("  ✓ Proxy monitor stopped")
-	} else {
-		logger.Infof("  → Proxy monitor not enabled, skipping")
-	}
-
-	// 5. Close storage (wait for async writes)
-	logger.Infof("  → Closing storage...")
-	// Note: unifiedAuditor doesn't have Close method, skip for now
-	logger.Infof("  ✓ Storage closed")
-
-	// 6. Close database
-	logger.Infof("  → Closing database...")
-	database.Close()
-	logger.Infof("  ✓ Database closed")
-
-	// 7. Close Redis if enabled
-	if cfg.Redis.Enabled {
-		logger.Infof("  → Closing Redis...")
-		pkgredis.Close()
-		logger.Infof("  ✓ Redis closed")
-	}
-
-	logger.Infof("")
-	logger.Infof("Shutdown complete")
-	logger.Infof("")
 }
 
 // printStartupBanner 打印启动横幅

@@ -239,6 +239,7 @@ func (h *DeployParamHandler) UpsertTemplate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "保存模板失败: " + tx.Error.Error()})
 		return
 	}
+	defer tx.Rollback()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
@@ -247,18 +248,15 @@ func (h *DeployParamHandler) UpsertTemplate(c *gin.Context) {
 
 	var exists model.ParamTemplate
 	if err := tx.Where("language = ? AND version_name = ?", req.Language, req.VersionName).First(&exists).Error; err == nil {
-		tx.Rollback()
 		c.JSON(http.StatusConflict, model.Response{Code: 409, Message: "同语言下版本名已存在，请更换版本名"})
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "保存模板失败: " + err.Error()})
 		return
 	}
 
 	if req.IsDefault {
 		if err := tx.Model(&model.ParamTemplate{}).Where("language = ?", req.Language).Update("is_default", false).Error; err != nil {
-			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "保存模板失败: " + err.Error()})
 			return
 		}
@@ -272,7 +270,6 @@ func (h *DeployParamHandler) UpsertTemplate(c *gin.Context) {
 		Content:     string(b),
 	}
 	if err := tx.Create(&row).Error; err != nil {
-		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "保存模板失败: " + err.Error()})
 		return
 	}
@@ -325,21 +322,19 @@ func (h *DeployParamHandler) UpdateTemplate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "更新模板失败: " + tx.Error.Error()})
 		return
 	}
+	defer tx.Rollback()
 
 	var dup model.ParamTemplate
 	if err := tx.Where("language = ? AND version_name = ? AND id <> ?", req.Language, req.VersionName, id).First(&dup).Error; err == nil {
-		tx.Rollback()
 		c.JSON(http.StatusConflict, model.Response{Code: 409, Message: "同语言下版本名已存在，请更换版本名"})
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "更新模板失败: " + err.Error()})
 		return
 	}
 
 	if req.IsDefault {
 		if err := tx.Model(&model.ParamTemplate{}).Where("language = ?", req.Language).Update("is_default", false).Error; err != nil {
-			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "更新模板失败: " + err.Error()})
 			return
 		}
@@ -353,7 +348,6 @@ func (h *DeployParamHandler) UpdateTemplate(c *gin.Context) {
 		"content":      string(b),
 	}
 	if err := tx.Model(&model.ParamTemplate{}).Where("id = ?", id).Updates(updates).Error; err != nil {
-		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "更新模板失败: " + err.Error()})
 		return
 	}
@@ -378,9 +372,9 @@ func (h *DeployParamHandler) DeleteTemplate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "删除失败: " + tx.Error.Error()})
 		return
 	}
+	defer tx.Rollback()
 
 	if err := tx.Delete(&model.ParamTemplate{}, id).Error; err != nil {
-		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "删除失败: " + err.Error()})
 		return
 	}
@@ -390,7 +384,6 @@ func (h *DeployParamHandler) DeleteTemplate(c *gin.Context) {
 		var next model.ParamTemplate
 		if err := tx.Where("language = ?", row.Language).Order("updated_at desc, id desc").First(&next).Error; err == nil {
 			if err2 := tx.Model(&model.ParamTemplate{}).Where("id = ?", next.ID).Update("is_default", true).Error; err2 != nil {
-				tx.Rollback()
 				c.JSON(http.StatusInternalServerError, model.Response{Code: 500, Message: "删除失败: " + err2.Error()})
 				return
 			}

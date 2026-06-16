@@ -1,0 +1,13 @@
+apiVersion: v2
+name: standard-app
+description: 统一应用部署模板 - 根据参数动态配置
+type: application
+version: 1.0.0
+appVersion: "1.0"
+keywords:
+  - deployment
+  - service
+  - ingress
+  - configmap
+maintainers:
+  - name: Platform Team

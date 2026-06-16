@@ -24,20 +24,21 @@ bastion_storage:
   # uri 支持完整连接串，可附带 timeout、authSource 等参数
   # 示例: "mongodb://user:pass@localhost:27017?authSource=admin&connectTimeoutMS=5000"
   mongodb:
-    uri: "mongodb://admin:123456@mongodb:27017/keyops_bastion?authSource=admin&connectTimeoutMS=5000"
+    uri: "mongodb://admin:123456@localhost:27017/keyops_bastion?authSource=admin&connectTimeoutMS=5000"
     database: keyops_bastion
     collection_recordings: bastion_recordings
     collection_commands: bastion_commands
     collection_logins: bastion_logins
 
 # ============================================================================
-# 账单存储配置（MongoDB，用于 AWS/阿里云原始账单）
+# 账单展示配置
 # ============================================================================
-# uri 支持完整连接串，可附带 timeout、authSource 等参数
-# 示例: "mongodb://user:pass@localhost:27017/zjump_bill?authSource=admin&connectTimeoutMS=5000"
-bill_storage:
-  uri: "mongodb://admin:123456@mongodb:27017/keyops_bill?authSource=admin&connectTimeoutMS=5000"
-  database: keyops_bill
+# default_currency: Dashboard 默认基准币种 (CNY / USD)
+# usd_to_cny_rate:  USD→CNY 汇率，用于聚合数据统一换算（单一来源，避免硬编码）
+# ============================================================================
+billing:
+  default_currency: CNY
+  usd_to_cny_rate: 6.8
 
 # ============================================================================
 # 数据库配置（必需）
@@ -61,6 +62,7 @@ database:
   max_idle_conns: 10           # 最大空闲连接数
   max_open_conns: 100          # 最大打开连接数
   conn_max_lifetime: 3600      # 连接最大生存时间（秒）
+  slow_threshold_ms: 5000      # GORM 慢 SQL 日志阈值（毫秒），同步时可调到 10000
 
 # ============================================================================
 # Redis配置（可选）

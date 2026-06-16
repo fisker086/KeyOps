@@ -581,10 +581,12 @@ func (h *ConnectionHandler) proxySSHConnectionWithTimeout(ws *websocket.Conn, ho
 			case <-stopCountdown:
 				// 连接成功，只在显示过倒计时时才清除
 				if countdownShown {
-					ws.WriteJSON(map[string]interface{}{
-						"type": "data",
-						"data": "\r\033[K", // 清除当前行
-					})
+		if err := ws.WriteJSON(map[string]interface{}{
+			"type": "data",
+			"data": "\r\033[K", // 清除当前行
+		}); err != nil {
+			log.Printf("[Connection] WebSocket write error (clear countdown): %v", err)
+		}
 				}
 				log.Printf("[Connection] Countdown stopped for session %s", sessionID)
 				return
@@ -592,10 +594,12 @@ func (h *ConnectionHandler) proxySSHConnectionWithTimeout(ws *websocket.Conn, ho
 				remaining := time.Until(deadline)
 				if remaining > 0 {
 					countdownShown = true
-					ws.WriteJSON(map[string]interface{}{
-						"type": "data",
-						"data": fmt.Sprintf("\r\033[33m正在连接... 剩余时间: %d 秒\033[0m", int(remaining.Seconds())),
-					})
+				if err := ws.WriteJSON(map[string]interface{}{
+					"type": "data",
+					"data": fmt.Sprintf("\r\033[33m正在连接... 剩余时间: %d 秒\033[0m", int(remaining.Seconds())),
+				}); err != nil {
+					log.Printf("[Connection] WebSocket write error (countdown): %v", err)
+				}
 				}
 			}
 		}
@@ -673,9 +677,18 @@ func (h *ConnectionHandler) proxySSHConnection(ws *websocket.Conn, host *model.H
 	}
 
 	// 获取输入输出管道
-	stdin, _ := session.StdinPipe()
-	stdout, _ := session.StdoutPipe()
-	stderr, _ := session.StderrPipe()
+	stdin, err := session.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get stdin pipe: %w", err)
+	}
+	stdout, err := session.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get stdout pipe: %w", err)
+	}
+	stderr, err := session.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get stderr pipe: %w", err)
+	}
 
 	// 启动 shell
 	if err := session.Shell(); err != nil {
@@ -868,10 +881,12 @@ func (h *ConnectionHandler) proxySSHConnection(ws *websocket.Conn, host *model.H
 
 							// 发送阻止警告给客户端
 							blockMsg := fmt.Sprintf("\r\n\033[1;31m🛡️ [安全策略阻止] %s\033[0m\r\n", reason)
-							ws.WriteJSON(map[string]interface{}{
-								"type": "output",
-								"data": blockMsg,
-							})
+						if err := ws.WriteJSON(map[string]interface{}{
+							"type": "output",
+							"data": blockMsg,
+						}); err != nil {
+							log.Printf("[Connection] WebSocket write error (block warning): %v", err)
+						}
 
 							continue
 						}
@@ -924,34 +939,40 @@ func (h *ConnectionHandler) proxySSHConnection(ws *websocket.Conn, host *model.H
 				} else {
 					log.Printf("[Connection] WARNING: Command parser is nil, command will not be recorded!")
 				}
-				ws.WriteJSON(map[string]interface{}{
-					"type": "output",
-					"data": data,
-				})
-			}
-		}
-	}()
-
-	// SSH stderr -> WebSocket
-	go func() {
-		buf := make([]byte, 32*1024)
-		for {
-			n, err := stderr.Read(buf)
-			if err != nil {
+			if err := ws.WriteJSON(map[string]interface{}{
+				"type": "output",
+				"data": data,
+			}); err != nil {
+				log.Printf("[Connection] WebSocket write error (stdout): %v", err)
 				return
 			}
-			if n > 0 {
-				data := string(buf[:n])
-				rec.RecordOutput(data)
-				// stderr 也可能包含命令提示符（如果解析器存在）
-				if cmdParser != nil {
-					log.Printf("[Connection] Feeding stderr data to command parser, length=%d", len(data))
-					cmdParser.Feed(data)
-				}
-				ws.WriteJSON(map[string]interface{}{
-					"type": "output",
-					"data": data,
-				})
+		}
+	}
+}()
+
+// SSH stderr -> WebSocket
+go func() {
+	buf := make([]byte, 32*1024)
+	for {
+		n, err := stderr.Read(buf)
+		if err != nil {
+			return
+		}
+		if n > 0 {
+			data := string(buf[:n])
+			rec.RecordOutput(data)
+			// stderr 也可能包含命令提示符（如果解析器存在）
+			if cmdParser != nil {
+				log.Printf("[Connection] Feeding stderr data to command parser, length=%d", len(data))
+				cmdParser.Feed(data)
+			}
+			if err := ws.WriteJSON(map[string]interface{}{
+				"type": "output",
+				"data": data,
+			}); err != nil {
+				log.Printf("[Connection] WebSocket write error (stderr): %v", err)
+				return
+			}
 			}
 		}
 	}()

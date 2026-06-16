@@ -2061,7 +2061,7 @@ func (h *ApprovalHandler) getDefaultExternalURL(platform model.ApprovalPlatform,
 	case model.ApprovalPlatformLark:
 		return fmt.Sprintf("https://www.larksuite.com/approval/instance/%s", externalID)
 	case model.ApprovalPlatformDingTalk:
-		return fmt.Sprintf("https://aflow.dingtalk.com/dingtalk/mobile/homepage.htm?corpid=&lwp_as=1&procInstId=%s", externalID)
+		return fmt.Sprintf("https://oa.dingtalk.com/approval/detail?processInstanceId=%s", externalID)
 	case model.ApprovalPlatformWeChat:
 		return fmt.Sprintf("https://work.weixin.qq.com/wework_admin/frame#/approval/detail/%s", externalID)
 	default:

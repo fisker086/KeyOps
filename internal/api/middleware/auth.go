@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/fisker086/keyops/internal/service"
 	"github.com/fisker086/keyops/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // AuthMiddleware JWT认证中间件
@@ -24,7 +26,7 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 			logger.Debugf("[AuthMiddleware] WebSocket request: %s %s", c.Request.Method, c.Request.URL.Path)
 			tokenString := c.Query("token")
 			if tokenString == "" {
-				logger.Warnf("[AuthMiddleware] WebSocket missing token query parameter")
+				logger.Warnf("[Auth] 401 %s %s: missing token query", c.Request.Method, c.Request.URL.Path)
 				c.JSON(http.StatusUnauthorized, model.Error(401, "WebSocket请求缺少token参数"))
 				c.Abort()
 				return
@@ -32,7 +34,7 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 			// 验证Token
 			claims, err := authService.ValidateToken(tokenString)
 			if err != nil {
-				logger.Warnf("[AuthMiddleware] token validation failed: %v", err)
+				logAuthFailure(c, err)
 				c.JSON(http.StatusUnauthorized, model.Error(401, "Token无效或已过期: "+err.Error()))
 				c.Abort()
 				return
@@ -48,11 +50,13 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 		if authHeader != "" {
 			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
 			if tokenString == authHeader {
+				logger.Warnf("[Auth] 401 %s %s: malformed Authorization header", c.Request.Method, c.Request.URL.Path)
 				c.JSON(http.StatusUnauthorized, model.Error(401, "Token格式错误：Authorization header 必须以 'Bearer ' 开头"))
 				c.Abort()
 				return
 			}
 		} else {
+			logger.Warnf("[Auth] 401 %s %s: missing Authorization header", c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, model.Error(401, "缺少Authorization Header"))
 			c.Abort()
 			return
@@ -60,6 +64,7 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 
 		claims, err := authService.ValidateToken(tokenString)
 		if err != nil {
+			logAuthFailure(c, err)
 			c.JSON(http.StatusUnauthorized, model.Error(401, "Token无效或已过期: "+err.Error()))
 			c.Abort()
 			return
@@ -68,6 +73,16 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 		setUser(c, claims.UserID, claims.Username, claims.Role)
 		c.Next()
 	}
+}
+
+func logAuthFailure(c *gin.Context, err error) {
+	method := c.Request.Method
+	path := c.Request.URL.Path
+	if errors.Is(err, jwt.ErrTokenExpired) {
+		logger.Debugf("[Auth] 401 %s %s: token expired", method, path)
+		return
+	}
+	logger.Warnf("[Auth] 401 %s %s: invalid token (%v)", method, path, err)
 }
 
 func setUser(c *gin.Context, userID, username, role string) {

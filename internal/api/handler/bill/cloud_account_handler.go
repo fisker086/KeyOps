@@ -281,3 +281,31 @@ func (h *CloudAccountHandler) SyncCloudAccount(c *gin.Context) {
 	h.service.SyncCloudBillingAsync(uint(id), billingDate)
 	c.JSON(http.StatusOK, model.Success(gin.H{"ok": true, "async": true, "synced_at": billingDate}))
 }
+
+// CancelSync 取消正在同步中的账单
+// @Summary 取消同步
+// @Tags bill
+// @Success 200
+// @Router /api/bill/cloud-accounts/:id/sync/cancel [post]
+func (h *CloudAccountHandler) CancelSync(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Error(400, "invalid cloud_account_id"))
+		return
+	}
+
+	billingDate := time.Now()
+	if monthStr := c.Query("month"); monthStr != "" {
+		billingDate, err = time.Parse("2006-01", monthStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, model.Error(400, "invalid month format"))
+			return
+		}
+	}
+
+	if err := h.service.CancelSync(uint(id), billingDate); err != nil {
+		c.JSON(http.StatusNotFound, model.Error(404, err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, model.Success(gin.H{"ok": true, "cancelled": true}))
+}

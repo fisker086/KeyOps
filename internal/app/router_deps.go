@@ -38,7 +38,6 @@ func RouterDeps(h *Handlers, s *Services, repos *Repositories, mode string) rout
 			K8sSearch:        h.K8sSearch,
 			Deployment:       h.Deployment,
 			Bill:             h.Bill,
-			ExpensesMap:      h.ExpensesMap,
 			CloudAccount:     h.CloudAccount,
 			Resources:        h.Resources,
 			BillDashboard:    h.BillDashboard,

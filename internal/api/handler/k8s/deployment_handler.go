@@ -437,6 +437,7 @@ func (h *DeploymentHandler) ExecuteK8sDeployment(c *gin.Context) {
 	// 在 goroutine 中执行部署，避免阻塞 API 响应
 	go func() {
 		if err := h.deploymentService.ExecuteK8sDeployment(id); err != nil {
+			logger.Errorf("[Deployment] ExecuteK8sDeployment(%s) error: %v", id, err)
 			return
 		}
 	}()

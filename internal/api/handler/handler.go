@@ -120,13 +120,11 @@ var NewOnCallHandler = onCallHandler.NewOnCallHandler
 
 // Bill handlers
 type BillHandler = billHandler.BillHandler
-type ExpensesMapHandler = billHandler.ExpensesMapHandler
 type CloudAccountHandler = billHandler.CloudAccountHandler
 type ResourcesHandler = billHandler.ResourcesHandler
 type BillDashboardHandler = billHandler.DashboardHandler
 
 var NewBillHandler = billHandler.NewBillHandler
-var NewExpensesMapHandler = billHandler.NewExpensesMapHandler
 var NewCloudAccountHandler = billHandler.NewCloudAccountHandler
 var NewResourcesHandler = billHandler.NewResourcesHandler
 var NewBillDashboardHandler = billHandler.NewDashboardHandler

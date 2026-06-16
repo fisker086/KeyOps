@@ -16,6 +16,11 @@ const (
 	CloudTypeTencent = "tencent"
 )
 
+// TempFileCleaner 同步结束后清理本地临时文件（如 S3 下载的 CUR parquet）
+type TempFileCleaner interface {
+	CleanupTempFiles()
+}
+
 type CloudAdapter interface {
 	ValidateCredentials() (map[string]interface{}, error)
 	// GetRawBillingData 全量获取（保留兼容）

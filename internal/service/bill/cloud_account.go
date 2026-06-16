@@ -3,10 +3,26 @@ package bill
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fisker086/keyops/internal/cloud"
 	"github.com/fisker086/keyops/internal/model"
+	"github.com/robfig/cron/v3"
+)
+
+const cloudAccountDetailsCacheTTL = 2 * time.Minute
+
+type cloudAccountAggCache struct {
+	yearCosts  map[uint]float64
+	monthCosts map[uint]float64
+	resources  map[uint]int
+	expiresAt  time.Time
+}
+
+var (
+	cloudAccountDetailsCacheMu sync.Mutex
+	cloudAccountAggCacheStore  = make(map[string]cloudAccountAggCache)
 )
 
 // CloudAccountDetails 云账户费用详情
@@ -17,12 +33,29 @@ type CloudAccountDetails struct {
 	LastMonthCost float64 `json:"last_month_cost"`
 }
 
+func validateSyncCron(expr string) error {
+	if expr == "" {
+		return nil
+	}
+	normalized := normalizeBillSyncCron(expr)
+	parser := cron.NewParser(cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+	_, err := parser.Parse(normalized)
+	if err != nil {
+		return fmt.Errorf("无效的 cron 表达式 %q: %w", expr, err)
+	}
+	return nil
+}
+
 // AddCloudAccount 添加云账户
 func (s *BillService) AddCloudAccount(account *model.CloudAccount) error {
 	if account.CloudType == cloud.CloudTypeAWS {
 		if strings.TrimSpace(account.BucketName) == "" {
 			return fmt.Errorf("AWS billing requires bucket_name for CUR S3 import")
 		}
+	}
+
+	if err := validateSyncCron(account.SyncCron); err != nil {
+		return err
 	}
 
 	// 验证凭证
@@ -111,6 +144,9 @@ func (s *BillService) UpdateCloudAccount(id uint, patch *model.CloudAccount) err
 	}
 	// sync_cron 允许清空（设为空字符串）
 	if patch.SyncCron != existing.SyncCron {
+		if err := validateSyncCron(patch.SyncCron); err != nil {
+			return err
+		}
 		existing.SyncCron = patch.SyncCron
 	}
 	if existing.CloudType == cloud.CloudTypeAWS {
@@ -127,6 +163,33 @@ func (s *BillService) UpdateCloudAccount(id uint, patch *model.CloudAccount) err
 	return s.cloudRepo.Update(existing)
 }
 
+func cloudAccountAggCacheKey(year, month string) string {
+	return year + ":" + month + ":" + time.Now().Truncate(cloudAccountDetailsCacheTTL).Format(time.RFC3339)
+}
+
+func getCachedCloudAccountAgg(year, month string) (cloudAccountAggCache, bool) {
+	key := cloudAccountAggCacheKey(year, month)
+	cloudAccountDetailsCacheMu.Lock()
+	defer cloudAccountDetailsCacheMu.Unlock()
+	entry, ok := cloudAccountAggCacheStore[key]
+	if !ok || time.Now().After(entry.expiresAt) {
+		return cloudAccountAggCache{}, false
+	}
+	return entry, true
+}
+
+func setCachedCloudAccountAgg(year, month string, yearCosts map[uint]float64, monthCosts map[uint]float64, resources map[uint]int) {
+	key := cloudAccountAggCacheKey(year, month)
+	cloudAccountDetailsCacheMu.Lock()
+	defer cloudAccountDetailsCacheMu.Unlock()
+	cloudAccountAggCacheStore[key] = cloudAccountAggCache{
+		yearCosts:  yearCosts,
+		monthCosts: monthCosts,
+		resources:  resources,
+		expiresAt:  time.Now().Add(cloudAccountDetailsCacheTTL),
+	}
+}
+
 // ListCloudAccountsWithDetails 列出云账户（含费用详情）
 func (s *BillService) ListCloudAccountsWithDetails(cloudType string) ([]map[string]interface{}, error) {
 	accounts, err := s.cloudRepo.List(cloudType)
@@ -134,11 +197,27 @@ func (s *BillService) ListCloudAccountsWithDetails(cloudType string) ([]map[stri
 		return nil, err
 	}
 
-	result := make([]map[string]interface{}, 0, len(accounts))
 	now := time.Now()
 	thisYear := now.Format("2006")
 	lastMonth := now.AddDate(0, -1, 0).Format("2006-01")
 
+	accountIDs := make([]uint, 0, len(accounts))
+	for _, account := range accounts {
+		accountIDs = append(accountIDs, account.ID)
+	}
+
+	var yearCosts, monthCosts map[uint]float64
+	var resources map[uint]int
+	if cached, ok := getCachedCloudAccountAgg(thisYear, lastMonth); ok {
+		yearCosts, monthCosts, resources = cached.yearCosts, cached.monthCosts, cached.resources
+	} else {
+		yearCosts, _ = s.repo.GetCostByCloudAccountsYear(accountIDs, thisYear)
+		monthCosts, _ = s.repo.GetCostByCloudAccountsMonth(accountIDs, lastMonth)
+		resources, _ = s.repo.GetResourceCountByCloudAccounts(accountIDs)
+		setCachedCloudAccountAgg(thisYear, lastMonth, yearCosts, monthCosts, resources)
+	}
+
+	result := make([]map[string]interface{}, 0, len(accounts))
 	for _, account := range accounts {
 		item := map[string]interface{}{
 			"id":                account.ID,
@@ -158,21 +237,13 @@ func (s *BillService) ListCloudAccountsWithDetails(cloudType string) ([]map[stri
 			"last_import_error": account.LastImportError,
 			"created_at":        account.CreatedAt,
 			"updated_at":        account.UpdatedAt,
-			"details":           nil,
+			"details": CloudAccountDetails{
+				Cost:          yearCosts[account.ID],
+				Forecast:      0,
+				Resources:     resources[account.ID],
+				LastMonthCost: monthCosts[account.ID],
+			},
 		}
-
-		cost, _ := s.repo.GetCostByCloudAccountYear(account.ID, thisYear)
-		lastMonthCost, _ := s.repo.GetCostByCloudAccount(account.ID, lastMonth)
-		resources, _ := s.repo.GetResourceCountByCloudAccount(account.ID)
-
-		details := CloudAccountDetails{
-			Cost:          cost,
-			Forecast:      0,
-			Resources:     resources,
-			LastMonthCost: lastMonthCost,
-		}
-
-		item["details"] = details
 		result = append(result, item)
 	}
 

@@ -255,7 +255,7 @@ func (h *RDPHandler) Connect(ctx context.Context, config *ConnectionConfig) erro
 	if rdpPort == 0 {
 		rdpPort = 3389 // RDP 默认端口
 	}
-	log.Printf("[RDP] RDP connection info: host=%s:%d, username=%s, password=%s", config.HostIP, rdpPort, config.Username, config.Password)
+	log.Printf("[RDP] RDP connection info: host=%s:%d, username=%s, password=****", config.HostIP, rdpPort, config.Username)
 
 	h.guacdConn = conn
 	h.guacdReader = bufio.NewReader(conn)

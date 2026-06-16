@@ -8,6 +8,7 @@ func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
 		if origin != "" {
+			// 暂时反射 origin 以支持开发和代理场景（TODO: 生产环境应替换为白名单校验）
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 			c.Writer.Header().Add("Vary", "Origin")
 		} else {

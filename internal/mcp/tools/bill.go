@@ -7,10 +7,11 @@ import (
 
 	"github.com/fisker086/keyops/internal/mcp"
 	"github.com/fisker086/keyops/internal/repository"
+	billSvc "github.com/fisker086/keyops/internal/service/bill"
 )
 
 type BillToolContext struct {
-	BillRepo     repository.BillRepository
+	BillSvc      *billSvc.BillService
 	CloudAccRepo repository.CloudAccountRepository
 }
 
@@ -28,24 +29,6 @@ func RegisterBillTools(registry *mcp.Registry, ctx *BillToolContext) {
 		},
 		func(args json.RawMessage) *mcp.CallToolResult {
 			return handleListCloudAccounts(args, ctx)
-		},
-	)
-
-	registry.Register(
-		mcp.ToolDefinition{
-			Name:        "bill_get_summary",
-			Description: "Get billing summary by vendor and month",
-			InputSchema: rawJSON(map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"vendor": map[string]string{"type": "string", "description": "Cloud vendor: aws, aliyun, tencent"},
-					"month":  map[string]string{"type": "string", "description": "Billing month (YYYY-MM), e.g. 2026-04"},
-				},
-				"required": []string{"vendor", "month"},
-			}),
-		},
-		func(args json.RawMessage) *mcp.CallToolResult {
-			return handleGetSummary(args, ctx)
 		},
 	)
 
@@ -102,42 +85,6 @@ func RegisterBillTools(registry *mcp.Registry, ctx *BillToolContext) {
 
 	registry.Register(
 		mcp.ToolDefinition{
-			Name:        "bill_get_breakdown_by_account",
-			Description: "Get cost breakdown by cloud account for a specific month",
-			InputSchema: rawJSON(map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"vendor": map[string]string{"type": "string", "description": "Cloud vendor: aws, aliyun, tencent"},
-					"month":  map[string]string{"type": "string", "description": "Billing month (YYYY-MM), e.g. 2026-04"},
-				},
-				"required": []string{"vendor", "month"},
-			}),
-		},
-		func(args json.RawMessage) *mcp.CallToolResult {
-			return handleBreakdownByAccount(args, ctx)
-		},
-	)
-
-	registry.Register(
-		mcp.ToolDefinition{
-			Name:        "bill_get_breakdown_by_tags",
-			Description: "Get cost breakdown by tags for a specific month",
-			InputSchema: rawJSON(map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"vendor": map[string]string{"type": "string", "description": "Cloud vendor: aws, aliyun, tencent"},
-					"month":  map[string]string{"type": "string", "description": "Billing month (YYYY-MM), e.g. 2026-04"},
-				},
-				"required": []string{"vendor", "month"},
-			}),
-		},
-		func(args json.RawMessage) *mcp.CallToolResult {
-			return handleBreakdownByTags(args, ctx)
-		},
-	)
-
-	registry.Register(
-		mcp.ToolDefinition{
 			Name:        "bill_list_resources",
 			Description: "List cloud billing resources with optional filters",
 			InputSchema: rawJSON(map[string]any{
@@ -186,28 +133,6 @@ func RegisterBillTools(registry *mcp.Registry, ctx *BillToolContext) {
 		},
 		func(args json.RawMessage) *mcp.CallToolResult {
 			return handleExpensesBreakdown(args, ctx)
-		},
-	)
-
-	registry.Register(
-		mcp.ToolDefinition{
-			Name:        "bill_list_records",
-			Description: "List billing records with filters",
-			InputSchema: rawJSON(map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"vendor":       map[string]string{"type": "string", "description": "Cloud vendor: aws, aliyun, tencent"},
-					"month":        map[string]string{"type": "string", "description": "Billing month (YYYY-MM), e.g. 2026-04"},
-					"resourceCode": map[string]string{"type": "string", "description": "Filter by resource type code"},
-					"serviceCode":  map[string]string{"type": "string", "description": "Filter by service code"},
-					"page":         map[string]string{"type": "string", "description": "Page number (default: 1)"},
-					"size":         map[string]string{"type": "string", "description": "Page size (default: 50)"},
-				},
-				"required": []string{"vendor", "month"},
-			}),
-		},
-		func(args json.RawMessage) *mcp.CallToolResult {
-			return handleListRecords(args, ctx)
 		},
 	)
 
@@ -279,23 +204,6 @@ type summaryParams struct {
 	Month  string `json:"month"`
 }
 
-func handleGetSummary(args json.RawMessage, ctx *BillToolContext) *mcp.CallToolResult {
-	var params summaryParams
-	if err := json.Unmarshal(args, &params); err != nil {
-		return errorResult("invalid arguments: " + err.Error())
-	}
-	summary, details, err := ctx.BillRepo.GetSummary(params.Vendor, params.Month)
-	if err != nil {
-		return errorResult("query error: " + err.Error())
-	}
-	result := map[string]any{
-		"summary": summary,
-		"details": details,
-	}
-	data, _ := json.MarshalIndent(result, "", "  ")
-	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
-}
-
 type monthParams struct {
 	Month string `json:"month"`
 }
@@ -305,7 +213,7 @@ func handleBreakdownByVendor(args json.RawMessage, ctx *BillToolContext) *mcp.Ca
 	if err := json.Unmarshal(args, &params); err != nil {
 		return errorResult("invalid arguments: " + err.Error())
 	}
-	result, err := ctx.BillRepo.GetCostByVendor(params.Month)
+	result, err := ctx.BillSvc.MCPGetCostByVendor(params.Month)
 	if err != nil {
 		return errorResult("query error: " + err.Error())
 	}
@@ -318,7 +226,7 @@ func handleBreakdownByService(args json.RawMessage, ctx *BillToolContext) *mcp.C
 	if err := json.Unmarshal(args, &params); err != nil {
 		return errorResult("invalid arguments: " + err.Error())
 	}
-	result, err := ctx.BillRepo.GetCostByService(params.Month)
+	result, err := ctx.BillSvc.MCPGetCostByService(params.Month)
 	if err != nil {
 		return errorResult("query error: " + err.Error())
 	}
@@ -331,38 +239,7 @@ func handleBreakdownByRegion(args json.RawMessage, ctx *BillToolContext) *mcp.Ca
 	if err := json.Unmarshal(args, &params); err != nil {
 		return errorResult("invalid arguments: " + err.Error())
 	}
-	result, err := ctx.BillRepo.GetCostByRegion(params.Month)
-	if err != nil {
-		return errorResult("query error: " + err.Error())
-	}
-	data, _ := json.MarshalIndent(result, "", "  ")
-	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
-}
-
-type vendorMonthParams struct {
-	Vendor string `json:"vendor"`
-	Month  string `json:"month"`
-}
-
-func handleBreakdownByAccount(args json.RawMessage, ctx *BillToolContext) *mcp.CallToolResult {
-	var params vendorMonthParams
-	if err := json.Unmarshal(args, &params); err != nil {
-		return errorResult("invalid arguments: " + err.Error())
-	}
-	result, err := ctx.BillRepo.GetBreakdownByAccounts(params.Vendor, params.Month)
-	if err != nil {
-		return errorResult("query error: " + err.Error())
-	}
-	data, _ := json.MarshalIndent(result, "", "  ")
-	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
-}
-
-func handleBreakdownByTags(args json.RawMessage, ctx *BillToolContext) *mcp.CallToolResult {
-	var params vendorMonthParams
-	if err := json.Unmarshal(args, &params); err != nil {
-		return errorResult("invalid arguments: " + err.Error())
-	}
-	result, err := ctx.BillRepo.GetBreakdownByTags(params.Vendor, params.Month)
+	result, err := ctx.BillSvc.MCPGetCostByRegion(params.Month)
 	if err != nil {
 		return errorResult("query error: " + err.Error())
 	}
@@ -383,7 +260,7 @@ func handleListResources(args json.RawMessage, ctx *BillToolContext) *mcp.CallTo
 	}
 	page, _ := parseInt(params.Page, 1)
 	size, _ := parseInt(params.Size, 50)
-	total, resources, err := ctx.BillRepo.ListBillResources(params.Vendor, page, size)
+	total, resources, err := ctx.BillSvc.MCPListBillResources(params.Vendor, page, size)
 	if err != nil {
 		return errorResult("query error: " + err.Error())
 	}
@@ -398,19 +275,11 @@ func handleListResources(args json.RawMessage, ctx *BillToolContext) *mcp.CallTo
 }
 
 func handleGetRecommendations(_ json.RawMessage, ctx *BillToolContext) *mcp.CallToolResult {
-	idleResources, err := ctx.BillRepo.GetIdleResources()
+	recommendations, err := ctx.BillSvc.GetRecommendations()
 	if err != nil {
-		return errorResult("query idle resources error: " + err.Error())
+		return errorResult("query error: " + err.Error())
 	}
-	largeResources, err := ctx.BillRepo.GetLargeResources()
-	if err != nil {
-		return errorResult("query large resources error: " + err.Error())
-	}
-	result := map[string]any{
-		"idle_resources": idleResources,
-		"rightsizing":    largeResources,
-	}
-	data, _ := json.MarshalIndent(result, "", "  ")
+	data, _ := json.MarshalIndent(recommendations, "", "  ")
 	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
 }
 
@@ -438,39 +307,9 @@ func handleExpensesBreakdown(args json.RawMessage, ctx *BillToolContext) *mcp.Ca
 	if params.Granularity == "" {
 		params.Granularity = "monthly"
 	}
-	result, err := ctx.BillRepo.GetExpensesBreakdown(startDate, endDate, params.Granularity, params.GroupBy, params.Vendor, "", "")
+	result, err := ctx.BillSvc.GetExpensesBreakdown(startDate, endDate, params.Granularity, params.GroupBy, params.Vendor, "", "", "unblended", "")
 	if err != nil {
 		return errorResult("query error: " + err.Error())
-	}
-	data, _ := json.MarshalIndent(result, "", "  ")
-	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
-}
-
-type listRecordsParams struct {
-	Vendor       string `json:"vendor"`
-	Month        string `json:"month"`
-	ResourceCode string `json:"resourceCode"`
-	ServiceCode  string `json:"serviceCode"`
-	Page         string `json:"page"`
-	Size         string `json:"size"`
-}
-
-func handleListRecords(args json.RawMessage, ctx *BillToolContext) *mcp.CallToolResult {
-	var params listRecordsParams
-	if err := json.Unmarshal(args, &params); err != nil {
-		return errorResult("invalid arguments: " + err.Error())
-	}
-	page, _ := parseInt(params.Page, 1)
-	size, _ := parseInt(params.Size, 50)
-	total, records, err := ctx.BillRepo.GetRecords(params.Vendor, params.Month, params.ResourceCode, params.ServiceCode, page, size)
-	if err != nil {
-		return errorResult("query error: " + err.Error())
-	}
-	result := map[string]any{
-		"total":   total,
-		"page":    page,
-		"size":    size,
-		"records": records,
 	}
 	data, _ := json.MarshalIndent(result, "", "  ")
 	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
@@ -494,7 +333,7 @@ func handleCostTrend(args json.RawMessage, ctx *BillToolContext) *mcp.CallToolRe
 	if err != nil {
 		return errorResult("invalid end_date, expected YYYY-MM-DD: " + err.Error())
 	}
-	trend, err := ctx.BillRepo.GetDailyCostTrend(startDate, endDate)
+	trend, err := ctx.BillSvc.MCPGetDailyCostTrend(startDate, endDate)
 	if err != nil {
 		return errorResult("query error: " + err.Error())
 	}
@@ -502,7 +341,6 @@ func handleCostTrend(args json.RawMessage, ctx *BillToolContext) *mcp.CallToolRe
 	return &mcp.CallToolResult{Content: []mcp.ToolContent{{Type: "text", Text: string(data)}}}
 }
 
-// parseInt parses a string to int with a default value
 func parseInt(s string, defaultVal int) (int, error) {
 	if s == "" {
 		return defaultVal, nil

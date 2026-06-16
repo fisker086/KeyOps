@@ -53,7 +53,6 @@ type Handlers struct {
 	K8sSearch        *handler.K8sSearchHandler
 	Deployment       *handler.DeploymentHandler
 	Bill             *handler.BillHandler
-	ExpensesMap      *handler.ExpensesMapHandler
 	CloudAccount     *handler.CloudAccountHandler
 	Resources        *handler.ResourcesHandler
 	BillDashboard    *handler.BillDashboardHandler
@@ -109,7 +108,7 @@ func InitializeHandlers(
 		K8sClusterRepo: repos.K8sCluster,
 	})
 	mcpTools.RegisterBillTools(mcpServer.Registry(), &mcpTools.BillToolContext{
-		BillRepo:     repos.Bill,
+		BillSvc:      services.Bill,
 		CloudAccRepo: repos.CloudAccount,
 	})
 	mcpHandler := mcp.NewHandler(mcpServer)
@@ -153,7 +152,6 @@ func InitializeHandlers(
 	k8sSearchHandler := handler.NewK8sSearchHandler(services.K8sCluster, services.K8s, services.K8sPermission, repos.Role)
 	deploymentHandler := handler.NewDeploymentHandler(services.Deployment, services.K8sPermission, repos.Role)
 	billHandler := handler.NewBillHandler(services.Bill) // 合并后的账单处理器
-	expensesMapHandler := handler.NewExpensesMapHandler(services.Bill)
 	cloudAccountHandler := handler.NewCloudAccountHandler(services.Bill)
 	resourcesHandler := handler.NewResourcesHandler(services.Bill)
 	billDashboardHandler := handler.NewBillDashboardHandler(services.Bill)
@@ -263,7 +261,6 @@ func InitializeHandlers(
 		K8sSearch:        k8sSearchHandler,
 		Deployment:       deploymentHandler,
 		Bill:             billHandler, // 合并后的账单处理器
-		ExpensesMap:      expensesMapHandler,
 		CloudAccount:     cloudAccountHandler,
 		Resources:        resourcesHandler,
 		BillDashboard:    billDashboardHandler,

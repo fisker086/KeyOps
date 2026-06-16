@@ -72,22 +72,7 @@ func (h *ProxyHandler) HandleTerminal(ctx context.Context, channel ssh.Channel, 
 		}
 	}()
 
-	// 启动心跳机制，定期更新会话活跃时间
-	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				// 这里需要访问SSH会话的LastActive字段
-				// 但由于架构限制，我们无法直接访问
-				// 这个心跳主要用于保持连接活跃
-			}
-		}
-	}()
+	// 心跳保持由 SSH 服务器层处理，此处不再重复启动空 ticker
 
 	// 创建新版菜单（支持分组）
 	menu := NewMenuV2(h.selector, channel)

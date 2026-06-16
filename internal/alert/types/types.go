@@ -29,5 +29,3 @@ type SilenceConfig struct {
 	Weeks     []int    `json:"weeks,omitempty"`      // 周期静默: [0,1,2,3,4,5,6]
 	Times     []string `json:"times,omitempty"`      // 周期静默: ["09:00:00", "18:00:00"]
 }
-
-

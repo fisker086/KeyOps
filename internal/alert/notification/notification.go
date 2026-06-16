@@ -591,5 +591,3 @@ func (n *AlertNotifier) sendRecoveryNotificationWithTemplate(event *model.AlertE
 
 	return nil
 }
-
-

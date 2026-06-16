@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +15,7 @@ import (
 	"github.com/fisker086/keyops/pkg/config"
 	"github.com/fisker086/keyops/pkg/database"
 	"github.com/fisker086/keyops/pkg/logger"
+	pkgredis "github.com/fisker086/keyops/pkg/redis"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -27,8 +29,8 @@ type App struct {
 	SSHServer           *server.Server
 	UnifiedAuditor      *audit.DatabaseAuditor
 	NotificationManager *notification.NotificationManager
-	MongoClient         *mongodb.Client
 	BastionMongo        *mongo.Client
+	HTTPServer          *http.Server
 }
 
 // Initialize 初始化应用程序
@@ -44,19 +46,7 @@ func Initialize(cfgPath string) (*App, error) {
 		}
 	}()
 
-	// 2. 初始化 MongoDB：账单库（独立 Client）与堡垒机库（独立 URI / Database）
-	var mongoClient *mongodb.Client
-	if cfg.BillStorage.GetURI() != "" {
-		mongoClient, err = mongodb.NewClientWithDatabase(cfg.BillStorage.GetURI(), cfg.BillStorage.Database)
-		if err != nil {
-			logger.Warnf("MongoDB (bill) connect failed: %v", err)
-		} else {
-			if err := mongoClient.InitIndexes(context.Background()); err != nil {
-				logger.Warnf("MongoDB init indexes failed: %v", err)
-			}
-		}
-	}
-
+	// 2. 初始化 MongoDB（堡垒机会话/录制，engine=mongodb 时）
 	var bastionMongo *mongo.Client
 	if cfg.BastionStorage.GetEngine() == "mongodb" {
 		cfg.BastionStorage.SetDefaults()
@@ -82,7 +72,7 @@ func Initialize(cfgPath string) (*App, error) {
 	logger.Infof("Repositories initialized")
 
 	// 4. Initialize services
-	services := InitializeServices(repos, cfg, mongoClient)
+	services := InitializeServices(repos, cfg)
 	logger.Infof("Services initialized")
 
 	// 4. Initialize audit service
@@ -120,7 +110,6 @@ func Initialize(cfgPath string) (*App, error) {
 		SSHServer:           sshServer,
 		UnifiedAuditor:      unifiedAuditor,
 		NotificationManager: notificationMgr,
-		MongoClient:         services.MongoClient,
 		BastionMongo:        bastionMongo,
 	}, nil
 }
@@ -134,33 +123,61 @@ func CloseDatabase() error {
 func Shutdown(app *App) {
 	logger.Infof("[Shutdown] Received shutdown signal, starting graceful shutdown")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
 
-	// 1. 停止账单同步调度器
-	if app.BackgroundServices.BillSync != nil {
+	// 1. Stop HTTP server first (stops accepting new requests)
+	if app.HTTPServer != nil {
+		logger.Infof("[Shutdown] Stopping HTTP server...")
+		if err := app.HTTPServer.Shutdown(shutdownCtx); err != nil {
+			logger.Warnf("[Shutdown] HTTP server shutdown error: %v", err)
+		} else {
+			logger.Infof("[Shutdown] HTTP server stopped")
+		}
+	}
+
+	// 2. Stop Expiration Service
+	if app.BackgroundServices != nil && app.BackgroundServices.Expiration != nil {
+		logger.Infof("[Shutdown] Stopping expiration service...")
+		app.BackgroundServices.Expiration.Stop()
+		logger.Infof("[Shutdown] Expiration service stopped")
+	}
+
+	// 3. Stop On-Call Notification Service
+	if app.BackgroundServices != nil && app.BackgroundServices.OnCallNotification != nil {
+		if onCallNotificationService, ok := app.BackgroundServices.OnCallNotification.(interface{ Stop() }); ok {
+			logger.Infof("[Shutdown] Stopping on-call notification service...")
+			onCallNotificationService.Stop()
+			logger.Infof("[Shutdown] On-call notification service stopped")
+		}
+	}
+
+	// 4. Stop bill sync scheduler
+	if app.BackgroundServices != nil && app.BackgroundServices.BillSync != nil {
 		app.BackgroundServices.BillSync.Stop()
 		logger.Infof("[Shutdown] Bill sync scheduler stopped")
 	}
 
-	// 2. Close MongoDB connections
+	// 5. Stop proxy monitor
+	if app.BackgroundServices != nil && app.BackgroundServices.ProxyMonitor != nil {
+		logger.Infof("[Shutdown] Stopping proxy monitor...")
+		app.BackgroundServices.ProxyMonitor.Stop()
+		logger.Infof("[Shutdown] Proxy monitor stopped")
+	}
+
+	// 6. Close MongoDB connections (bastion)
 	if app.BastionMongo != nil {
-		if err := app.BastionMongo.Disconnect(ctx); err != nil {
+		logger.Infof("[Shutdown] Closing bastion MongoDB...")
+		if err := app.BastionMongo.Disconnect(shutdownCtx); err != nil {
 			logger.Warnf("[Shutdown] Bastion MongoDB close error: %v", err)
 		} else {
 			logger.Infof("[Shutdown] Bastion MongoDB connection closed")
 		}
 	}
-	if app.MongoClient != nil {
-		if err := app.MongoClient.Close(ctx); err != nil {
-			logger.Warnf("[Shutdown] MongoDB (bill) close error: %v", err)
-		} else {
-			logger.Infof("[Shutdown] MongoDB (bill) connection closed")
-		}
-	}
 
-	// 3. Stop SSH server
+	// 7. Stop SSH server
 	if app.SSHServer != nil {
+		logger.Infof("[Shutdown] Stopping SSH server...")
 		if err := app.SSHServer.Stop(); err != nil {
 			logger.Warnf("[Shutdown] SSH server stop error: %v", err)
 		} else {
@@ -168,11 +185,19 @@ func Shutdown(app *App) {
 		}
 	}
 
-	// 4. Close database (MySQL/PostgreSQL)
+	// 8. Close database (MySQL/PostgreSQL)
+	logger.Infof("[Shutdown] Closing database...")
 	if err := CloseDatabase(); err != nil {
 		logger.Warnf("[Shutdown] Database close error: %v", err)
 	} else {
 		logger.Infof("[Shutdown] Database connection closed")
+	}
+
+	// 9. Close Redis if enabled
+	if app.Config != nil && app.Config.Redis.Enabled {
+		logger.Infof("[Shutdown] Closing Redis...")
+		pkgredis.Close()
+		logger.Infof("[Shutdown] Redis closed")
 	}
 
 	logger.Infof("[Shutdown] Graceful shutdown completed")

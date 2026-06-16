@@ -1,9 +1,9 @@
 # ============================================================================
-# KeyOps 集成 Dockerfile
-# 将前端代码嵌入到 Go 二进制文件中，一个容器运行所有服务
+# KeyOps API Server Dockerfile
+# 构建 API 后端二进制（分离架构，前端由 Nginx 独立部署）
 # ============================================================================
 
-# ---------- Stage 1: Build backend (Go) with embedded frontend ----------
+# ---------- Stage 1: Build backend (Go) ----------
 FROM golang:1.23-alpine AS backend-builder
 WORKDIR /build/backend
 
@@ -21,15 +21,9 @@ RUN go mod download
 # Copy backend sources
 COPY . ./
 
-# Copy frontend build output to embed directory
-# Go embed 需要文件在编译时存在于文件系统中
-# 从本地已编译好的 dist 目录拷贝
-COPY ui/web/dist ./pkg/static/dist
-
-# Build api-server binary (static) with embedded frontend
-# 使用 embed_frontend build tag 启用前端嵌入
+# Build api-server binary (static)
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-RUN go build -tags embed_frontend -o /out/keyops-api ./cmd/api-server
+RUN go build -o /out/keyops-api ./cmd/api-server
 
 # ---------- Stage 2: Runtime (minimal alpine) ----------
 FROM alpine:latest
@@ -47,7 +41,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
         git && \
     update-ca-certificates
 
-# Copy backend binary (with embedded frontend)
+# Copy backend binary
 COPY --from=backend-builder /out/keyops-api /usr/local/bin/keyops-api
 
 # Create directories
@@ -57,7 +51,7 @@ RUN mkdir -p /app/config && \
 # Copy backend config (can be overridden by volume)
 COPY config /app/config
 
-# Expose ports: 8080 (HTTP/API + Frontend), 2222 (SSH gateway)
+# Expose ports: 8080 (HTTP/API), 2222 (SSH gateway)
 EXPOSE 8080 2222
 
 ENV KEYOPS_CONFIG=/app/config/config.yaml \
@@ -68,5 +62,5 @@ ENV KEYOPS_CONFIG=/app/config/config.yaml \
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://127.0.0.1:8080/health >/dev/null 2>&1 || exit 1
 
-# Start backend (serves both API and frontend)
+# Start backend (API only; frontend served by Nginx in split deployment)
 CMD ["/usr/local/bin/keyops-api"]

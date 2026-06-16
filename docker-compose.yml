@@ -154,10 +154,8 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
       
-      # MongoDB 配置（用于堡垒机会话录制/命令历史，以及云账单原始数据）
-      # 注意：config.yaml 中的 mongodb URI 需使用服务名 mongodb 而非 localhost
+      # MongoDB 配置（堡垒机会话录制/命令历史，engine=mongodb 时）
       MONGO_BASTION_URI: ${MONGO_BASTION_URI:-mongodb://admin:123456@mongodb:27017/keyops_bastion?authSource=admin}
-      MONGO_BILL_URI: ${MONGO_BILL_URI:-mongodb://admin:123456@mongodb:27017/keyops_bill?authSource=admin}
       
       # Guacd 配置（用于 RDP 连接）
       GUACD_HOST: guacd

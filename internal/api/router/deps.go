@@ -49,7 +49,6 @@ type HandlerSet struct {
 	K8sSearch        *handler.K8sSearchHandler
 	Deployment       *handler.DeploymentHandler
 	Bill             *handler.BillHandler
-	ExpensesMap      *handler.ExpensesMapHandler
 	CloudAccount     *handler.CloudAccountHandler
 	Resources        *handler.ResourcesHandler
 	BillDashboard    *handler.BillDashboardHandler

@@ -80,12 +80,13 @@
 | | 👨‍💼 值班管理 | 排班管理，值班日历，自动/手动告警分配 | ✅ |
 | | 📈 告警统计 | 告警趋势、级别分布、策略效果分析 | ✅ |
 | | 🔗 Prometheus Webhook | 原生 Prometheus Alertmanager webhook 接收 | ✅ |
+| | 📊 Prometheus 指标 | 内置 `/metrics` 端点，暴露 API 请求计数、代理健康状态、活跃会话、同步错误 | ✅ |
 | **💾 数据库管理** | 🗄️ 多数据库支持 | MySQL、PostgreSQL、MongoDB、Redis 统一管理 | ✅ |
 | | 🔍 查询执行 | SQL 查询、MongoDB 查询、Redis 命令执行，结果格式化 | ✅ |
 | | 📝 查询审计日志 | 完整查询审计记录：用户、时间、IP、执行 SQL | ✅ |
 | | 🔐 细粒度权限 | 基于 Casbin 的权限控制（实例→数据库→表→权限类型） | ✅ |
 | | 🧪 连接测试 | 保存前连接验证 | ✅ |
-| **☁️ 云费用 FinOps** | 💳 云账号 | 多云账号凭据管理：AWS、阿里云、腾讯云 | ✅ |
+| **☁️ 云费用 FinOps** | 💳 云账号 | 多云账号凭据管理：AWS、Azure、GCP、阿里云、腾讯云 | ✅ |
 | | 📊 费用看板 | 多云费用总览、趋势、对比 | ✅ |
 | | 📈 费用拆分 | 按标签、账号、区域、服务、资源拆分 | ✅ |
 | | 📉 优化建议 | 基于用量分析的费用优化建议 | ✅ |
@@ -93,6 +94,7 @@
 | | 🔄 账单同步 | 定时自动同步云账单，支持配置频率 | ✅ |
 | **🔧 CMDB MCP** | 🖥️ CMDB 工具 | 通过 Model Context Protocol 暴露 CMDB（主机/资产）查询工具 | ✅ |
 | | 🛠️ K8s 工具 | 通过 MCP 暴露 K8s 资源操作工具 | ✅ |
+| | 💰 账单工具 | 通过 MCP 提供云费用查询（费用拆分、趋势、优化建议） | ✅ |
 | | 🔌 MCP 服务 | 标准 MCP 服务器，供 AI 工具调用，支持 API 密钥认证 | ✅ |
 | **📋 审计** | 📝 操作日志 | 完整的 API 操作审计追溯：用户、动作、资源、时间 | ✅ |
 | | 🗃️ Pod 命令审计 | 堡垒机 Pod 命令记录与审计 | ✅ |
@@ -128,13 +130,11 @@ docker-compose down
 
 ### PostgreSQL 部署
 
-修改环境变量，在 `.env` 文件中设置：
+KeyOps 支持 PostgreSQL 作为后端数据库。在 `.env` 中设置以下环境变量，并确保有可用的 PostgreSQL 实例：
 
 ```bash
-docker-compose -f docker-compose-pg.yaml up -d
-
 DB_DRIVER=postgres
-DB_HOST=postgres
+DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
@@ -153,7 +153,13 @@ DB_NAME=keyops
 
 ## 环境变量配置
 
-创建 `.env` 文件（可选）：
+复制 `.env.example` 为 `.env` 并按需修改（可选）：
+
+```bash
+cp .env.example .env
+```
+
+示例内容：
 
 ```bash
 # 数据库配置
@@ -171,7 +177,6 @@ REDIS_PASSWORD=
 MONGO_INITDB_ROOT_USERNAME=admin
 MONGO_INITDB_ROOT_PASSWORD=123456
 MONGO_BASTION_URI=mongodb://admin:123456@mongodb:27017/keyops_bastion?authSource=admin
-MONGO_BILL_URI=mongodb://admin:123456@mongodb:27017/keyops_bill?authSource=admin
 
 # AI 助手
 # LLM/模型配置改为数据库管理（ai_assistant_models），不再通过 .env 配置。
